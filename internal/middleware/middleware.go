@@ -12,6 +12,10 @@ import (
 	"github.com/libops/api/internal/logging"
 )
 
+type requestIdKey string
+
+const requestIDContextKey requestIdKey = "request_id"
+
 // responseWriter wraps http.ResponseWriter to capture status code.
 type responseWriter struct {
 	http.ResponseWriter
@@ -78,7 +82,7 @@ func RequestIDMiddleware(next http.Handler) http.Handler {
 		w.Header().Set("X-Request-ID", requestID)
 
 		ctx := logging.WithRequestID(r.Context(), requestID)
-		ctx = context.WithValue(ctx, "request_id", requestID)
+		ctx = context.WithValue(ctx, requestIDContextKey, requestID)
 
 		next.ServeHTTP(w, r.WithContext(ctx))
 	})
