@@ -1,0 +1,23 @@
+syntax = "proto3";
+
+package libops.v1.common;
+
+import "gnostic/openapi/v3/annotations.proto";
+import "libops/v1/common/types.proto";
+
+option go_package = "github.com/libops/platform/proto/libops/v1/common;commonv1";
+
+// SiteConfig is the organization-facing site configuration
+// Contains only safe, non-sensitive fields
+message SiteConfig {
+  string site_id = 1 [(gnostic.openapi.v3.property) = {format: "uuid"}];  // Unique site identifier (UUID)
+  string organization_id = 2 [(gnostic.openapi.v3.property) = {format: "uuid"}];
+  string project_id = 3 [(gnostic.openapi.v3.property) = {format: "uuid"}];
+  string site_name = 4;  // "production", "staging", "development"
+
+  // GitHub reference: heads/{branch_name}, tags/{tag_name}, or "release"
+  string github_ref = 5;
+
+  // Status (organization-visible)
+  Status status = 6;
+}

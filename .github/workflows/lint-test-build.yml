@@ -1,0 +1,71 @@
+name: build-push
+on:
+  push:
+  workflow_dispatch:
+
+jobs:
+  lint-test:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3 # v6
+
+      - name: Set up Go
+        uses: actions/setup-go@4dc6199c7b1a012772edbd06daecab0f50c9053c # v6
+        with:
+          go-version: ">=1.25.3"
+
+      - name: golangci-lint
+        uses: golangci/golangci-lint-action@e7fa5ac41e1cf5b7d48e45e42232ce7ada589601 # v9
+        with:
+          version: latest
+          install-only: true
+
+      - name: setup
+        run: make install-tools
+
+      - name: lint
+        run: make lint
+
+      - name: test
+        run: make test
+
+      - name: check contract
+        run: make proto-breaking
+
+      - name: Run integration tests
+        run: make integration-test
+
+      - name: Display test logs on failure
+        if: failure()
+        run: |
+          cd ci
+          echo "=== API Logs ==="
+          docker compose logs api
+          echo ""
+          echo "=== Test Runner Logs ==="
+          docker compose logs test-runner
+          echo ""
+          echo "=== Vault Logs ==="
+          docker compose logs vault
+          echo ""
+          echo "=== MariaDB Logs ==="
+          docker compose logs mariadb
+
+      - name: coverage
+        run: go test -v -coverprofile=coverage.out -covermode=atomic ./internal/...
+
+      - name: upload coverage to codecov
+        uses: codecov/codecov-action@5a1091511ad55cbe89839c7260b706298ca349f7 # v5
+        with:
+          files: ./coverage.out
+          fail_ci_if_error: false
+        env:
+          CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
+
+  run:
+    needs: [lint-test]
+    uses: libops/.github/.github/workflows/build-push-ghcr.yaml@main
+    permissions:
+      contents: read
+      packages: write
+    secrets: inherit

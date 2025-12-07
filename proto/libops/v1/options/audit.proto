@@ -1,0 +1,14 @@
+syntax = "proto3";
+
+package libops.v1.options;
+
+import "google/protobuf/descriptor.proto";
+
+option go_package = "github.com/libops/platform/proto/libops/v1/options;optionsv1";
+
+// Field option to mark fields as sensitive for audit logging
+// Fields marked as sensitive will be redacted in audit logs
+extend google.protobuf.FieldOptions {
+  // If true, this field contains sensitive data and should be redacted from audit logs
+  bool sensitive = 50001;
+}

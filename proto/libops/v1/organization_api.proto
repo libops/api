@@ -1,0 +1,1209 @@
+syntax = "proto3";
+
+package libops.v1;
+
+import "google/api/annotations.proto";
+import "google/protobuf/empty.proto";
+import "google/protobuf/field_mask.proto";
+import "libops/v1/common/project.proto";
+import "libops/v1/common/organization.proto";
+import "libops/v1/common/site.proto";
+import "libops/v1/common/types.proto";
+import "libops/v1/options/scope.proto";
+
+option go_package = "github.com/libops/platform/proto/libops/v1;libopsv1";
+
+// OrganizationService manages organization-facing organization/folder operations
+service OrganizationService {
+  // Get organization configuration (organization view)
+  rpc GetOrganization(GetOrganizationRequest) returns (GetOrganizationResponse) {
+    option (google.api.http) = {
+      get: "/v1/organizations/{organizationId}"
+    };
+    option (libops.v1.options.required_scope) = {
+      resource: RESOURCE_TYPE_ORGANIZATION
+      level: ACCESS_LEVEL_READ
+      allow_parent_access: true
+      oauth_scopes: "read:organization"
+      resource_id_field: "organization_id"
+    };
+  }
+
+  // Create a new organization
+  rpc CreateOrganization(CreateOrganizationRequest) returns (CreateOrganizationResponse) {
+    option (google.api.http) = {
+      post: "/v1/organizations"
+      body: "folder"
+    };
+    option (libops.v1.options.required_scope) = {
+      resource: RESOURCE_TYPE_ACCOUNT
+      level: ACCESS_LEVEL_WRITE
+      allow_parent_access: true
+      oauth_scopes: "write:organization"
+    };
+  }
+
+  // Update organization metadata (organization-editable fields only)
+  rpc UpdateOrganization(UpdateOrganizationRequest) returns (UpdateOrganizationResponse) {
+    option (google.api.http) = {
+      put: "/v1/organizations/{organizationId}"
+      body: "folder"
+    };
+    option (libops.v1.options.required_scope) = {
+      resource: RESOURCE_TYPE_ORGANIZATION
+      level: ACCESS_LEVEL_WRITE
+      allow_parent_access: true
+
+      oauth_scopes: "write:organization"
+      resource_id_field: "organization_id"};
+  }
+
+  // Delete a organization (must have no projects)
+  rpc DeleteOrganization(DeleteOrganizationRequest) returns (google.protobuf.Empty) {
+    option (google.api.http) = {
+      delete: "/v1/organizations/{organizationId}"
+    };
+    option (libops.v1.options.required_scope) = {
+      resource: RESOURCE_TYPE_ORGANIZATION
+      level: ACCESS_LEVEL_ADMIN
+      allow_parent_access: true
+
+      oauth_scopes: "delete:organization"
+      resource_id_field: "organization_id"};
+  }
+
+  // List all organizations
+  rpc ListOrganizations(ListOrganizationsRequest) returns (ListOrganizationsResponse) {
+    option (google.api.http) = {
+      get: "/v1/organizations"
+    };
+    option (libops.v1.options.required_scope) = {
+      resource: RESOURCE_TYPE_ACCOUNT
+      level: ACCESS_LEVEL_READ
+      allow_parent_access: true
+
+      oauth_scopes: "read:organization"
+    };
+  }
+
+  // List projects for a organization
+  rpc ListOrganizationProjects(ListOrganizationProjectsRequest) returns (ListOrganizationProjectsResponse) {
+    option (google.api.http) = {
+      get: "/v1/projects"
+    };
+    option (libops.v1.options.required_scope) = {
+      resource: RESOURCE_TYPE_ORGANIZATION
+      level: ACCESS_LEVEL_READ
+      allow_parent_access: true
+
+      oauth_scopes: "read:project"
+      resource_id_field: "organization_id"};
+  }
+}
+
+// SiteService manages organization-facing site operations
+service SiteService {
+  // List sites for a organization
+  rpc ListSites(ListSitesRequest) returns (ListSitesResponse) {
+    option (google.api.http) = {
+      get: "/v1/sites"
+    };
+    option (libops.v1.options.required_scope) = {
+      resource: RESOURCE_TYPE_ACCOUNT
+      level: ACCESS_LEVEL_READ
+      allow_parent_access: true
+
+      oauth_scopes: "read:site"
+    };
+  }
+
+  // Get site configuration (organization view)
+  rpc GetSite(GetSiteRequest) returns (GetSiteResponse) {
+    option (google.api.http) = {
+      get: "/v1/sites/{siteId}"
+    };
+    option (libops.v1.options.required_scope) = {
+      resource: RESOURCE_TYPE_SITE
+      level: ACCESS_LEVEL_READ
+      allow_parent_access: true
+
+      oauth_scopes: "read:site"
+      resource_id_field: "site_id"};
+  }
+
+  // Create a new site
+  rpc CreateSite(CreateSiteRequest) returns (CreateSiteResponse) {
+    option (google.api.http) = {
+      post: "/v1/sites"
+      body: "site"
+    };
+    option (libops.v1.options.required_scope) = {
+      resource: RESOURCE_TYPE_PROJECT
+      level: ACCESS_LEVEL_WRITE
+      allow_parent_access: true
+
+      oauth_scopes: "write:project"
+      parent_resource_id_field: "project_id"
+      parent_resource: RESOURCE_TYPE_PROJECT};
+  }
+
+  // Update site configuration (organization-editable fields only)
+  rpc UpdateSite(UpdateSiteRequest) returns (UpdateSiteResponse) {
+    option (google.api.http) = {
+      patch: "/v1/sites/{siteId}"
+      body: "site"
+    };
+    option (libops.v1.options.required_scope) = {
+      resource: RESOURCE_TYPE_SITE
+      level: ACCESS_LEVEL_WRITE
+      allow_parent_access: true
+
+      oauth_scopes: "write:site"
+      resource_id_field: "site_id"};
+  }
+
+  // Delete a site
+  rpc DeleteSite(DeleteSiteRequest) returns (google.protobuf.Empty) {
+    option (google.api.http) = {
+      delete: "/v1/sites/{siteId}"
+    };
+    option (libops.v1.options.required_scope) = {
+      resource: RESOURCE_TYPE_SITE
+      level: ACCESS_LEVEL_ADMIN
+      allow_parent_access: true
+
+      oauth_scopes: "delete:site"
+      resource_id_field: "site_id"};
+  }
+}
+
+// ProjectService manages organization-facing project operations
+service ProjectService {
+  // Get project configuration (organization view)
+  rpc GetProject(GetProjectRequest) returns (GetProjectResponse) {
+    option (google.api.http) = {
+      get: "/v1/projects/{projectId}"
+    };
+    option (libops.v1.options.required_scope) = {
+      resource: RESOURCE_TYPE_PROJECT
+      level: ACCESS_LEVEL_READ
+      allow_parent_access: true
+
+      oauth_scopes: "read:project"
+      resource_id_field: "project_id"};
+  }
+
+  // Create a new project (organization)
+  rpc CreateProject(CreateProjectRequest) returns (CreateProjectResponse) {
+    option (google.api.http) = {
+      post: "/v1/projects"
+      body: "project"
+    };
+    option (libops.v1.options.required_scope) = {
+      resource: RESOURCE_TYPE_ORGANIZATION
+      level: ACCESS_LEVEL_WRITE
+      allow_parent_access: true
+
+      oauth_scopes: "write:organization"
+      parent_resource_id_field: "organization_id"
+      parent_resource: RESOURCE_TYPE_ORGANIZATION};
+  }
+
+  // Update project configuration (organization-editable fields only)
+  rpc UpdateProject(UpdateProjectRequest) returns (UpdateProjectResponse) {
+    option (google.api.http) = {
+      put: "/v1/projects/{projectId}"
+      body: "project"
+    };
+    option (libops.v1.options.required_scope) = {
+      resource: RESOURCE_TYPE_PROJECT
+      level: ACCESS_LEVEL_WRITE
+      allow_parent_access: true
+
+      oauth_scopes: "write:project"
+      resource_id_field: "project_id"};
+  }
+
+  // Delete a project (must have no sites)
+  rpc DeleteProject(DeleteProjectRequest) returns (google.protobuf.Empty) {
+    option (google.api.http) = {
+      delete: "/v1/projects/{projectId}"
+    };
+    option (libops.v1.options.required_scope) = {
+      resource: RESOURCE_TYPE_PROJECT
+      level: ACCESS_LEVEL_ADMIN
+      allow_parent_access: true
+
+      oauth_scopes: "delete:project"
+      resource_id_field: "project_id"};
+  }
+
+  // List projects for a organization
+  rpc ListProjects(ListProjectsRequest) returns (ListProjectsResponse) {
+    option (google.api.http) = {
+      get: "/v1/projects"
+    };
+    option (libops.v1.options.required_scope) = {
+      resource: RESOURCE_TYPE_ACCOUNT
+      level: ACCESS_LEVEL_READ
+      allow_parent_access: true
+
+      oauth_scopes: "read:organization"
+    };
+  }
+
+  // List sites for a project
+  rpc ListProjectSites(ListProjectSitesRequest) returns (ListProjectSitesResponse) {
+    option (google.api.http) = {
+      get: "/v1/projects/{projectId}/sites"
+    };
+    option (libops.v1.options.required_scope) = {
+      resource: RESOURCE_TYPE_PROJECT
+      level: ACCESS_LEVEL_READ
+      allow_parent_access: true
+
+      oauth_scopes: "read:project"
+      resource_id_field: "project_id"};
+  }
+}
+
+// ==============================================================================
+// REQUEST/RESPONSE - GetProject
+// ==============================================================================
+
+message GetProjectRequest {
+  string organization_id = 1;
+  string project_id = 2;
+}
+
+message GetProjectResponse {
+  libops.v1.common.ProjectConfig project = 1;
+}
+
+// ==============================================================================
+// REQUEST/RESPONSE - CreateProject
+// ==============================================================================
+
+message CreateProjectRequest {
+  string organization_id = 1;
+  libops.v1.common.ProjectConfig project = 2;
+}
+
+message CreateProjectResponse {
+  libops.v1.common.ProjectConfig project = 1;
+}
+
+// ==============================================================================
+// REQUEST/RESPONSE - UpdateProject
+// ==============================================================================
+
+message UpdateProjectRequest {
+  string organization_id = 1;
+  string project_id = 2;
+  libops.v1.common.ProjectConfig project = 3;
+  google.protobuf.FieldMask update_mask = 4;
+}
+
+message UpdateProjectResponse {
+  libops.v1.common.ProjectConfig project = 1;
+}
+
+// ==============================================================================
+// REQUEST/RESPONSE - DeleteProject
+// ==============================================================================
+
+message DeleteProjectRequest {
+  string organization_id = 1;
+  string project_id = 2;
+}
+
+// ==============================================================================
+// REQUEST/RESPONSE - ListProjects
+// ==============================================================================
+
+message ListProjectsRequest {
+  optional string organization_id = 1;
+  int32 page_size = 2;
+  string page_token = 3;
+}
+
+message ListProjectsResponse {
+  repeated libops.v1.common.ProjectConfig projects = 1;
+  string next_page_token = 2;
+}
+
+// ==============================================================================
+// REQUEST/RESPONSE - ListProjectSites
+// ==============================================================================
+
+message ListProjectSitesRequest {
+  string project_id = 1;
+  int32 page_size = 2;
+  string page_token = 3;
+}
+
+message ListProjectSitesResponse {
+  repeated string site_names = 1;
+  string next_page_token = 2;
+}
+
+// ==============================================================================
+// REQUEST/RESPONSE - GetOrganization
+// ==============================================================================
+
+message GetOrganizationRequest {
+  string organization_id = 1;
+}
+
+message GetOrganizationResponse {
+  libops.v1.common.FolderConfig folder = 1;
+}
+
+// ==============================================================================
+// REQUEST/RESPONSE - CreateOrganization
+// ==============================================================================
+
+message CreateOrganizationRequest {
+  libops.v1.common.FolderConfig folder = 1;
+}
+
+message CreateOrganizationResponse {
+  string organization_id = 1;
+  libops.v1.common.FolderConfig folder = 2;
+}
+
+// ==============================================================================
+// REQUEST/RESPONSE - UpdateOrganization
+// ==============================================================================
+
+message UpdateOrganizationRequest {
+  string organization_id = 1;
+  libops.v1.common.FolderConfig folder = 2;
+  google.protobuf.FieldMask update_mask = 3;
+}
+
+message UpdateOrganizationResponse {
+  libops.v1.common.FolderConfig folder = 1;
+}
+
+// ==============================================================================
+// REQUEST/RESPONSE - DeleteOrganization
+// ==============================================================================
+
+message DeleteOrganizationRequest {
+  string organization_id = 1;
+}
+
+// ==============================================================================
+// REQUEST/RESPONSE - ListOrganizations
+// ==============================================================================
+
+message ListOrganizationsRequest {
+  int32 page_size = 1;
+  string page_token = 2;
+}
+
+message ListOrganizationsResponse {
+  repeated libops.v1.common.FolderConfig organizations = 1;
+  string next_page_token = 2;
+}
+
+// ==============================================================================
+// REQUEST/RESPONSE - ListOrganizationProjects
+// ==============================================================================
+
+message ListOrganizationProjectsRequest {
+  string organization_id = 1;
+  int32 page_size = 2;
+  string page_token = 3;
+}
+
+message ListOrganizationProjectsResponse {
+  repeated string project_ids = 1;
+  string next_page_token = 2;
+}
+
+// ==============================================================================
+// REQUEST/RESPONSE - GetSite
+// ==============================================================================
+
+message GetSiteRequest {
+  string site_id = 1;
+}
+
+message GetSiteResponse {
+  libops.v1.common.SiteConfig site = 1;
+}
+
+// ==============================================================================
+// REQUEST/RESPONSE - CreateSite
+// ==============================================================================
+
+message CreateSiteRequest {
+  string organization_id = 1;
+  string project_id = 2;
+  libops.v1.common.SiteConfig site = 3;
+}
+
+message CreateSiteResponse {
+  libops.v1.common.SiteConfig site = 1;
+}
+
+// ==============================================================================
+// REQUEST/RESPONSE - UpdateSite
+// ==============================================================================
+
+message UpdateSiteRequest {
+  string site_id = 1;
+  libops.v1.common.SiteConfig site = 2;
+  google.protobuf.FieldMask update_mask = 3;
+}
+
+message UpdateSiteResponse {
+  libops.v1.common.SiteConfig site = 1;
+}
+
+// ==============================================================================
+// REQUEST/RESPONSE - DeleteSite
+// ==============================================================================
+
+message DeleteSiteRequest {
+  string site_id = 1;
+}
+
+// ==============================================================================
+// REQUEST/RESPONSE - ListSites
+// ==============================================================================
+
+message ListSitesRequest {
+  optional string organization_id = 1;
+  optional string project_id = 2;
+  int32 page_size = 3;
+  string page_token = 4;
+}
+
+message ListSitesResponse {
+  repeated libops.v1.common.SiteConfig sites = 1;
+  string next_page_token = 2;
+}
+
+// ==============================================================================
+// FIREWALL SERVICES
+// ==============================================================================
+
+// FirewallService manages firewall operations for all sites for a organization
+service FirewallService {
+  // List firewall rules applied to all sites for a organization
+  rpc ListOrganizationFirewallRules(ListOrganizationFirewallRulesRequest) returns (ListOrganizationFirewallRulesResponse) {
+    option (google.api.http) = {
+      get: "/v1/organizations/{organizationId}/firewall"
+    };
+    option (libops.v1.options.required_scope) = {
+      resource: RESOURCE_TYPE_ORGANIZATION
+      level: ACCESS_LEVEL_READ
+      allow_parent_access: true
+      oauth_scopes: "read:firewall"
+      resource_id_field: "organization_id"};
+  }
+
+  // Add firewall rule applied to all sites for a organization
+  rpc CreateOrganizationFirewallRule(CreateOrganizationFirewallRuleRequest) returns (CreateOrganizationFirewallRuleResponse) {
+    option (google.api.http) = {
+      post: "/v1/organizations/{organizationId}/firewall"
+      body: "*"
+    };
+    option (libops.v1.options.required_scope) = {
+      resource: RESOURCE_TYPE_ORGANIZATION
+      level: ACCESS_LEVEL_WRITE
+      allow_parent_access: true
+      oauth_scopes: "write:firewall"
+      parent_resource_id_field: "organization_id"
+      parent_resource: RESOURCE_TYPE_ORGANIZATION};
+  }
+
+  // Remove a firewall rule from all sites for a organization
+  rpc DeleteOrganizationFirewallRule(DeleteOrganizationFirewallRuleRequest) returns (google.protobuf.Empty) {
+    option (google.api.http) = {
+      delete: "/v1/organizations/{organizationId}/firewall"
+    };
+    option (libops.v1.options.required_scope) = {
+      resource: RESOURCE_TYPE_ORGANIZATION
+      level: ACCESS_LEVEL_WRITE
+      allow_parent_access: true
+      oauth_scopes: "delete:firewall"
+      resource_id_field: "organization_id"};
+  }
+}
+
+// ProjectFirewallService manages firewall operations for all sites in a project
+service ProjectFirewallService {
+  // List firewall rules applied to all sites in a project
+  rpc ListProjectFirewallRules(ListProjectFirewallRulesRequest) returns (ListProjectFirewallRulesResponse) {
+    option (google.api.http) = {
+      get: "/v1/projects/{projectId}/firewall"
+    };
+    option (libops.v1.options.required_scope) = {
+      resource: RESOURCE_TYPE_PROJECT
+      level: ACCESS_LEVEL_READ
+      allow_parent_access: true
+      oauth_scopes: "read:firewall"
+      resource_id_field: "project_id"};
+  }
+
+  // Add firewall rule to all sites in a project
+  rpc CreateProjectFirewallRule(CreateProjectFirewallRuleRequest) returns (CreateProjectFirewallRuleResponse) {
+    option (google.api.http) = {
+      post: "/v1/projects/{projectId}/firewall"
+      body: "*"
+    };
+    option (libops.v1.options.required_scope) = {
+      resource: RESOURCE_TYPE_PROJECT
+      level: ACCESS_LEVEL_WRITE
+      allow_parent_access: true
+      oauth_scopes: "write:firewall"
+      parent_resource_id_field: "project_id"
+      parent_resource: RESOURCE_TYPE_PROJECT};
+  }
+
+  // Remove a firewall rule from all sites in a project
+  rpc DeleteProjectFirewallRule(DeleteProjectFirewallRuleRequest) returns (google.protobuf.Empty) {
+    option (google.api.http) = {
+      delete: "/v1/projects/{projectId}/firewall/{ruleId}"
+    };
+    option (libops.v1.options.required_scope) = {
+      resource: RESOURCE_TYPE_PROJECT
+      level: ACCESS_LEVEL_WRITE
+      allow_parent_access: true
+      oauth_scopes: "delete:firewall"
+      resource_id_field: "project_id"};
+  }
+}
+
+// SiteFirewallService manages firewall operations for a specific site
+service SiteFirewallService {
+  // List firewall rules applied to a specific site
+  rpc ListSiteFirewallRules(ListSiteFirewallRulesRequest) returns (ListSiteFirewallRulesResponse) {
+    option (google.api.http) = {
+      get: "/v1/sites/{siteId}/firewall"
+    };
+    option (libops.v1.options.required_scope) = {
+      resource: RESOURCE_TYPE_SITE
+      level: ACCESS_LEVEL_READ
+      allow_parent_access: true
+      oauth_scopes: "read:firewall"
+      resource_id_field: "site_id"};
+  }
+
+  // Add firewall rule to a specific site
+  rpc CreateSiteFirewallRule(CreateSiteFirewallRuleRequest) returns (CreateSiteFirewallRuleResponse) {
+    option (google.api.http) = {
+      post: "/v1/sites/{siteId}/firewall"
+      body: "*"
+    };
+    option (libops.v1.options.required_scope) = {
+      resource: RESOURCE_TYPE_SITE
+      level: ACCESS_LEVEL_WRITE
+      allow_parent_access: true
+      oauth_scopes: "write:firewall"
+      parent_resource_id_field: "site_id"
+      parent_resource: RESOURCE_TYPE_SITE};
+  }
+
+  // Remove a firewall rule from a specific site
+  rpc DeleteSiteFirewallRule(DeleteSiteFirewallRuleRequest) returns (google.protobuf.Empty) {
+    option (google.api.http) = {
+      delete: "/v1/sites/{siteId}/firewall/{ruleId}"
+    };
+    option (libops.v1.options.required_scope) = {
+      resource: RESOURCE_TYPE_SITE
+      level: ACCESS_LEVEL_WRITE
+      allow_parent_access: true
+      oauth_scopes: "delete:firewall"
+      resource_id_field: "site_id"};
+  }
+}
+
+// ==============================================================================
+// MEMBER SERVICES
+// ==============================================================================
+
+// MemberService manages organization membership operations
+service MemberService {
+  // List members of a organization
+  rpc ListOrganizationMembers(ListOrganizationMembersRequest) returns (ListOrganizationMembersResponse) {
+    option (google.api.http) = {
+      get: "/v1/organizations/{organizationId}/members"
+    };
+    option (libops.v1.options.required_scope) = {
+      resource: RESOURCE_TYPE_ORGANIZATION
+      level: ACCESS_LEVEL_READ
+      allow_parent_access: true
+      oauth_scopes: "read:members"
+      resource_id_field: "organization_id"};
+  }
+
+  // Create a member in a organization
+  rpc CreateOrganizationMember(CreateOrganizationMemberRequest) returns (CreateOrganizationMemberResponse) {
+    option (google.api.http) = {
+      post: "/v1/organizations/{organizationId}/members"
+      body: "*"
+    };
+    option (libops.v1.options.required_scope) = {
+      resource: RESOURCE_TYPE_ORGANIZATION
+      level: ACCESS_LEVEL_ADMIN
+      allow_parent_access: true
+      oauth_scopes: "write:members"
+      parent_resource_id_field: "organization_id"
+      parent_resource: RESOURCE_TYPE_ORGANIZATION};
+  }
+
+  // Update a member's role
+  rpc UpdateOrganizationMember(UpdateOrganizationMemberRequest) returns (UpdateOrganizationMemberResponse) {
+    option (google.api.http) = {
+      patch: "/v1/organizations/{organizationId}/members/{accountId}"
+      body: "*"
+    };
+    option (libops.v1.options.required_scope) = {
+      resource: RESOURCE_TYPE_ORGANIZATION
+      level: ACCESS_LEVEL_ADMIN
+      allow_parent_access: true
+      oauth_scopes: "write:members"
+      resource_id_field: "organization_id"};
+  }
+
+  // Delete a member from a organization
+  rpc DeleteOrganizationMember(DeleteOrganizationMemberRequest) returns (google.protobuf.Empty) {
+    option (google.api.http) = {
+      delete: "/v1/organizations/{organizationId}/members/{accountId}"
+    };
+    option (libops.v1.options.required_scope) = {
+      resource: RESOURCE_TYPE_ORGANIZATION
+      level: ACCESS_LEVEL_ADMIN
+      allow_parent_access: true
+      oauth_scopes: "delete:members"
+      resource_id_field: "organization_id"};
+  }
+}
+
+// ProjectMemberService manages project membership operations
+service ProjectMemberService {
+  // List members of a project
+  rpc ListProjectMembers(ListProjectMembersRequest) returns (ListProjectMembersResponse) {
+    option (google.api.http) = {
+      get: "/v1/projects/{projectId}/members"
+    };
+    option (libops.v1.options.required_scope) = {
+      resource: RESOURCE_TYPE_PROJECT
+      level: ACCESS_LEVEL_READ
+      allow_parent_access: true
+      oauth_scopes: "read:members"
+      resource_id_field: "project_id"};
+  }
+
+  // Add a member to a project
+  rpc CreateProjectMember(CreateProjectMemberRequest) returns (CreateProjectMemberResponse) {
+    option (google.api.http) = {
+      post: "/v1/projects/{projectId}/members"
+      body: "*"
+    };
+    option (libops.v1.options.required_scope) = {
+      resource: RESOURCE_TYPE_PROJECT
+      level: ACCESS_LEVEL_ADMIN
+      allow_parent_access: true
+      oauth_scopes: "write:members"
+      parent_resource_id_field: "project_id"
+      parent_resource: RESOURCE_TYPE_PROJECT};
+  }
+
+  // Update a member's role
+  rpc UpdateProjectMember(UpdateProjectMemberRequest) returns (UpdateProjectMemberResponse) {
+    option (google.api.http) = {
+      patch: "/v1/projects/{projectId}/members/{accountId}"
+      body: "*"
+    };
+    option (libops.v1.options.required_scope) = {
+      resource: RESOURCE_TYPE_PROJECT
+      level: ACCESS_LEVEL_ADMIN
+      allow_parent_access: true
+      oauth_scopes: "write:members"
+      resource_id_field: "project_id"};
+  }
+
+  // Remove a member from a project
+  rpc DeleteProjectMember(DeleteProjectMemberRequest) returns (google.protobuf.Empty) {
+    option (google.api.http) = {
+      delete: "/v1/projects/{projectId}/members/{accountId}"
+    };
+    option (libops.v1.options.required_scope) = {
+      resource: RESOURCE_TYPE_PROJECT
+      level: ACCESS_LEVEL_ADMIN
+      allow_parent_access: true
+      oauth_scopes: "delete:members"
+      resource_id_field: "project_id"};
+  }
+}
+
+// SiteMemberService manages site membership operations
+service SiteMemberService {
+  // List members of a site
+  rpc ListSiteMembers(ListSiteMembersRequest) returns (ListSiteMembersResponse) {
+    option (google.api.http) = {
+      get: "/v1/sites/{siteId}/members"
+    };
+    option (libops.v1.options.required_scope) = {
+      resource: RESOURCE_TYPE_SITE
+      level: ACCESS_LEVEL_READ
+      allow_parent_access: true
+      oauth_scopes: "read:members"
+      resource_id_field: "site_id"};
+  }
+
+  // Add a member to a site
+  rpc CreateSiteMember(CreateSiteMemberRequest) returns (CreateSiteMemberResponse) {
+    option (google.api.http) = {
+      post: "/v1/sites/{siteId}/members"
+      body: "*"
+    };
+    option (libops.v1.options.required_scope) = {
+      resource: RESOURCE_TYPE_SITE
+      level: ACCESS_LEVEL_ADMIN
+      allow_parent_access: true
+      oauth_scopes: "write:members"
+      parent_resource_id_field: "site_id"
+      parent_resource: RESOURCE_TYPE_SITE};
+  }
+
+  // Update a member's role
+  rpc UpdateSiteMember(UpdateSiteMemberRequest) returns (UpdateSiteMemberResponse) {
+    option (google.api.http) = {
+      patch: "/v1/sites/{siteId}/members/{accountId}"
+      body: "*"
+    };
+    option (libops.v1.options.required_scope) = {
+      resource: RESOURCE_TYPE_SITE
+      level: ACCESS_LEVEL_ADMIN
+      allow_parent_access: true
+      oauth_scopes: "write:members"
+      resource_id_field: "site_id"};
+  }
+
+  // Remove a member from a site
+  rpc DeleteSiteMember(DeleteSiteMemberRequest) returns (google.protobuf.Empty) {
+    option (google.api.http) = {
+      delete: "/v1/sites/{siteId}/members/{accountId}"
+    };
+    option (libops.v1.options.required_scope) = {
+      resource: RESOURCE_TYPE_SITE
+      level: ACCESS_LEVEL_ADMIN
+      allow_parent_access: true
+      oauth_scopes: "delete:members"
+      resource_id_field: "site_id"};
+  }
+}
+
+// ==============================================================================
+// SSH KEY SERVICE
+// ==============================================================================
+
+// SshKeyService manages SSH keys for accounts
+service SshKeyService {
+  // List SSH keys for an account
+  rpc ListSshKeys(ListSshKeysRequest) returns (ListSshKeysResponse) {
+    option (google.api.http) = {
+      get: "/v1/accounts/{accountId}/ssh-keys"
+    };
+    option (libops.v1.options.required_scope) = {
+      resource: RESOURCE_TYPE_ACCOUNT
+      level: ACCESS_LEVEL_READ
+      allow_parent_access: true
+      oauth_scopes: "read:user"
+    };
+  }
+
+  // Create SSH key for an account
+  rpc CreateSshKey(CreateSshKeyRequest) returns (CreateSshKeyResponse) {
+    option (google.api.http) = {
+      post: "/v1/accounts/{accountId}/ssh-keys"
+      body: "*"
+    };
+    option (libops.v1.options.required_scope) = {
+      resource: RESOURCE_TYPE_ACCOUNT
+      level: ACCESS_LEVEL_WRITE
+      allow_parent_access: true
+      oauth_scopes: "write:user"
+    };
+  }
+
+  // Delete SSH key
+  rpc DeleteSshKey(DeleteSshKeyRequest) returns (google.protobuf.Empty) {
+    option (google.api.http) = {
+      delete: "/v1/accounts/{accountId}/ssh-keys/{keyId}"
+    };
+    option (libops.v1.options.required_scope) = {
+      resource: RESOURCE_TYPE_ACCOUNT
+      level: ACCESS_LEVEL_WRITE
+      allow_parent_access: true
+      oauth_scopes: "write:user"
+    };
+  }
+}
+
+// ==============================================================================
+// SITE OPERATIONS SERVICE
+// ==============================================================================
+
+// SiteOperationsService manages site deployment and operational tasks
+service SiteOperationsService {
+  // Get site deployment status
+  rpc GetSiteStatus(GetSiteStatusRequest) returns (GetSiteStatusResponse) {
+    option (google.api.http) = {
+      get: "/v1/sites/{siteId}/status"
+    };
+    option (libops.v1.options.required_scope) = {
+      resource: RESOURCE_TYPE_SITE
+      level: ACCESS_LEVEL_READ
+      allow_parent_access: true
+      oauth_scopes: "read:site"
+      resource_id_field: "site_id"};
+  }
+
+  // Deploy a site
+  rpc DeploySite(DeploySiteRequest) returns (DeploySiteResponse) {
+    option (google.api.http) = {
+      post: "/v1/sites/{siteId}/deploy"
+      body: "*"
+    };
+    option (libops.v1.options.required_scope) = {
+      resource: RESOURCE_TYPE_SITE
+      level: ACCESS_LEVEL_WRITE
+      allow_parent_access: true
+      oauth_scopes: "write:site"
+      resource_id_field: "site_id"};
+  }
+}
+
+// ==============================================================================
+// MESSAGES - Firewall Rules
+// ==============================================================================
+
+enum FirewallRuleType {
+  FIREWALL_RULE_TYPE_UNSPECIFIED = 0;
+  FIREWALL_RULE_TYPE_HTTPS_ALLOWED = 1;  // Allow HTTPS traffic
+  FIREWALL_RULE_TYPE_SSH_ALLOWED = 2;    // Allow SSH traffic
+  FIREWALL_RULE_TYPE_BLOCKED = 3;        // Block traffic
+}
+
+message OrganizationFirewallRule {
+  string rule_id = 1;          // Unique rule identifier
+  string organization_id = 2;      // Organization this rule applies to
+  FirewallRuleType rule_type = 3;  // Type of rule
+  string cidr = 4;             // CIDR block (e.g., "203.0.113.0/24")
+  string name = 5;             // Human-readable name for the rule
+  libops.v1.common.Status status = 6;  // Rule status
+}
+
+message ProjectFirewallRule {
+  string rule_id = 1;          // Unique rule identifier
+  string project_id = 2;       // Project this rule applies to
+  FirewallRuleType rule_type = 3;  // Type of rule
+  string cidr = 4;             // CIDR block
+  string name = 5;             // Human-readable name
+  libops.v1.common.Status status = 6;  // Rule status
+}
+
+message SiteFirewallRule {
+  string rule_id = 1;          // Unique rule identifier
+  string site_id = 2;          // Site this rule applies to
+  FirewallRuleType rule_type = 3;  // Type of rule
+  string cidr = 4;             // CIDR block
+  string name = 5;             // Human-readable name
+  libops.v1.common.Status status = 6;  // Rule status
+}
+
+// ==============================================================================
+// MESSAGES - Members
+// ==============================================================================
+
+message MemberDetail {
+  string account_id = 1;       // Account ID of the member
+  string email = 2;            // Member's email
+  string name = 3;             // Member's display name
+  string role = 4;             // "owner", "developer", "read"
+  optional string github_username = 5;  // GitHub username
+  libops.v1.common.Status status = 6;  // Member status
+}
+
+// ==============================================================================
+// MESSAGES - SSH Keys
+// ==============================================================================
+
+message SshKey {
+  string key_id = 1;           // UUID
+  string account_id = 2;       // UUID of account that owns this key
+  string public_key = 3;       // SSH public key content
+  optional string name = 4;    // User-friendly name
+  optional string fingerprint = 5;  // Key fingerprint (computed)
+}
+
+// ==============================================================================
+// MESSAGES - Site Status
+// ==============================================================================
+
+message SiteStatus {
+  string site_id = 1;
+  string status = 2;           // "pending", "deploying", "deployed", "failed"
+  optional string message = 3; // Status message
+  optional string deployed_at = 4;  // Timestamp of last deployment
+}
+
+// ==============================================================================
+// REQUEST/RESPONSE - Firewall Rules
+// ==============================================================================
+
+message ListOrganizationFirewallRulesRequest {
+  string organization_id = 1;
+  int32 page_size = 2;
+  string page_token = 3;
+}
+
+message ListOrganizationFirewallRulesResponse {
+  repeated OrganizationFirewallRule rules = 1;
+  string next_page_token = 2;
+}
+
+message CreateOrganizationFirewallRuleRequest {
+  string organization_id = 1;
+  FirewallRuleType rule_type = 2;
+  string cidr = 3;
+  string name = 4;
+}
+
+message CreateOrganizationFirewallRuleResponse {
+  OrganizationFirewallRule rule = 1;
+}
+
+message DeleteOrganizationFirewallRuleRequest {
+  string organization_id = 1;
+  string rule_id = 2;
+}
+
+message ListProjectFirewallRulesRequest {
+  string project_id = 1;
+  int32 page_size = 2;
+  string page_token = 3;
+}
+
+message ListProjectFirewallRulesResponse {
+  repeated ProjectFirewallRule rules = 1;
+  string next_page_token = 2;
+}
+
+message CreateProjectFirewallRuleRequest {
+  string project_id = 1;
+  FirewallRuleType rule_type = 2;
+  string cidr = 3;
+  string name = 4;
+}
+
+message CreateProjectFirewallRuleResponse {
+  ProjectFirewallRule rule = 1;
+}
+
+message DeleteProjectFirewallRuleRequest {
+  string project_id = 1;
+  string rule_id = 2;
+}
+
+message ListSiteFirewallRulesRequest {
+  string site_id = 1;
+  int32 page_size = 2;
+  string page_token = 3;
+}
+
+message ListSiteFirewallRulesResponse {
+  repeated SiteFirewallRule rules = 1;
+  string next_page_token = 2;
+}
+
+message CreateSiteFirewallRuleRequest {
+  string site_id = 1;
+  FirewallRuleType rule_type = 2;
+  string cidr = 3;
+  string name = 4;
+}
+
+message CreateSiteFirewallRuleResponse {
+  SiteFirewallRule rule = 1;
+}
+
+message DeleteSiteFirewallRuleRequest {
+  string site_id = 1;
+  string rule_id = 2;
+}
+
+// ==============================================================================
+// REQUEST/RESPONSE - Members
+// ==============================================================================
+
+message ListOrganizationMembersRequest {
+  string organization_id = 1;
+  int32 page_size = 2;
+  string page_token = 3;
+}
+
+message ListOrganizationMembersResponse {
+  repeated MemberDetail members = 1;
+  string next_page_token = 2;
+}
+
+message CreateOrganizationMemberRequest {
+  string organization_id = 1;
+  string account_id = 2;       // Account to add
+  string role = 3;             // "owner", "developer", "read"
+}
+
+message CreateOrganizationMemberResponse {
+  MemberDetail member = 1;
+}
+
+message UpdateOrganizationMemberRequest {
+  string organization_id = 1;
+  string account_id = 2;
+  string role = 3;             // New role
+  google.protobuf.FieldMask update_mask = 4;
+}
+
+message UpdateOrganizationMemberResponse {
+  MemberDetail member = 1;
+}
+
+message DeleteOrganizationMemberRequest {
+  string organization_id = 1;
+  string account_id = 2;
+}
+
+message ListProjectMembersRequest {
+  string project_id = 1;
+  int32 page_size = 2;
+  string page_token = 3;
+}
+
+message ListProjectMembersResponse {
+  repeated MemberDetail members = 1;
+  string next_page_token = 2;
+}
+
+message CreateProjectMemberRequest {
+  string project_id = 1;
+  string account_id = 2;       // Account to add
+  string role = 3;             // "developer", "read"
+}
+
+message CreateProjectMemberResponse {
+  MemberDetail member = 1;
+}
+
+message UpdateProjectMemberRequest {
+  string project_id = 1;
+  string account_id = 2;
+  string role = 3;             // New role
+  google.protobuf.FieldMask update_mask = 4;
+}
+
+message UpdateProjectMemberResponse {
+  MemberDetail member = 1;
+}
+
+message DeleteProjectMemberRequest {
+  string project_id = 1;
+  string account_id = 2;
+}
+
+message ListSiteMembersRequest {
+  string site_id = 1;
+  int32 page_size = 2;
+  string page_token = 3;
+}
+
+message ListSiteMembersResponse {
+  repeated MemberDetail members = 1;
+  string next_page_token = 2;
+}
+
+message CreateSiteMemberRequest {
+  string site_id = 1;
+  string account_id = 2;       // Account to add
+  string role = 3;             // "developer", "read"
+}
+
+message CreateSiteMemberResponse {
+  MemberDetail member = 1;
+}
+
+message UpdateSiteMemberRequest {
+  string site_id = 1;
+  string account_id = 2;
+  string role = 3;             // New role
+  google.protobuf.FieldMask update_mask = 4;
+}
+
+message UpdateSiteMemberResponse {
+  MemberDetail member = 1;
+}
+
+message DeleteSiteMemberRequest {
+  string site_id = 1;
+  string account_id = 2;
+}
+
+// ==============================================================================
+// REQUEST/RESPONSE - SSH Keys
+// ==============================================================================
+
+message ListSshKeysRequest {
+  string account_id = 1;
+  int32 page_size = 2;
+  string page_token = 3;
+}
+
+message ListSshKeysResponse {
+  repeated SshKey ssh_keys = 1;
+  string next_page_token = 2;
+}
+
+message CreateSshKeyRequest {
+  string account_id = 1;
+  string public_key = 2;
+  optional string name = 3;
+}
+
+message CreateSshKeyResponse {
+  SshKey ssh_key = 1;
+}
+
+message DeleteSshKeyRequest {
+  string account_id = 1;
+  string key_id = 2;
+}
+
+// ==============================================================================
+// REQUEST/RESPONSE - Site Operations
+// ==============================================================================
+
+message GetSiteStatusRequest {
+  string site_id = 1;
+}
+
+message GetSiteStatusResponse {
+  SiteStatus status = 1;
+}
+
+message DeploySiteRequest {
+  string site_id = 1;
+  optional string git_ref = 2;  // Branch, tag, or commit to deploy
+}
+
+message DeploySiteResponse {
+  string deployment_id = 1;
+  SiteStatus status = 2;
+}

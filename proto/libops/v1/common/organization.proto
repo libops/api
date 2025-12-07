@@ -1,0 +1,33 @@
+syntax = "proto3";
+
+package libops.v1.common;
+
+import "gnostic/openapi/v3/annotations.proto";
+import "libops/v1/common/types.proto";
+
+option go_package = "github.com/libops/platform/proto/libops/v1/common;commonv1";
+
+// Location represents Google Cloud geographic locations
+enum Location {
+  LOCATION_UNSPECIFIED = 0;
+  LOCATION_ASIA = 1;
+  LOCATION_AU = 2;
+  LOCATION_CA = 3;
+  LOCATION_DE = 4;
+  LOCATION_EU = 5;
+  LOCATION_IN = 6;
+  LOCATION_IT = 7;
+  LOCATION_US = 8;
+}
+
+// FolderConfig is the organization-facing folder/organization configuration
+// Contains only safe, non-sensitive fields
+message FolderConfig {
+  string organization_id = 1 [(gnostic.openapi.v3.property) = {format: "uuid"}];
+  string organization_name = 2;
+  Status status = 3;
+
+  // Organization's preferred Google Cloud location and region
+  Location location = 4;  // Geographic location (ASIA, AU, CA, DE, EU, IN, IT, US)
+  string region = 5;      // Specific region (e.g., "us-central1", "europe-west1")
+}

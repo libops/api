@@ -1,0 +1,24 @@
+syntax = "proto3";
+
+package libops.v1.common;
+
+option go_package = "github.com/libops/platform/proto/libops/v1/common;commonv1";
+
+// Status represents the lifecycle state of libops entities
+// Used across organization, project, site, member, and firewall resources
+enum Status {
+  STATUS_UNSPECIFIED = 0;
+  STATUS_ACTIVE = 1;        // Resource is active and operational
+  STATUS_PROVISIONING = 2;  // Resource is being created/provisioned
+  STATUS_FAILED = 3;        // Resource provisioning/operation failed
+  STATUS_SUSPENDED = 4;     // Resource is suspended (can be reactivated)
+  STATUS_DELETED = 5;       // Resource is marked for deletion or deleted
+}
+
+// AuthMethod represents how a user authenticates to libops
+enum AuthMethod {
+  AUTH_METHOD_UNSPECIFIED = 0;
+  AUTH_METHOD_GOOGLE = 1;      // Google OAuth
+  AUTH_METHOD_USERPASS = 2;    // Email/password
+  AUTH_METHOD_GCLOUD = 3;      // Google Cloud service account
+}

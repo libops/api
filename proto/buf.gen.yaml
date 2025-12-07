@@ -1,0 +1,21 @@
+version: v2
+managed:
+  enabled: true
+  override:
+    - file_option: go_package_prefix
+      value: github.com/libops/api/proto
+  disable:
+    - module: buf.build/googleapis/googleapis
+    - module: buf.build/gnostic/gnostic
+plugins:
+  # Generate Go protobuf code
+  - remote: buf.build/protocolbuffers/go
+    out: .
+    opt:
+      - paths=source_relative
+
+  # Generate ConnectRPC Go code
+  - remote: buf.build/connectrpc/go
+    out: .
+    opt:
+      - paths=source_relative

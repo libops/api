@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>libops - Dashboard</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        body {
+            background-color: #f8f9fa;
+        }
+        .navbar {
+            box-shadow: 0 2px 4px rgba(0,0,0,.1);
+        }
+        .main-content {
+            padding: 2rem 0;
+        }
+        .card {
+            box-shadow: 0 0.125rem 0.25rem rgba(0,0,0,.075);
+        }
+        .table-responsive {
+            border-radius: 0.5rem;
+            overflow: hidden;
+        }
+    </style>
+</head>
+<body>
+    <!-- Navigation -->
+    <nav class="navbar navbar-expand-lg navbar-dark bg-primary">
+        <div class="container">
+            <a class="navbar-brand fw-bold" href="/dashboard">libops</a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav ms-auto">
+                    <li class="nav-item dropdown">
+                        <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown">
+                            {{if .Name}}{{.Name}}{{else}}{{.Email}}{{end}}
+                        </a>
+                        <ul class="dropdown-menu dropdown-menu-end">
+                            <li><a class="dropdown-item" href="/auth/me">Profile</a></li>
+                            <li><hr class="dropdown-divider"></li>
+                            <li><a class="dropdown-item" href="/auth/logout">Sign out</a></li>
+                        </ul>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Main Content -->
+    <div class="container main-content">
+        <div class="row mb-4">
+            <div class="col">
+                <h1 class="h2">Welcome, {{if .Name}}{{.Name}}{{else}}{{.Email}}{{end}}</h1>
+                <p class="text-muted">Manage your organizations and projects</p>
+            </div>
+        </div>
+
+        <div class="row">
+            <div class="col">
+                <div class="card">
+                    <div class="card-header bg-white">
+                        <h5 class="card-title mb-0">Your Organizations</h5>
+                    </div>
+                    <div class="card-body p-0">
+                        {{if .Organizations}}
+                        <div class="table-responsive">
+                            <table class="table table-hover mb-0">
+                                <thead class="table-light">
+                                    <tr>
+                                        <th>Name</th>
+                                        <th>Description</th>
+                                        <th>Your Role</th>
+                                        <th>Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {{range .Organizations}}
+                                    <tr>
+                                        <td class="fw-semibold">{{.Name}}</td>
+                                        <td>{{if .Description}}{{.Description}}{{else}}<span class="text-muted">No description</span>{{end}}</td>
+                                        <td>
+                                            {{if eq .Role "owner"}}
+                                            <span class="badge bg-primary">Owner</span>
+                                            {{else if eq .Role "developer"}}
+                                            <span class="badge bg-success">Developer</span>
+                                            {{else if eq .Role "read"}}
+                                            <span class="badge bg-info">Read Only</span>
+                                            {{else}}
+                                            <span class="badge bg-secondary">{{.Role}}</span>
+                                            {{end}}
+                                        </td>
+                                        <td>
+                                            <a href="/organizations/{{.ID}}" class="btn btn-sm btn-outline-primary">View</a>
+                                        </td>
+                                    </tr>
+                                    {{end}}
+                                </tbody>
+                            </table>
+                        </div>
+                        {{else}}
+                        <div class="text-center py-5">
+                            <svg class="text-muted mb-3" width="48" height="48" fill="currentColor" viewBox="0 0 16 16">
+                                <path d="M15 14s1 0 1-1-1-4-5-4-5 3-5 4 1 1 1 1h8zm-7.978-1A.261.261 0 0 1 7 12.996c.001-.264.167-1.03.76-1.72C8.312 10.629 9.282 10 11 10c1.717 0 2.687.63 3.24 1.276.593.69.758 1.457.76 1.72l-.008.002a.274.274 0 0 1-.014.002H7.022zM11 7a2 2 0 1 0 0-4 2 2 0 0 0 0 4zm3-2a3 3 0 1 1-6 0 3 3 0 0 1 6 0zM6.936 9.28a5.88 5.88 0 0 0-1.23-.247A7.35 7.35 0 0 0 5 9c-4 0-5 3-5 4 0 .667.333 1 1 1h4.216A2.238 2.238 0 0 1 5 13c0-1.01.377-2.042 1.09-2.904.243-.294.526-.569.846-.816zM4.92 10A5.493 5.493 0 0 0 4 13H1c0-.26.164-1.03.76-1.724.545-.636 1.492-1.256 3.16-1.275zM1.5 5.5a3 3 0 1 1 6 0 3 3 0 0 1-6 0zm3-2a2 2 0 1 0 0 4 2 2 0 0 0 0-4z"/>
+                            </svg>
+                            <p class="text-muted">You are not a member of any organizations yet.</p>
+                            <a href="/organizations/new" class="btn btn-primary">Create Organization</a>
+                        </div>
+                        {{end}}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="/static/token.js"></script>
+</body>
+</html>

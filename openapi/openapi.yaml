@@ -1,0 +1,6283 @@
+openapi: 3.0.3
+info:
+  title: LibOps API
+  description: '"LibOps control plane API to run docker compose projects on Google
+    Cloud"'
+  version: 1.0.0
+paths:
+  /admin/v1/accounts:
+    get:
+      tags:
+      - AdminAccountService
+      description: 'List accounts (admin only)
+
+
+        ### Authorization
+
+
+        An API key or OAuth token must have at least one of the following scopes in
+        order to use this API endpoint:
+
+
+        **API Key Scopes**: `admin:system`
+
+
+        **OAuth Scopes**
+
+
+        | Resource | Scope |
+
+        |----------|-------|
+
+        | System | `admin:system` |
+
+        '
+      operationId: AdminAccountService_ListAccounts
+      parameters:
+      - name: pageSize
+        in: query
+        schema:
+          type: integer
+          format: int32
+      - name: pageToken
+        in: query
+        schema:
+          type: string
+      - name: status
+        in: query
+        schema:
+          enum:
+          - ACCOUNT_STATUS_UNSPECIFIED
+          - ACCOUNT_STATUS_ACTIVE
+          - ACCOUNT_STATUS_SUSPENDED
+          - ACCOUNT_STATUS_DELETED
+          type: string
+          format: enum
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ListAccountsResponse'
+      security:
+      - oauth2: &id001
+        - admin:system
+      - apiKey: []
+      summary: 'List accounts (admin only) [Requires: admin:system]'
+      x-scopes: *id001
+      x-auth-type: oauth2 or apiKey
+      x-min-access-level: system:admin
+    post:
+      tags:
+      - AdminAccountService
+      description: 'Create a new account
+
+
+        ### Authorization
+
+
+        An API key or OAuth token must have at least one of the following scopes in
+        order to use this API endpoint:
+
+
+        **API Key Scopes**: `admin:system`
+
+
+        **OAuth Scopes**
+
+
+        | Resource | Scope |
+
+        |----------|-------|
+
+        | System | `admin:system` |
+
+        '
+      operationId: AdminAccountService_CreateAccount
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateAccountRequest'
+        required: true
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CreateAccountResponse'
+      security:
+      - oauth2: &id002
+        - admin:system
+      - apiKey: []
+      summary: 'Create a new account [Requires: admin:system]'
+      x-scopes: *id002
+      x-auth-type: oauth2 or apiKey
+      x-min-access-level: system:admin
+  /admin/v1/accounts/email/{email}:
+    get:
+      tags:
+      - AdminAccountService
+      description: 'Get account information by email
+
+
+        ### Authorization
+
+
+        An API key or OAuth token must have at least one of the following scopes in
+        order to use this API endpoint:
+
+
+        **API Key Scopes**: `admin:system`
+
+
+        **OAuth Scopes**
+
+
+        | Resource | Scope |
+
+        |----------|-------|
+
+        | System | `admin:system` |
+
+        '
+      operationId: AdminAccountService_GetAccountByEmail
+      parameters:
+      - name: email
+        in: path
+        required: true
+        schema:
+          type: string
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AdminGetAccountByEmailResponse'
+      security:
+      - oauth2: &id003
+        - admin:system
+      - apiKey: []
+      summary: 'Get account information by email [Requires: admin:system]'
+      x-scopes: *id003
+      x-auth-type: oauth2 or apiKey
+      x-min-access-level: system:admin
+  /admin/v1/accounts/{accountId}:
+    get:
+      tags:
+      - AdminAccountService
+      description: 'Get account information by ID
+
+
+        ### Authorization
+
+
+        An API key or OAuth token must have at least one of the following scopes in
+        order to use this API endpoint:
+
+
+        **API Key Scopes**: `admin:system`
+
+
+        **OAuth Scopes**
+
+
+        | Resource | Scope |
+
+        |----------|-------|
+
+        | System | `admin:system` |
+
+        '
+      operationId: AdminAccountService_GetAccount
+      parameters:
+      - name: accountId
+        in: path
+        required: true
+        schema:
+          type: string
+      - name: accountId
+        in: query
+        schema:
+          type: string
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GetAccountResponse'
+      security:
+      - oauth2: &id004
+        - admin:system
+      - apiKey: []
+      summary: 'Get account information by ID [Requires: admin:system]'
+      x-scopes: *id004
+      x-auth-type: oauth2 or apiKey
+      x-min-access-level: system:admin
+    put:
+      tags:
+      - AdminAccountService
+      description: 'Update account information
+
+
+        ### Authorization
+
+
+        An API key or OAuth token must have at least one of the following scopes in
+        order to use this API endpoint:
+
+
+        **API Key Scopes**: `admin:system`
+
+
+        **OAuth Scopes**
+
+
+        | Resource | Scope |
+
+        |----------|-------|
+
+        | System | `admin:system` |
+
+        '
+      operationId: AdminAccountService_UpdateAccount
+      parameters:
+      - name: accountId
+        in: path
+        required: true
+        schema:
+          type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateAccountRequest'
+        required: true
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UpdateAccountResponse'
+      security:
+      - oauth2: &id005
+        - admin:system
+      - apiKey: []
+      summary: 'Update account information [Requires: admin:system]'
+      x-scopes: *id005
+      x-auth-type: oauth2 or apiKey
+      x-min-access-level: system:admin
+    delete:
+      tags:
+      - AdminAccountService
+      description: 'Delete an account
+
+
+        ### Authorization
+
+
+        An API key or OAuth token must have at least one of the following scopes in
+        order to use this API endpoint:
+
+
+        **API Key Scopes**: `admin:system`
+
+
+        **OAuth Scopes**
+
+
+        | Resource | Scope |
+
+        |----------|-------|
+
+        | System | `admin:system` |
+
+        '
+      operationId: AdminAccountService_DeleteAccount
+      parameters:
+      - name: accountId
+        in: path
+        required: true
+        schema:
+          type: string
+      - name: accountId
+        in: query
+        schema:
+          type: string
+      responses:
+        '200':
+          description: OK
+          content: {}
+      security:
+      - oauth2: &id006
+        - admin:system
+      - apiKey: []
+      summary: 'Delete an account [Requires: admin:system]'
+      x-scopes: *id006
+      x-auth-type: oauth2 or apiKey
+      x-min-access-level: system:admin
+  /admin/v1/accounts/{accountId}/projects:
+    get:
+      tags:
+      - AdminAccountService
+      description: 'List projects for an account
+
+
+        ### Authorization
+
+
+        An API key or OAuth token must have at least one of the following scopes in
+        order to use this API endpoint:
+
+
+        **API Key Scopes**: `admin:system`
+
+
+        **OAuth Scopes**
+
+
+        | Resource | Scope |
+
+        |----------|-------|
+
+        | System | `admin:system` |
+
+        '
+      operationId: AdminAccountService_ListAccountProjects
+      parameters:
+      - name: accountId
+        in: path
+        required: true
+        schema:
+          type: string
+      - name: accountId
+        in: query
+        schema:
+          type: string
+      - name: pageSize
+        in: query
+        schema:
+          type: integer
+          format: int32
+      - name: pageToken
+        in: query
+        schema:
+          type: string
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ListAccountProjectsResponse'
+      security:
+      - oauth2: &id007
+        - admin:system
+      - apiKey: []
+      summary: 'List projects for an account [Requires: admin:system]'
+      x-scopes: *id007
+      x-auth-type: oauth2 or apiKey
+      x-min-access-level: system:admin
+  /admin/v1/accounts/{accountId}/repositories:
+    get:
+      tags:
+      - AdminAccountService
+      description: 'List repositories for an account
+
+
+        ### Authorization
+
+
+        An API key or OAuth token must have at least one of the following scopes in
+        order to use this API endpoint:
+
+
+        **API Key Scopes**: `admin:system`
+
+
+        **OAuth Scopes**
+
+
+        | Resource | Scope |
+
+        |----------|-------|
+
+        | System | `admin:system` |
+
+        '
+      operationId: AdminAccountService_ListAccountRepositories
+      parameters:
+      - name: accountId
+        in: path
+        required: true
+        schema:
+          type: string
+      - name: accountId
+        in: query
+        schema:
+          type: string
+      - name: pageSize
+        in: query
+        schema:
+          type: integer
+          format: int32
+      - name: pageToken
+        in: query
+        schema:
+          type: string
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ListAccountRepositoriesResponse'
+      security:
+      - oauth2: &id008
+        - admin:system
+      - apiKey: []
+      summary: 'List repositories for an account [Requires: admin:system]'
+      x-scopes: *id008
+      x-auth-type: oauth2 or apiKey
+      x-min-access-level: system:admin
+  /admin/v1/organizations:
+    get:
+      tags:
+      - AdminOrganizationService
+      description: 'List all organizations (admin view)
+
+
+        ### Authorization
+
+
+        An API key or OAuth token must have at least one of the following scopes in
+        order to use this API endpoint:
+
+
+        **API Key Scopes**: `admin:system`
+
+
+        **OAuth Scopes**
+
+
+        | Resource | Scope |
+
+        |----------|-------|
+
+        | System | `admin:system` |
+
+        '
+      operationId: AdminOrganizationService_ListOrganizations
+      parameters:
+      - name: pageSize
+        in: query
+        schema:
+          type: integer
+          format: int32
+      - name: pageToken
+        in: query
+        schema:
+          type: string
+      - name: filter
+        in: query
+        schema:
+          type: string
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AdminListOrganizationsResponse'
+      security:
+      - oauth2: &id009
+        - admin:system
+      - apiKey: []
+      summary: 'List all organizations (admin view) [Requires: admin:system]'
+      x-scopes: *id009
+      x-auth-type: oauth2 or apiKey
+      x-min-access-level: system:admin
+    post:
+      tags:
+      - AdminOrganizationService
+      description: 'Create a new organization (admin - can set all fields)
+
+
+        ### Authorization
+
+
+        An API key or OAuth token must have at least one of the following scopes in
+        order to use this API endpoint:
+
+
+        **API Key Scopes**: `admin:system`
+
+
+        **OAuth Scopes**
+
+
+        | Resource | Scope |
+
+        |----------|-------|
+
+        | System | `admin:system` |
+
+        '
+      operationId: AdminOrganizationService_CreateOrganization
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AdminFolderConfig'
+        required: true
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AdminCreateOrganizationResponse'
+      security:
+      - oauth2: &id010
+        - admin:system
+      - apiKey: []
+      summary: 'Create a new organization (admin - can set all fields) [Requires:
+        admin:system]'
+      x-scopes: *id010
+      x-auth-type: oauth2 or apiKey
+      x-min-access-level: system:admin
+  /admin/v1/organizations/{organizationId}:
+    get:
+      tags:
+      - AdminOrganizationService
+      description: 'Get organization configuration (admin view - includes sensitive
+        fields)
+
+
+        ### Authorization
+
+
+        An API key or OAuth token must have at least one of the following scopes in
+        order to use this API endpoint:
+
+
+        **API Key Scopes**: `admin:system`
+
+
+        **OAuth Scopes**
+
+
+        | Resource | Scope |
+
+        |----------|-------|
+
+        | System | `admin:system` |
+
+        '
+      operationId: AdminOrganizationService_GetOrganization
+      parameters:
+      - name: organizationId
+        in: path
+        required: true
+        schema:
+          type: string
+      - name: organizationId
+        in: query
+        schema:
+          type: string
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AdminGetOrganizationResponse'
+      security:
+      - oauth2: &id011
+        - admin:system
+      - apiKey: []
+      summary: 'Get organization configuration (admin view - includes sensitive fields)
+        [Requires: admin:system]'
+      x-scopes: *id011
+      x-auth-type: oauth2 or apiKey
+      x-min-access-level: system:admin
+    put:
+      tags:
+      - AdminOrganizationService
+      description: 'Update organization metadata (admin - can update all fields)
+
+
+        ### Authorization
+
+
+        An API key or OAuth token must have at least one of the following scopes in
+        order to use this API endpoint:
+
+
+        **API Key Scopes**: `admin:system`
+
+
+        **OAuth Scopes**
+
+
+        | Resource | Scope |
+
+        |----------|-------|
+
+        | System | `admin:system` |
+
+        '
+      operationId: AdminOrganizationService_UpdateOrganization
+      parameters:
+      - name: organizationId
+        in: path
+        required: true
+        schema:
+          type: string
+      - name: organizationId
+        in: query
+        schema:
+          type: string
+      - name: updateMask
+        in: query
+        schema:
+          type: string
+          format: field-mask
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AdminFolderConfig'
+        required: true
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AdminUpdateOrganizationResponse'
+      security:
+      - oauth2: &id012
+        - admin:system
+      - apiKey: []
+      summary: 'Update organization metadata (admin - can update all fields) [Requires:
+        admin:system]'
+      x-scopes: *id012
+      x-auth-type: oauth2 or apiKey
+      x-min-access-level: system:admin
+    delete:
+      tags:
+      - AdminOrganizationService
+      description: 'Delete a organization (must have no projects)
+
+
+        ### Authorization
+
+
+        An API key or OAuth token must have at least one of the following scopes in
+        order to use this API endpoint:
+
+
+        **API Key Scopes**: `admin:system`
+
+
+        **OAuth Scopes**
+
+
+        | Resource | Scope |
+
+        |----------|-------|
+
+        | System | `admin:system` |
+
+        '
+      operationId: AdminOrganizationService_DeleteOrganization
+      parameters:
+      - name: organizationId
+        in: path
+        required: true
+        schema:
+          type: string
+      - name: organizationId
+        in: query
+        schema:
+          type: string
+      responses:
+        '200':
+          description: OK
+          content: {}
+      security:
+      - oauth2: &id013
+        - admin:system
+      - apiKey: []
+      summary: 'Delete a organization (must have no projects) [Requires: admin:system]'
+      x-scopes: *id013
+      x-auth-type: oauth2 or apiKey
+      x-min-access-level: system:admin
+  /admin/v1/organizations/{organizationId}/projects:
+    get:
+      tags:
+      - AdminOrganizationService
+      description: 'List projects for a organization (admin view)
+
+
+        ### Authorization
+
+
+        An API key or OAuth token must have at least one of the following scopes in
+        order to use this API endpoint:
+
+
+        **API Key Scopes**: `admin:system`
+
+
+        **OAuth Scopes**
+
+
+        | Resource | Scope |
+
+        |----------|-------|
+
+        | System | `admin:system` |
+
+        '
+      operationId: AdminOrganizationService_ListOrganizationProjects
+      parameters:
+      - name: organizationId
+        in: path
+        required: true
+        schema:
+          type: string
+      - name: organizationId
+        in: query
+        schema:
+          type: string
+      - name: pageSize
+        in: query
+        schema:
+          type: integer
+          format: int32
+      - name: pageToken
+        in: query
+        schema:
+          type: string
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AdminListOrganizationProjectsResponse'
+      security:
+      - oauth2: &id014
+        - admin:system
+      - apiKey: []
+      summary: 'List projects for a organization (admin view) [Requires: admin:system]'
+      x-scopes: *id014
+      x-auth-type: oauth2 or apiKey
+      x-min-access-level: system:admin
+  /admin/v1/projects:
+    get:
+      tags:
+      - AdminProjectService
+      description: 'List projects for a organization (admin view)
+
+
+        ### Authorization
+
+
+        An API key or OAuth token must have at least one of the following scopes in
+        order to use this API endpoint:
+
+
+        **API Key Scopes**: `admin:system`
+
+
+        **OAuth Scopes**
+
+
+        | Resource | Scope |
+
+        |----------|-------|
+
+        | System | `admin:system` |
+
+        '
+      operationId: AdminProjectService_ListProjects
+      parameters:
+      - name: organizationId
+        in: query
+        schema:
+          type: string
+      - name: pageSize
+        in: query
+        schema:
+          type: integer
+          format: int32
+      - name: pageToken
+        in: query
+        schema:
+          type: string
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AdminListProjectsResponse'
+      security:
+      - oauth2: &id015
+        - admin:system
+      - apiKey: []
+      summary: 'List projects for a organization (admin view) [Requires: admin:system]'
+      x-scopes: *id015
+      x-auth-type: oauth2 or apiKey
+      x-min-access-level: system:admin
+    post:
+      tags:
+      - AdminProjectService
+      description: 'Create a new project (admin - can set all fields)
+
+
+        ### Authorization
+
+
+        An API key or OAuth token must have at least one of the following scopes in
+        order to use this API endpoint:
+
+
+        **API Key Scopes**: `admin:system`
+
+
+        **OAuth Scopes**
+
+
+        | Resource | Scope |
+
+        |----------|-------|
+
+        | System | `admin:system` |
+
+        '
+      operationId: AdminProjectService_CreateProject
+      parameters:
+      - name: organizationId
+        in: query
+        schema:
+          type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AdminProjectConfig'
+        required: true
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AdminCreateProjectResponse'
+      security:
+      - oauth2: &id016
+        - admin:system
+      - apiKey: []
+      summary: 'Create a new project (admin - can set all fields) [Requires: admin:system]'
+      x-scopes: *id016
+      x-auth-type: oauth2 or apiKey
+      x-min-access-level: system:admin
+  /admin/v1/projects/all:
+    get:
+      tags:
+      - AdminProjectService
+      description: 'List all projects across all organizations (admin only)
+
+
+        ### Authorization
+
+
+        An API key or OAuth token must have at least one of the following scopes in
+        order to use this API endpoint:
+
+
+        **API Key Scopes**: `admin:system`
+
+
+        **OAuth Scopes**
+
+
+        | Resource | Scope |
+
+        |----------|-------|
+
+        | System | `admin:system` |
+
+        '
+      operationId: AdminProjectService_ListAllProjects
+      parameters:
+      - name: pageSize
+        in: query
+        schema:
+          type: integer
+          format: int32
+      - name: pageToken
+        in: query
+        schema:
+          type: string
+      - name: filter
+        in: query
+        schema:
+          type: string
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AdminListAllProjectsResponse'
+      security:
+      - oauth2: &id017
+        - admin:system
+      - apiKey: []
+      summary: 'List all projects across all organizations (admin only) [Requires:
+        admin:system]'
+      x-scopes: *id017
+      x-auth-type: oauth2 or apiKey
+      x-min-access-level: system:admin
+  /admin/v1/projects/{projectId}:
+    get:
+      tags:
+      - AdminProjectService
+      description: 'Get project configuration (admin view - includes sensitive fields)
+
+
+        ### Authorization
+
+
+        An API key or OAuth token must have at least one of the following scopes in
+        order to use this API endpoint:
+
+
+        **API Key Scopes**: `admin:system`
+
+
+        **OAuth Scopes**
+
+
+        | Resource | Scope |
+
+        |----------|-------|
+
+        | System | `admin:system` |
+
+        '
+      operationId: AdminProjectService_GetProject
+      parameters:
+      - name: projectId
+        in: path
+        required: true
+        schema:
+          type: string
+      - name: organizationId
+        in: query
+        schema:
+          type: string
+      - name: projectId
+        in: query
+        schema:
+          type: string
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AdminGetProjectResponse'
+      security:
+      - oauth2: &id018
+        - admin:system
+      - apiKey: []
+      summary: 'Get project configuration (admin view - includes sensitive fields)
+        [Requires: admin:system]'
+      x-scopes: *id018
+      x-auth-type: oauth2 or apiKey
+      x-min-access-level: system:admin
+    put:
+      tags:
+      - AdminProjectService
+      description: 'Update project configuration (admin - can update all fields)
+
+
+        ### Authorization
+
+
+        An API key or OAuth token must have at least one of the following scopes in
+        order to use this API endpoint:
+
+
+        **API Key Scopes**: `admin:system`
+
+
+        **OAuth Scopes**
+
+
+        | Resource | Scope |
+
+        |----------|-------|
+
+        | System | `admin:system` |
+
+        '
+      operationId: AdminProjectService_UpdateProject
+      parameters:
+      - name: projectId
+        in: path
+        required: true
+        schema:
+          type: string
+      - name: organizationId
+        in: query
+        schema:
+          type: string
+      - name: projectId
+        in: query
+        schema:
+          type: string
+      - name: updateMask
+        in: query
+        schema:
+          type: string
+          format: field-mask
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AdminProjectConfig'
+        required: true
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AdminUpdateProjectResponse'
+      security:
+      - oauth2: &id019
+        - admin:system
+      - apiKey: []
+      summary: 'Update project configuration (admin - can update all fields) [Requires:
+        admin:system]'
+      x-scopes: *id019
+      x-auth-type: oauth2 or apiKey
+      x-min-access-level: system:admin
+    delete:
+      tags:
+      - AdminProjectService
+      description: 'Delete a project (must have no sites)
+
+
+        ### Authorization
+
+
+        An API key or OAuth token must have at least one of the following scopes in
+        order to use this API endpoint:
+
+
+        **API Key Scopes**: `admin:system`
+
+
+        **OAuth Scopes**
+
+
+        | Resource | Scope |
+
+        |----------|-------|
+
+        | System | `admin:system` |
+
+        '
+      operationId: AdminProjectService_DeleteProject
+      parameters:
+      - name: projectId
+        in: path
+        required: true
+        schema:
+          type: string
+      - name: organizationId
+        in: query
+        schema:
+          type: string
+      - name: projectId
+        in: query
+        schema:
+          type: string
+      responses:
+        '200':
+          description: OK
+          content: {}
+      security:
+      - oauth2: &id020
+        - admin:system
+      - apiKey: []
+      summary: 'Delete a project (must have no sites) [Requires: admin:system]'
+      x-scopes: *id020
+      x-auth-type: oauth2 or apiKey
+      x-min-access-level: system:admin
+  /admin/v1/sites:
+    get:
+      tags:
+      - AdminSiteService
+      description: 'List sites (admin view)
+
+
+        ### Authorization
+
+
+        An API key or OAuth token must have at least one of the following scopes in
+        order to use this API endpoint:
+
+
+        **API Key Scopes**: `admin:system`
+
+
+        **OAuth Scopes**
+
+
+        | Resource | Scope |
+
+        |----------|-------|
+
+        | System | `admin:system` |
+
+        '
+      operationId: AdminSiteService_ListSites
+      parameters:
+      - name: organizationId
+        in: query
+        schema:
+          type: string
+      - name: projectId
+        in: query
+        schema:
+          type: string
+      - name: pageSize
+        in: query
+        schema:
+          type: integer
+          format: int32
+      - name: pageToken
+        in: query
+        schema:
+          type: string
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AdminListSitesResponse'
+      security:
+      - oauth2: &id021
+        - admin:system
+      - apiKey: []
+      summary: 'List sites (admin view) [Requires: admin:system]'
+      x-scopes: *id021
+      x-auth-type: oauth2 or apiKey
+      x-min-access-level: system:admin
+    post:
+      tags:
+      - AdminSiteService
+      description: 'Create a new site (admin - can set all fields)
+
+
+        ### Authorization
+
+
+        An API key or OAuth token must have at least one of the following scopes in
+        order to use this API endpoint:
+
+
+        **API Key Scopes**: `admin:system`
+
+
+        **OAuth Scopes**
+
+
+        | Resource | Scope |
+
+        |----------|-------|
+
+        | System | `admin:system` |
+
+        '
+      operationId: AdminSiteService_CreateSite
+      parameters:
+      - name: organizationId
+        in: query
+        schema:
+          type: string
+      - name: projectId
+        in: query
+        schema:
+          type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AdminSiteConfig'
+        required: true
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AdminCreateSiteResponse'
+      security:
+      - oauth2: &id022
+        - admin:system
+      - apiKey: []
+      summary: 'Create a new site (admin - can set all fields) [Requires: admin:system]'
+      x-scopes: *id022
+      x-auth-type: oauth2 or apiKey
+      x-min-access-level: system:admin
+  /admin/v1/sites/all:
+    get:
+      tags:
+      - AdminSiteService
+      description: 'List all sites across all organizations/projects (admin only)
+
+
+        ### Authorization
+
+
+        An API key or OAuth token must have at least one of the following scopes in
+        order to use this API endpoint:
+
+
+        **API Key Scopes**: `admin:system`
+
+
+        **OAuth Scopes**
+
+
+        | Resource | Scope |
+
+        |----------|-------|
+
+        | System | `admin:system` |
+
+        '
+      operationId: AdminSiteService_ListAllSites
+      parameters:
+      - name: pageSize
+        in: query
+        schema:
+          type: integer
+          format: int32
+      - name: pageToken
+        in: query
+        schema:
+          type: string
+      - name: filter
+        in: query
+        schema:
+          type: string
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AdminListAllSitesResponse'
+      security:
+      - oauth2: &id023
+        - admin:system
+      - apiKey: []
+      summary: 'List all sites across all organizations/projects (admin only) [Requires:
+        admin:system]'
+      x-scopes: *id023
+      x-auth-type: oauth2 or apiKey
+      x-min-access-level: system:admin
+  /admin/v1/sites/{siteId}:
+    get:
+      tags:
+      - AdminSiteService
+      description: 'Get site configuration (admin view - includes internal GCP details)
+
+
+        ### Authorization
+
+
+        An API key or OAuth token must have at least one of the following scopes in
+        order to use this API endpoint:
+
+
+        **API Key Scopes**: `admin:system`
+
+
+        **OAuth Scopes**
+
+
+        | Resource | Scope |
+
+        |----------|-------|
+
+        | System | `admin:system` |
+
+        '
+      operationId: AdminSiteService_GetSite
+      parameters:
+      - name: siteId
+        in: path
+        required: true
+        schema:
+          type: string
+      - name: organizationId
+        in: query
+        schema:
+          type: string
+      - name: projectId
+        in: query
+        schema:
+          type: string
+      - name: siteName
+        in: query
+        schema:
+          type: string
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AdminGetSiteResponse'
+      security:
+      - oauth2: &id024
+        - admin:system
+      - apiKey: []
+      summary: 'Get site configuration (admin view - includes internal GCP details)
+        [Requires: admin:system]'
+      x-scopes: *id024
+      x-auth-type: oauth2 or apiKey
+      x-min-access-level: system:admin
+    delete:
+      tags:
+      - AdminSiteService
+      description: 'Delete a site
+
+
+        ### Authorization
+
+
+        An API key or OAuth token must have at least one of the following scopes in
+        order to use this API endpoint:
+
+
+        **API Key Scopes**: `admin:system`
+
+
+        **OAuth Scopes**
+
+
+        | Resource | Scope |
+
+        |----------|-------|
+
+        | System | `admin:system` |
+
+        '
+      operationId: AdminSiteService_DeleteSite
+      parameters:
+      - name: siteId
+        in: path
+        required: true
+        schema:
+          type: string
+      - name: organizationId
+        in: query
+        schema:
+          type: string
+      - name: projectId
+        in: query
+        schema:
+          type: string
+      - name: siteName
+        in: query
+        schema:
+          type: string
+      responses:
+        '200':
+          description: OK
+          content: {}
+      security:
+      - oauth2: &id025
+        - admin:system
+      - apiKey: []
+      summary: 'Delete a site [Requires: admin:system]'
+      x-scopes: *id025
+      x-auth-type: oauth2 or apiKey
+      x-min-access-level: system:admin
+    patch:
+      tags:
+      - AdminSiteService
+      description: 'Update site configuration (admin - can update all fields)
+
+
+        ### Authorization
+
+
+        An API key or OAuth token must have at least one of the following scopes in
+        order to use this API endpoint:
+
+
+        **API Key Scopes**: `admin:system`
+
+
+        **OAuth Scopes**
+
+
+        | Resource | Scope |
+
+        |----------|-------|
+
+        | System | `admin:system` |
+
+        '
+      operationId: AdminSiteService_UpdateSite
+      parameters:
+      - name: siteId
+        in: path
+        required: true
+        schema:
+          type: string
+      - name: organizationId
+        in: query
+        schema:
+          type: string
+      - name: projectId
+        in: query
+        schema:
+          type: string
+      - name: siteName
+        in: query
+        schema:
+          type: string
+      - name: updateMask
+        in: query
+        schema:
+          type: string
+          format: field-mask
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AdminSiteConfig'
+        required: true
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AdminUpdateSiteResponse'
+      security:
+      - oauth2: &id026
+        - admin:system
+      - apiKey: []
+      summary: 'Update site configuration (admin - can update all fields) [Requires:
+        admin:system]'
+      x-scopes: *id026
+      x-auth-type: oauth2 or apiKey
+      x-min-access-level: system:admin
+  /v1/accounts/{accountId}/ssh-keys:
+    get:
+      tags:
+      - SshKeyService
+      description: 'List SSH keys for an account
+
+
+        ### Authorization
+
+
+        An API key or OAuth token must have at least one of the following scopes in
+        order to use this API endpoint:
+
+
+        **API Key Scopes**: `read:user`
+
+
+        **OAuth Scopes**
+
+
+        | Resource | Scope |
+
+        |----------|-------|
+
+        | Account | `read:user` |
+
+        '
+      operationId: SshKeyService_ListSshKeys
+      parameters:
+      - name: accountId
+        in: path
+        required: true
+        schema:
+          type: string
+      - name: accountId
+        in: query
+        schema:
+          type: string
+      - name: pageSize
+        in: query
+        schema:
+          type: integer
+          format: int32
+      - name: pageToken
+        in: query
+        schema:
+          type: string
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ListSshKeysResponse'
+      security:
+      - oauth2: &id027
+        - read:user
+      - apiKey: []
+      summary: 'List SSH keys for an account [Requires: read:user]'
+      x-scopes: *id027
+      x-auth-type: oauth2 or apiKey
+      x-min-access-level: account:read
+    post:
+      tags:
+      - SshKeyService
+      description: 'Create SSH key for an account
+
+
+        ### Authorization
+
+
+        An API key or OAuth token must have at least one of the following scopes in
+        order to use this API endpoint:
+
+
+        **API Key Scopes**: `write:user`
+
+
+        **OAuth Scopes**
+
+
+        | Resource | Scope |
+
+        |----------|-------|
+
+        | Account | `write:user` |
+
+        '
+      operationId: SshKeyService_CreateSshKey
+      parameters:
+      - name: accountId
+        in: path
+        required: true
+        schema:
+          type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateSshKeyRequest'
+        required: true
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CreateSshKeyResponse'
+      security:
+      - oauth2: &id028
+        - write:user
+      - apiKey: []
+      summary: 'Create SSH key for an account [Requires: write:user]'
+      x-scopes: *id028
+      x-auth-type: oauth2 or apiKey
+      x-min-access-level: account:write
+  /v1/accounts/{accountId}/ssh-keys/{keyId}:
+    delete:
+      tags:
+      - SshKeyService
+      description: 'Delete SSH key
+
+
+        ### Authorization
+
+
+        An API key or OAuth token must have at least one of the following scopes in
+        order to use this API endpoint:
+
+
+        **API Key Scopes**: `write:user`
+
+
+        **OAuth Scopes**
+
+
+        | Resource | Scope |
+
+        |----------|-------|
+
+        | Account | `write:user` |
+
+        '
+      operationId: SshKeyService_DeleteSshKey
+      parameters:
+      - name: accountId
+        in: path
+        required: true
+        schema:
+          type: string
+      - name: keyId
+        in: path
+        required: true
+        schema:
+          type: string
+      - name: accountId
+        in: query
+        schema:
+          type: string
+      - name: keyId
+        in: query
+        schema:
+          type: string
+      responses:
+        '200':
+          description: OK
+          content: {}
+      security:
+      - oauth2: &id029
+        - write:user
+      - apiKey: []
+      summary: 'Delete SSH key [Requires: write:user]'
+      x-scopes: *id029
+      x-auth-type: oauth2 or apiKey
+      x-min-access-level: account:write
+  /v1/accounts/{email}:
+    get:
+      tags:
+      - AccountService
+      description: 'Get account information by email (for Terraform provider lookups)
+
+
+        ### Authorization
+
+
+        An API key or OAuth token must have at least one of the following scopes in
+        order to use this API endpoint:
+
+
+        **API Key Scopes**: `admin:system`
+
+
+        **OAuth Scopes**
+
+
+        | Resource | Scope |
+
+        |----------|-------|
+
+        | System | `admin:system` |
+
+        '
+      operationId: AccountService_GetAccountByEmail
+      parameters:
+      - name: email
+        in: path
+        required: true
+        schema:
+          type: string
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GetAccountByEmailResponse'
+      security:
+      - oauth2: *id003
+      - apiKey: []
+      summary: 'Get account information by email (for Terraform provider lookups)
+        [Requires: admin:system]'
+      x-scopes: *id003
+      x-auth-type: oauth2 or apiKey
+      x-min-access-level: system:admin
+  /v1/api-keys:
+    get:
+      tags:
+      - AccountService
+      description: 'List API keys for the authenticated user
+
+
+        ### Authorization
+
+
+        An API key or OAuth token must have at least one of the following scopes in
+        order to use this API endpoint:
+
+
+        **API Key Scopes**: `read:user`
+
+
+        **OAuth Scopes**
+
+
+        | Resource | Scope |
+
+        |----------|-------|
+
+        | Account | `read:user` |
+
+        '
+      operationId: AccountService_ListApiKeys
+      parameters:
+      - name: pageSize
+        in: query
+        schema:
+          type: integer
+          format: int32
+      - name: pageToken
+        in: query
+        schema:
+          type: string
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ListApiKeysResponse'
+      security:
+      - oauth2: &id030
+        - read:user
+      - apiKey: []
+      summary: 'List API keys for the authenticated user [Requires: read:user]'
+      x-scopes: *id030
+      x-auth-type: oauth2 or apiKey
+      x-min-access-level: account:read
+    post:
+      tags:
+      - AccountService
+      description: 'Create an API key for the authenticated user
+
+
+        ### Authorization
+
+
+        An API key or OAuth token must have at least one of the following scopes in
+        order to use this API endpoint:
+
+
+        **API Key Scopes**: `write:user`
+
+
+        **OAuth Scopes**
+
+
+        | Resource | Scope |
+
+        |----------|-------|
+
+        | Account | `write:user` |
+
+        '
+      operationId: AccountService_CreateApiKey
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateApiKeyRequest'
+        required: true
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CreateApiKeyResponse'
+      security:
+      - oauth2: &id031
+        - write:user
+      - apiKey: []
+      summary: 'Create an API key for the authenticated user [Requires: write:user]'
+      x-scopes: *id031
+      x-auth-type: oauth2 or apiKey
+      x-min-access-level: account:write
+  /v1/api-keys/{apiKeyId}:
+    delete:
+      tags:
+      - AccountService
+      description: 'Revoke an API key for the authenticated user
+
+
+        ### Authorization
+
+
+        An API key or OAuth token must have at least one of the following scopes in
+        order to use this API endpoint:
+
+
+        **API Key Scopes**: `write:user`
+
+
+        **OAuth Scopes**
+
+
+        | Resource | Scope |
+
+        |----------|-------|
+
+        | Account | `write:user` |
+
+        '
+      operationId: AccountService_RevokeApiKey
+      parameters:
+      - name: apiKeyId
+        in: path
+        required: true
+        schema:
+          type: string
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RevokeApiKeyResponse'
+      security:
+      - oauth2: &id032
+        - write:user
+      - apiKey: []
+      summary: 'Revoke an API key for the authenticated user [Requires: write:user]'
+      x-scopes: *id032
+      x-auth-type: oauth2 or apiKey
+      x-min-access-level: account:write
+  /v1/organizations:
+    get:
+      tags:
+      - OrganizationService
+      description: 'List all organizations
+
+
+        ### Authorization
+
+
+        An API key or OAuth token must have at least one of the following scopes in
+        order to use this API endpoint:
+
+
+        **API Key Scopes**: `read:organization`
+
+
+        **OAuth Scopes**
+
+
+        | Resource | Scope |
+
+        |----------|-------|
+
+        | Account | `read:organization` |
+
+        '
+      operationId: OrganizationService_ListOrganizations
+      parameters:
+      - name: pageSize
+        in: query
+        schema:
+          type: integer
+          format: int32
+      - name: pageToken
+        in: query
+        schema:
+          type: string
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ListOrganizationsResponse'
+      security:
+      - oauth2: &id033
+        - read:organization
+      - apiKey: []
+      summary: 'List all organizations [Requires: read:organization]'
+      x-scopes: *id033
+      x-auth-type: oauth2 or apiKey
+      x-min-access-level: account:read
+    post:
+      tags:
+      - OrganizationService
+      description: 'Create a new organization
+
+
+        ### Authorization
+
+
+        An API key or OAuth token must have at least one of the following scopes in
+        order to use this API endpoint:
+
+
+        **API Key Scopes**: `write:organization`
+
+
+        **OAuth Scopes**
+
+
+        | Resource | Scope |
+
+        |----------|-------|
+
+        | Account | `write:organization` |
+
+        '
+      operationId: OrganizationService_CreateOrganization
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/FolderConfig'
+        required: true
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CreateOrganizationResponse'
+      security:
+      - oauth2: &id034
+        - write:organization
+      - apiKey: []
+      summary: 'Create a new organization [Requires: write:organization]'
+      x-scopes: *id034
+      x-auth-type: oauth2 or apiKey
+      x-min-access-level: account:write
+  /v1/organizations/{organizationId}:
+    get:
+      tags:
+      - OrganizationService
+      description: 'Get organization configuration (organization view)
+
+
+        ### Authorization
+
+
+        An API key or OAuth token must have at least one of the following scopes in
+        order to use this API endpoint:
+
+
+        **API Key Scopes**: `read:organization`
+
+
+        **OAuth Scopes**
+
+
+        | Resource | Scope |
+
+        |----------|-------|
+
+        | Organization | `read:organization` |
+
+        '
+      operationId: OrganizationService_GetOrganization
+      parameters:
+      - name: organizationId
+        in: path
+        required: true
+        schema:
+          type: string
+      - name: organizationId
+        in: query
+        schema:
+          type: string
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GetOrganizationResponse'
+      security:
+      - oauth2: &id035
+        - read:organization
+      - apiKey: []
+      summary: 'Get organization configuration (organization view) [Requires: read:organization]'
+      x-scopes: *id035
+      x-auth-type: oauth2 or apiKey
+      x-min-access-level: organization:read
+    put:
+      tags:
+      - OrganizationService
+      description: 'Update organization metadata (organization-editable fields only)
+
+
+        ### Authorization
+
+
+        An API key or OAuth token must have at least one of the following scopes in
+        order to use this API endpoint:
+
+
+        **API Key Scopes**: `write:organization`
+
+
+        **OAuth Scopes**
+
+
+        | Resource | Scope |
+
+        |----------|-------|
+
+        | Organization | `write:organization` |
+
+        '
+      operationId: OrganizationService_UpdateOrganization
+      parameters:
+      - name: organizationId
+        in: path
+        required: true
+        schema:
+          type: string
+      - name: organizationId
+        in: query
+        schema:
+          type: string
+      - name: updateMask
+        in: query
+        schema:
+          type: string
+          format: field-mask
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/FolderConfig'
+        required: true
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UpdateOrganizationResponse'
+      security:
+      - oauth2: &id036
+        - write:organization
+      - apiKey: []
+      summary: 'Update organization metadata (organization-editable fields only) [Requires:
+        write:organization]'
+      x-scopes: *id036
+      x-auth-type: oauth2 or apiKey
+      x-min-access-level: organization:write
+    delete:
+      tags:
+      - OrganizationService
+      description: 'Delete a organization (must have no projects)
+
+
+        ### Authorization
+
+
+        An API key or OAuth token must have at least one of the following scopes in
+        order to use this API endpoint:
+
+
+        **API Key Scopes**: `delete:organization`
+
+
+        **OAuth Scopes**
+
+
+        | Resource | Scope |
+
+        |----------|-------|
+
+        | Organization | `delete:organization` |
+
+        '
+      operationId: OrganizationService_DeleteOrganization
+      parameters:
+      - name: organizationId
+        in: path
+        required: true
+        schema:
+          type: string
+      - name: organizationId
+        in: query
+        schema:
+          type: string
+      responses:
+        '200':
+          description: OK
+          content: {}
+      security:
+      - oauth2: &id037
+        - delete:organization
+      - apiKey: []
+      summary: 'Delete a organization (must have no projects) [Requires: delete:organization]'
+      x-scopes: *id037
+      x-auth-type: oauth2 or apiKey
+      x-min-access-level: organization:admin
+  /v1/organizations/{organizationId}/firewall:
+    get:
+      tags:
+      - FirewallService
+      description: 'List firewall rules applied to all sites for a organization
+
+
+        ### Authorization
+
+
+        An API key or OAuth token must have at least one of the following scopes in
+        order to use this API endpoint:
+
+
+        **API Key Scopes**: `read:firewall`
+
+
+        **OAuth Scopes**
+
+
+        | Resource | Scope |
+
+        |----------|-------|
+
+        | Organization | `read:firewall` |
+
+        '
+      operationId: FirewallService_ListOrganizationFirewallRules
+      parameters:
+      - name: organizationId
+        in: path
+        required: true
+        schema:
+          type: string
+      - name: organizationId
+        in: query
+        schema:
+          type: string
+      - name: pageSize
+        in: query
+        schema:
+          type: integer
+          format: int32
+      - name: pageToken
+        in: query
+        schema:
+          type: string
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ListOrganizationFirewallRulesResponse'
+      security:
+      - oauth2: &id038
+        - read:firewall
+      - apiKey: []
+      summary: 'List firewall rules applied to all sites for a organization [Requires:
+        read:firewall]'
+      x-scopes: *id038
+      x-auth-type: oauth2 or apiKey
+      x-min-access-level: organization:read
+    post:
+      tags:
+      - FirewallService
+      description: 'Add firewall rule applied to all sites for a organization
+
+
+        ### Authorization
+
+
+        An API key or OAuth token must have at least one of the following scopes in
+        order to use this API endpoint:
+
+
+        **API Key Scopes**: `write:firewall`
+
+
+        **OAuth Scopes**
+
+
+        | Resource | Scope |
+
+        |----------|-------|
+
+        | Organization | `write:firewall` |
+
+        '
+      operationId: FirewallService_CreateOrganizationFirewallRule
+      parameters:
+      - name: organizationId
+        in: path
+        required: true
+        schema:
+          type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateOrganizationFirewallRuleRequest'
+        required: true
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CreateOrganizationFirewallRuleResponse'
+      security:
+      - oauth2: &id039
+        - write:firewall
+      - apiKey: []
+      summary: 'Add firewall rule applied to all sites for a organization [Requires:
+        write:firewall]'
+      x-scopes: *id039
+      x-auth-type: oauth2 or apiKey
+      x-min-access-level: organization:write
+    delete:
+      tags:
+      - FirewallService
+      description: 'Remove a firewall rule from all sites for a organization
+
+
+        ### Authorization
+
+
+        An API key or OAuth token must have at least one of the following scopes in
+        order to use this API endpoint:
+
+
+        **API Key Scopes**: `delete:firewall`
+
+
+        **OAuth Scopes**
+
+
+        | Resource | Scope |
+
+        |----------|-------|
+
+        | Organization | `delete:firewall` |
+
+        '
+      operationId: FirewallService_DeleteOrganizationFirewallRule
+      parameters:
+      - name: organizationId
+        in: path
+        required: true
+        schema:
+          type: string
+      - name: organizationId
+        in: query
+        schema:
+          type: string
+      - name: ruleId
+        in: query
+        schema:
+          type: string
+      responses:
+        '200':
+          description: OK
+          content: {}
+      security:
+      - oauth2: &id040
+        - delete:firewall
+      - apiKey: []
+      summary: 'Remove a firewall rule from all sites for a organization [Requires:
+        delete:firewall]'
+      x-scopes: *id040
+      x-auth-type: oauth2 or apiKey
+      x-min-access-level: organization:write
+  /v1/organizations/{organizationId}/members:
+    get:
+      tags:
+      - MemberService
+      description: 'List members of a organization
+
+
+        ### Authorization
+
+
+        An API key or OAuth token must have at least one of the following scopes in
+        order to use this API endpoint:
+
+
+        **API Key Scopes**: `read:members`
+
+
+        **OAuth Scopes**
+
+
+        | Resource | Scope |
+
+        |----------|-------|
+
+        | Organization | `read:members` |
+
+        '
+      operationId: MemberService_ListOrganizationMembers
+      parameters:
+      - name: organizationId
+        in: path
+        required: true
+        schema:
+          type: string
+      - name: organizationId
+        in: query
+        schema:
+          type: string
+      - name: pageSize
+        in: query
+        schema:
+          type: integer
+          format: int32
+      - name: pageToken
+        in: query
+        schema:
+          type: string
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ListOrganizationMembersResponse'
+      security:
+      - oauth2: &id041
+        - read:members
+      - apiKey: []
+      summary: 'List members of a organization [Requires: read:members]'
+      x-scopes: *id041
+      x-auth-type: oauth2 or apiKey
+      x-min-access-level: organization:read
+    post:
+      tags:
+      - MemberService
+      description: 'Create a member in a organization
+
+
+        ### Authorization
+
+
+        An API key or OAuth token must have at least one of the following scopes in
+        order to use this API endpoint:
+
+
+        **API Key Scopes**: `write:members`
+
+
+        **OAuth Scopes**
+
+
+        | Resource | Scope |
+
+        |----------|-------|
+
+        | Organization | `write:members` |
+
+        '
+      operationId: MemberService_CreateOrganizationMember
+      parameters:
+      - name: organizationId
+        in: path
+        required: true
+        schema:
+          type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateOrganizationMemberRequest'
+        required: true
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CreateOrganizationMemberResponse'
+      security:
+      - oauth2: &id042
+        - write:members
+      - apiKey: []
+      summary: 'Create a member in a organization [Requires: write:members]'
+      x-scopes: *id042
+      x-auth-type: oauth2 or apiKey
+      x-min-access-level: organization:admin
+  /v1/organizations/{organizationId}/members/{accountId}:
+    delete:
+      tags:
+      - MemberService
+      description: 'Delete a member from a organization
+
+
+        ### Authorization
+
+
+        An API key or OAuth token must have at least one of the following scopes in
+        order to use this API endpoint:
+
+
+        **API Key Scopes**: `delete:members`
+
+
+        **OAuth Scopes**
+
+
+        | Resource | Scope |
+
+        |----------|-------|
+
+        | Organization | `delete:members` |
+
+        '
+      operationId: MemberService_DeleteOrganizationMember
+      parameters:
+      - name: organizationId
+        in: path
+        required: true
+        schema:
+          type: string
+      - name: accountId
+        in: path
+        required: true
+        schema:
+          type: string
+      - name: organizationId
+        in: query
+        schema:
+          type: string
+      - name: accountId
+        in: query
+        schema:
+          type: string
+      responses:
+        '200':
+          description: OK
+          content: {}
+      security:
+      - oauth2: &id043
+        - delete:members
+      - apiKey: []
+      summary: 'Delete a member from a organization [Requires: delete:members]'
+      x-scopes: *id043
+      x-auth-type: oauth2 or apiKey
+      x-min-access-level: organization:admin
+    patch:
+      tags:
+      - MemberService
+      description: 'Update a member''s role
+
+
+        ### Authorization
+
+
+        An API key or OAuth token must have at least one of the following scopes in
+        order to use this API endpoint:
+
+
+        **API Key Scopes**: `write:members`
+
+
+        **OAuth Scopes**
+
+
+        | Resource | Scope |
+
+        |----------|-------|
+
+        | Organization | `write:members` |
+
+        '
+      operationId: MemberService_UpdateOrganizationMember
+      parameters:
+      - name: organizationId
+        in: path
+        required: true
+        schema:
+          type: string
+      - name: accountId
+        in: path
+        required: true
+        schema:
+          type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateOrganizationMemberRequest'
+        required: true
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UpdateOrganizationMemberResponse'
+      security:
+      - oauth2: &id044
+        - write:members
+      - apiKey: []
+      summary: 'Update a member''s role [Requires: write:members]'
+      x-scopes: *id044
+      x-auth-type: oauth2 or apiKey
+      x-min-access-level: organization:admin
+  /v1/organizations/{organizationId}/secrets:
+    get:
+      tags:
+      - OrganizationSecretService
+      description: 'List organization secrets
+
+
+        ### Authorization
+
+
+        An API key or OAuth token must have at least one of the following scopes in
+        order to use this API endpoint:
+
+
+        **API Key Scopes**: `manage_secrets`
+
+
+        **OAuth Scopes**
+
+
+        | Resource | Scope |
+
+        |----------|-------|
+
+        | Organization | `manage_secrets` |
+
+        '
+      operationId: OrganizationSecretService_ListOrganizationSecrets
+      parameters:
+      - name: organizationId
+        in: path
+        required: true
+        schema:
+          type: string
+      - name: pageSize
+        in: query
+        schema:
+          type: integer
+          format: int32
+      - name: pageToken
+        in: query
+        schema:
+          type: string
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ListOrganizationSecretsResponse'
+      security:
+      - oauth2: &id045
+        - manage_secrets
+      - apiKey: []
+      summary: 'List organization secrets [Requires: manage_secrets]'
+      x-scopes: *id045
+      x-auth-type: oauth2 or apiKey
+      x-min-access-level: organization:write
+    post:
+      tags:
+      - OrganizationSecretService
+      description: 'Create an organization secret
+
+
+        ### Authorization
+
+
+        An API key or OAuth token must have at least one of the following scopes in
+        order to use this API endpoint:
+
+
+        **API Key Scopes**: `manage_secrets`
+
+
+        **OAuth Scopes**
+
+
+        | Resource | Scope |
+
+        |----------|-------|
+
+        | Organization | `manage_secrets` |
+
+        '
+      operationId: OrganizationSecretService_CreateOrganizationSecret
+      parameters:
+      - name: organizationId
+        in: path
+        required: true
+        schema:
+          type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateOrganizationSecretRequest'
+        required: true
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CreateOrganizationSecretResponse'
+      security:
+      - oauth2: &id046
+        - manage_secrets
+      - apiKey: []
+      summary: 'Create an organization secret [Requires: manage_secrets]'
+      x-scopes: *id046
+      x-auth-type: oauth2 or apiKey
+      x-min-access-level: organization:write
+  /v1/organizations/{organizationId}/secrets/{secretId}:
+    get:
+      tags:
+      - OrganizationSecretService
+      description: 'Get an organization secret
+
+
+        ### Authorization
+
+
+        An API key or OAuth token must have at least one of the following scopes in
+        order to use this API endpoint:
+
+
+        **API Key Scopes**: `manage_secrets`
+
+
+        **OAuth Scopes**
+
+
+        | Resource | Scope |
+
+        |----------|-------|
+
+        | Organization | `manage_secrets` |
+
+        '
+      operationId: OrganizationSecretService_GetOrganizationSecret
+      parameters:
+      - name: organizationId
+        in: path
+        required: true
+        schema:
+          type: string
+      - name: secretId
+        in: path
+        required: true
+        schema:
+          type: string
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GetOrganizationSecretResponse'
+      security:
+      - oauth2: &id047
+        - manage_secrets
+      - apiKey: []
+      summary: 'Get an organization secret [Requires: manage_secrets]'
+      x-scopes: *id047
+      x-auth-type: oauth2 or apiKey
+      x-min-access-level: organization:write
+    put:
+      tags:
+      - OrganizationSecretService
+      description: 'Update an organization secret
+
+
+        ### Authorization
+
+
+        An API key or OAuth token must have at least one of the following scopes in
+        order to use this API endpoint:
+
+
+        **API Key Scopes**: `manage_secrets`
+
+
+        **OAuth Scopes**
+
+
+        | Resource | Scope |
+
+        |----------|-------|
+
+        | Organization | `manage_secrets` |
+
+        '
+      operationId: OrganizationSecretService_UpdateOrganizationSecret
+      parameters:
+      - name: organizationId
+        in: path
+        required: true
+        schema:
+          type: string
+      - name: secretId
+        in: path
+        required: true
+        schema:
+          type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateOrganizationSecretRequest'
+        required: true
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UpdateOrganizationSecretResponse'
+      security:
+      - oauth2: &id048
+        - manage_secrets
+      - apiKey: []
+      summary: 'Update an organization secret [Requires: manage_secrets]'
+      x-scopes: *id048
+      x-auth-type: oauth2 or apiKey
+      x-min-access-level: organization:write
+    delete:
+      tags:
+      - OrganizationSecretService
+      description: 'Delete an organization secret
+
+
+        ### Authorization
+
+
+        An API key or OAuth token must have at least one of the following scopes in
+        order to use this API endpoint:
+
+
+        **API Key Scopes**: `manage_secrets`
+
+
+        **OAuth Scopes**
+
+
+        | Resource | Scope |
+
+        |----------|-------|
+
+        | Organization | `manage_secrets` |
+
+        '
+      operationId: OrganizationSecretService_DeleteOrganizationSecret
+      parameters:
+      - name: organizationId
+        in: path
+        required: true
+        schema:
+          type: string
+      - name: secretId
+        in: path
+        required: true
+        schema:
+          type: string
+      responses:
+        '200':
+          description: OK
+          content: {}
+      security:
+      - oauth2: &id049
+        - manage_secrets
+      - apiKey: []
+      summary: 'Delete an organization secret [Requires: manage_secrets]'
+      x-scopes: *id049
+      x-auth-type: oauth2 or apiKey
+      x-min-access-level: organization:write
+  /v1/projects:
+    get:
+      tags:
+      - ProjectService
+      description: 'List projects for a organization
+
+
+        ### Authorization
+
+
+        An API key or OAuth token must have at least one of the following scopes in
+        order to use this API endpoint:
+
+
+        **API Key Scopes**: `read:organization`
+
+
+        **OAuth Scopes**
+
+
+        | Resource | Scope |
+
+        |----------|-------|
+
+        | Account | `read:organization` |
+
+        '
+      operationId: ProjectService_ListProjects
+      parameters:
+      - name: organizationId
+        in: query
+        schema:
+          type: string
+      - name: pageSize
+        in: query
+        schema:
+          type: integer
+          format: int32
+      - name: pageToken
+        in: query
+        schema:
+          type: string
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ListProjectsResponse'
+      security:
+      - oauth2: &id050
+        - read:organization
+      - apiKey: []
+      summary: 'List projects for a organization [Requires: read:organization]'
+      x-scopes: *id050
+      x-auth-type: oauth2 or apiKey
+      x-min-access-level: account:read
+    post:
+      tags:
+      - ProjectService
+      description: 'Create a new project (organization)
+
+
+        ### Authorization
+
+
+        An API key or OAuth token must have at least one of the following scopes in
+        order to use this API endpoint:
+
+
+        **API Key Scopes**: `write:organization`
+
+
+        **OAuth Scopes**
+
+
+        | Resource | Scope |
+
+        |----------|-------|
+
+        | Organization | `write:organization` |
+
+        '
+      operationId: ProjectService_CreateProject
+      parameters:
+      - name: organizationId
+        in: query
+        schema:
+          type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ProjectConfig'
+        required: true
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CreateProjectResponse'
+      security:
+      - oauth2: &id051
+        - write:organization
+      - apiKey: []
+      summary: 'Create a new project (organization) [Requires: write:organization]'
+      x-scopes: *id051
+      x-auth-type: oauth2 or apiKey
+      x-min-access-level: organization:write
+  /v1/projects/{projectId}:
+    get:
+      tags:
+      - ProjectService
+      description: 'Get project configuration (organization view)
+
+
+        ### Authorization
+
+
+        An API key or OAuth token must have at least one of the following scopes in
+        order to use this API endpoint:
+
+
+        **API Key Scopes**: `read:project`
+
+
+        **OAuth Scopes**
+
+
+        | Resource | Scope |
+
+        |----------|-------|
+
+        | Organization | `read:project` |
+
+        | Project | `read:project` |
+
+        '
+      operationId: ProjectService_GetProject
+      parameters:
+      - name: projectId
+        in: path
+        required: true
+        schema:
+          type: string
+      - name: organizationId
+        in: query
+        schema:
+          type: string
+      - name: projectId
+        in: query
+        schema:
+          type: string
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GetProjectResponse'
+      security:
+      - oauth2: &id052
+        - read:project
+      - apiKey: []
+      summary: 'Get project configuration (organization view) [Requires: read:project]'
+      x-scopes: *id052
+      x-auth-type: oauth2 or apiKey
+      x-min-access-level: project:read
+    put:
+      tags:
+      - ProjectService
+      description: 'Update project configuration (organization-editable fields only)
+
+
+        ### Authorization
+
+
+        An API key or OAuth token must have at least one of the following scopes in
+        order to use this API endpoint:
+
+
+        **API Key Scopes**: `write:project`
+
+
+        **OAuth Scopes**
+
+
+        | Resource | Scope |
+
+        |----------|-------|
+
+        | Organization | `write:project` |
+
+        | Project | `write:project` |
+
+        '
+      operationId: ProjectService_UpdateProject
+      parameters:
+      - name: projectId
+        in: path
+        required: true
+        schema:
+          type: string
+      - name: organizationId
+        in: query
+        schema:
+          type: string
+      - name: projectId
+        in: query
+        schema:
+          type: string
+      - name: updateMask
+        in: query
+        schema:
+          type: string
+          format: field-mask
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ProjectConfig'
+        required: true
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UpdateProjectResponse'
+      security:
+      - oauth2: &id053
+        - write:project
+      - apiKey: []
+      summary: 'Update project configuration (organization-editable fields only) [Requires:
+        write:project]'
+      x-scopes: *id053
+      x-auth-type: oauth2 or apiKey
+      x-min-access-level: project:write
+    delete:
+      tags:
+      - ProjectService
+      description: 'Delete a project (must have no sites)
+
+
+        ### Authorization
+
+
+        An API key or OAuth token must have at least one of the following scopes in
+        order to use this API endpoint:
+
+
+        **API Key Scopes**: `delete:project`
+
+
+        **OAuth Scopes**
+
+
+        | Resource | Scope |
+
+        |----------|-------|
+
+        | Organization | `delete:project` |
+
+        | Project | `delete:project` |
+
+        '
+      operationId: ProjectService_DeleteProject
+      parameters:
+      - name: projectId
+        in: path
+        required: true
+        schema:
+          type: string
+      - name: organizationId
+        in: query
+        schema:
+          type: string
+      - name: projectId
+        in: query
+        schema:
+          type: string
+      responses:
+        '200':
+          description: OK
+          content: {}
+      security:
+      - oauth2: &id054
+        - delete:project
+      - apiKey: []
+      summary: 'Delete a project (must have no sites) [Requires: delete:project]'
+      x-scopes: *id054
+      x-auth-type: oauth2 or apiKey
+      x-min-access-level: project:admin
+  /v1/projects/{projectId}/firewall:
+    get:
+      tags:
+      - ProjectFirewallService
+      description: 'List firewall rules applied to all sites in a project
+
+
+        ### Authorization
+
+
+        An API key or OAuth token must have at least one of the following scopes in
+        order to use this API endpoint:
+
+
+        **API Key Scopes**: `read:firewall`
+
+
+        **OAuth Scopes**
+
+
+        | Resource | Scope |
+
+        |----------|-------|
+
+        | Organization | `read:firewall` |
+
+        | Project | `read:firewall` |
+
+        '
+      operationId: ProjectFirewallService_ListProjectFirewallRules
+      parameters:
+      - name: projectId
+        in: path
+        required: true
+        schema:
+          type: string
+      - name: projectId
+        in: query
+        schema:
+          type: string
+      - name: pageSize
+        in: query
+        schema:
+          type: integer
+          format: int32
+      - name: pageToken
+        in: query
+        schema:
+          type: string
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ListProjectFirewallRulesResponse'
+      security:
+      - oauth2: &id055
+        - read:firewall
+      - apiKey: []
+      summary: 'List firewall rules applied to all sites in a project [Requires: read:firewall]'
+      x-scopes: *id055
+      x-auth-type: oauth2 or apiKey
+      x-min-access-level: project:read
+    post:
+      tags:
+      - ProjectFirewallService
+      description: 'Add firewall rule to all sites in a project
+
+
+        ### Authorization
+
+
+        An API key or OAuth token must have at least one of the following scopes in
+        order to use this API endpoint:
+
+
+        **API Key Scopes**: `write:firewall`
+
+
+        **OAuth Scopes**
+
+
+        | Resource | Scope |
+
+        |----------|-------|
+
+        | Organization | `write:firewall` |
+
+        | Project | `write:firewall` |
+
+        '
+      operationId: ProjectFirewallService_CreateProjectFirewallRule
+      parameters:
+      - name: projectId
+        in: path
+        required: true
+        schema:
+          type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateProjectFirewallRuleRequest'
+        required: true
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CreateProjectFirewallRuleResponse'
+      security:
+      - oauth2: &id056
+        - write:firewall
+      - apiKey: []
+      summary: 'Add firewall rule to all sites in a project [Requires: write:firewall]'
+      x-scopes: *id056
+      x-auth-type: oauth2 or apiKey
+      x-min-access-level: project:write
+  /v1/projects/{projectId}/firewall/{ruleId}:
+    delete:
+      tags:
+      - ProjectFirewallService
+      description: 'Remove a firewall rule from all sites in a project
+
+
+        ### Authorization
+
+
+        An API key or OAuth token must have at least one of the following scopes in
+        order to use this API endpoint:
+
+
+        **API Key Scopes**: `delete:firewall`
+
+
+        **OAuth Scopes**
+
+
+        | Resource | Scope |
+
+        |----------|-------|
+
+        | Organization | `delete:firewall` |
+
+        | Project | `delete:firewall` |
+
+        '
+      operationId: ProjectFirewallService_DeleteProjectFirewallRule
+      parameters:
+      - name: projectId
+        in: path
+        required: true
+        schema:
+          type: string
+      - name: ruleId
+        in: path
+        required: true
+        schema:
+          type: string
+      - name: projectId
+        in: query
+        schema:
+          type: string
+      - name: ruleId
+        in: query
+        schema:
+          type: string
+      responses:
+        '200':
+          description: OK
+          content: {}
+      security:
+      - oauth2: &id057
+        - delete:firewall
+      - apiKey: []
+      summary: 'Remove a firewall rule from all sites in a project [Requires: delete:firewall]'
+      x-scopes: *id057
+      x-auth-type: oauth2 or apiKey
+      x-min-access-level: project:write
+  /v1/projects/{projectId}/members:
+    get:
+      tags:
+      - ProjectMemberService
+      description: 'List members of a project
+
+
+        ### Authorization
+
+
+        An API key or OAuth token must have at least one of the following scopes in
+        order to use this API endpoint:
+
+
+        **API Key Scopes**: `read:members`
+
+
+        **OAuth Scopes**
+
+
+        | Resource | Scope |
+
+        |----------|-------|
+
+        | Organization | `read:members` |
+
+        | Project | `read:members` |
+
+        '
+      operationId: ProjectMemberService_ListProjectMembers
+      parameters:
+      - name: projectId
+        in: path
+        required: true
+        schema:
+          type: string
+      - name: projectId
+        in: query
+        schema:
+          type: string
+      - name: pageSize
+        in: query
+        schema:
+          type: integer
+          format: int32
+      - name: pageToken
+        in: query
+        schema:
+          type: string
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ListProjectMembersResponse'
+      security:
+      - oauth2: &id058
+        - read:members
+      - apiKey: []
+      summary: 'List members of a project [Requires: read:members]'
+      x-scopes: *id058
+      x-auth-type: oauth2 or apiKey
+      x-min-access-level: project:read
+    post:
+      tags:
+      - ProjectMemberService
+      description: 'Add a member to a project
+
+
+        ### Authorization
+
+
+        An API key or OAuth token must have at least one of the following scopes in
+        order to use this API endpoint:
+
+
+        **API Key Scopes**: `write:members`
+
+
+        **OAuth Scopes**
+
+
+        | Resource | Scope |
+
+        |----------|-------|
+
+        | Organization | `write:members` |
+
+        | Project | `write:members` |
+
+        '
+      operationId: ProjectMemberService_CreateProjectMember
+      parameters:
+      - name: projectId
+        in: path
+        required: true
+        schema:
+          type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateProjectMemberRequest'
+        required: true
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CreateProjectMemberResponse'
+      security:
+      - oauth2: &id059
+        - write:members
+      - apiKey: []
+      summary: 'Add a member to a project [Requires: write:members]'
+      x-scopes: *id059
+      x-auth-type: oauth2 or apiKey
+      x-min-access-level: project:admin
+  /v1/projects/{projectId}/members/{accountId}:
+    delete:
+      tags:
+      - ProjectMemberService
+      description: 'Remove a member from a project
+
+
+        ### Authorization
+
+
+        An API key or OAuth token must have at least one of the following scopes in
+        order to use this API endpoint:
+
+
+        **API Key Scopes**: `delete:members`
+
+
+        **OAuth Scopes**
+
+
+        | Resource | Scope |
+
+        |----------|-------|
+
+        | Organization | `delete:members` |
+
+        | Project | `delete:members` |
+
+        '
+      operationId: ProjectMemberService_DeleteProjectMember
+      parameters:
+      - name: projectId
+        in: path
+        required: true
+        schema:
+          type: string
+      - name: accountId
+        in: path
+        required: true
+        schema:
+          type: string
+      - name: projectId
+        in: query
+        schema:
+          type: string
+      - name: accountId
+        in: query
+        schema:
+          type: string
+      responses:
+        '200':
+          description: OK
+          content: {}
+      security:
+      - oauth2: &id060
+        - delete:members
+      - apiKey: []
+      summary: 'Remove a member from a project [Requires: delete:members]'
+      x-scopes: *id060
+      x-auth-type: oauth2 or apiKey
+      x-min-access-level: project:admin
+    patch:
+      tags:
+      - ProjectMemberService
+      description: 'Update a member''s role
+
+
+        ### Authorization
+
+
+        An API key or OAuth token must have at least one of the following scopes in
+        order to use this API endpoint:
+
+
+        **API Key Scopes**: `write:members`
+
+
+        **OAuth Scopes**
+
+
+        | Resource | Scope |
+
+        |----------|-------|
+
+        | Organization | `write:members` |
+
+        | Project | `write:members` |
+
+        '
+      operationId: ProjectMemberService_UpdateProjectMember
+      parameters:
+      - name: projectId
+        in: path
+        required: true
+        schema:
+          type: string
+      - name: accountId
+        in: path
+        required: true
+        schema:
+          type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateProjectMemberRequest'
+        required: true
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UpdateProjectMemberResponse'
+      security:
+      - oauth2: &id061
+        - write:members
+      - apiKey: []
+      summary: 'Update a member''s role [Requires: write:members]'
+      x-scopes: *id061
+      x-auth-type: oauth2 or apiKey
+      x-min-access-level: project:admin
+  /v1/projects/{projectId}/secrets:
+    get:
+      tags:
+      - ProjectSecretService
+      description: 'List a project''s secrets
+
+
+        ### Authorization
+
+
+        An API key or OAuth token must have at least one of the following scopes in
+        order to use this API endpoint:
+
+
+        **API Key Scopes**: `manage_secrets`
+
+
+        **OAuth Scopes**
+
+
+        | Resource | Scope |
+
+        |----------|-------|
+
+        | Organization | `manage_secrets` |
+
+        | Project | `manage_secrets` |
+
+        '
+      operationId: ProjectSecretService_ListProjectSecrets
+      parameters:
+      - name: projectId
+        in: path
+        required: true
+        schema:
+          type: string
+      - name: pageSize
+        in: query
+        schema:
+          type: integer
+          format: int32
+      - name: pageToken
+        in: query
+        schema:
+          type: string
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ListProjectSecretsResponse'
+      security:
+      - oauth2: &id062
+        - manage_secrets
+      - apiKey: []
+      summary: 'List a project''s secrets [Requires: manage_secrets]'
+      x-scopes: *id062
+      x-auth-type: oauth2 or apiKey
+      x-min-access-level: project:write
+    post:
+      tags:
+      - ProjectSecretService
+      description: 'Create a project secret
+
+
+        ### Authorization
+
+
+        An API key or OAuth token must have at least one of the following scopes in
+        order to use this API endpoint:
+
+
+        **API Key Scopes**: `manage_secrets`
+
+
+        **OAuth Scopes**
+
+
+        | Resource | Scope |
+
+        |----------|-------|
+
+        | Organization | `manage_secrets` |
+
+        | Project | `manage_secrets` |
+
+        '
+      operationId: ProjectSecretService_CreateProjectSecret
+      parameters:
+      - name: projectId
+        in: path
+        required: true
+        schema:
+          type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateProjectSecretRequest'
+        required: true
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CreateProjectSecretResponse'
+      security:
+      - oauth2: &id063
+        - manage_secrets
+      - apiKey: []
+      summary: 'Create a project secret [Requires: manage_secrets]'
+      x-scopes: *id063
+      x-auth-type: oauth2 or apiKey
+      x-min-access-level: project:write
+  /v1/projects/{projectId}/secrets/{secretId}:
+    get:
+      tags:
+      - ProjectSecretService
+      description: 'Get a project secret
+
+
+        ### Authorization
+
+
+        An API key or OAuth token must have at least one of the following scopes in
+        order to use this API endpoint:
+
+
+        **API Key Scopes**: `manage_secrets`
+
+
+        **OAuth Scopes**
+
+
+        | Resource | Scope |
+
+        |----------|-------|
+
+        | Organization | `manage_secrets` |
+
+        | Project | `manage_secrets` |
+
+        '
+      operationId: ProjectSecretService_GetProjectSecret
+      parameters:
+      - name: projectId
+        in: path
+        required: true
+        schema:
+          type: string
+      - name: secretId
+        in: path
+        required: true
+        schema:
+          type: string
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GetProjectSecretResponse'
+      security:
+      - oauth2: &id064
+        - manage_secrets
+      - apiKey: []
+      summary: 'Get a project secret [Requires: manage_secrets]'
+      x-scopes: *id064
+      x-auth-type: oauth2 or apiKey
+      x-min-access-level: project:write
+    put:
+      tags:
+      - ProjectSecretService
+      description: 'Update a project secret
+
+
+        ### Authorization
+
+
+        An API key or OAuth token must have at least one of the following scopes in
+        order to use this API endpoint:
+
+
+        **API Key Scopes**: `manage_secrets`
+
+
+        **OAuth Scopes**
+
+
+        | Resource | Scope |
+
+        |----------|-------|
+
+        | Organization | `manage_secrets` |
+
+        | Project | `manage_secrets` |
+
+        '
+      operationId: ProjectSecretService_UpdateProjectSecret
+      parameters:
+      - name: projectId
+        in: path
+        required: true
+        schema:
+          type: string
+      - name: secretId
+        in: path
+        required: true
+        schema:
+          type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateProjectSecretRequest'
+        required: true
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UpdateProjectSecretResponse'
+      security:
+      - oauth2: &id065
+        - manage_secrets
+      - apiKey: []
+      summary: 'Update a project secret [Requires: manage_secrets]'
+      x-scopes: *id065
+      x-auth-type: oauth2 or apiKey
+      x-min-access-level: project:write
+    delete:
+      tags:
+      - ProjectSecretService
+      description: 'Delete a project secret
+
+
+        ### Authorization
+
+
+        An API key or OAuth token must have at least one of the following scopes in
+        order to use this API endpoint:
+
+
+        **API Key Scopes**: `manage_secrets`
+
+
+        **OAuth Scopes**
+
+
+        | Resource | Scope |
+
+        |----------|-------|
+
+        | Organization | `manage_secrets` |
+
+        | Project | `manage_secrets` |
+
+        '
+      operationId: ProjectSecretService_DeleteProjectSecret
+      parameters:
+      - name: projectId
+        in: path
+        required: true
+        schema:
+          type: string
+      - name: secretId
+        in: path
+        required: true
+        schema:
+          type: string
+      responses:
+        '200':
+          description: OK
+          content: {}
+      security:
+      - oauth2: &id066
+        - manage_secrets
+      - apiKey: []
+      summary: 'Delete a project secret [Requires: manage_secrets]'
+      x-scopes: *id066
+      x-auth-type: oauth2 or apiKey
+      x-min-access-level: project:write
+  /v1/projects/{projectId}/sites:
+    get:
+      tags:
+      - ProjectService
+      description: 'List sites for a project
+
+
+        ### Authorization
+
+
+        An API key or OAuth token must have at least one of the following scopes in
+        order to use this API endpoint:
+
+
+        **API Key Scopes**: `read:project`
+
+
+        **OAuth Scopes**
+
+
+        | Resource | Scope |
+
+        |----------|-------|
+
+        | Organization | `read:project` |
+
+        | Project | `read:project` |
+
+        '
+      operationId: ProjectService_ListProjectSites
+      parameters:
+      - name: projectId
+        in: path
+        required: true
+        schema:
+          type: string
+      - name: projectId
+        in: query
+        schema:
+          type: string
+      - name: pageSize
+        in: query
+        schema:
+          type: integer
+          format: int32
+      - name: pageToken
+        in: query
+        schema:
+          type: string
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ListProjectSitesResponse'
+      security:
+      - oauth2: &id067
+        - read:project
+      - apiKey: []
+      summary: 'List sites for a project [Requires: read:project]'
+      x-scopes: *id067
+      x-auth-type: oauth2 or apiKey
+      x-min-access-level: project:read
+  /v1/sites:
+    get:
+      tags:
+      - SiteService
+      description: 'List sites for a organization
+
+
+        ### Authorization
+
+
+        An API key or OAuth token must have at least one of the following scopes in
+        order to use this API endpoint:
+
+
+        **API Key Scopes**: `read:site`
+
+
+        **OAuth Scopes**
+
+
+        | Resource | Scope |
+
+        |----------|-------|
+
+        | Account | `read:site` |
+
+        '
+      operationId: SiteService_ListSites
+      parameters:
+      - name: organizationId
+        in: query
+        schema:
+          type: string
+      - name: projectId
+        in: query
+        schema:
+          type: string
+      - name: pageSize
+        in: query
+        schema:
+          type: integer
+          format: int32
+      - name: pageToken
+        in: query
+        schema:
+          type: string
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ListSitesResponse'
+      security:
+      - oauth2: &id068
+        - read:site
+      - apiKey: []
+      summary: 'List sites for a organization [Requires: read:site]'
+      x-scopes: *id068
+      x-auth-type: oauth2 or apiKey
+      x-min-access-level: account:read
+    post:
+      tags:
+      - SiteService
+      description: 'Create a new site
+
+
+        ### Authorization
+
+
+        An API key or OAuth token must have at least one of the following scopes in
+        order to use this API endpoint:
+
+
+        **API Key Scopes**: `write:project`
+
+
+        **OAuth Scopes**
+
+
+        | Resource | Scope |
+
+        |----------|-------|
+
+        | Organization | `write:project` |
+
+        | Project | `write:project` |
+
+        '
+      operationId: SiteService_CreateSite
+      parameters:
+      - name: organizationId
+        in: query
+        schema:
+          type: string
+      - name: projectId
+        in: query
+        schema:
+          type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SiteConfig'
+        required: true
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CreateSiteResponse'
+      security:
+      - oauth2: &id069
+        - write:project
+      - apiKey: []
+      summary: 'Create a new site [Requires: write:project]'
+      x-scopes: *id069
+      x-auth-type: oauth2 or apiKey
+      x-min-access-level: project:write
+  /v1/sites/{siteId}:
+    get:
+      tags:
+      - SiteService
+      description: 'Get site configuration (organization view)
+
+
+        ### Authorization
+
+
+        An API key or OAuth token must have at least one of the following scopes in
+        order to use this API endpoint:
+
+
+        **API Key Scopes**: `read:site`
+
+
+        **OAuth Scopes**
+
+
+        | Resource | Scope |
+
+        |----------|-------|
+
+        | Organization | `read:site` |
+
+        | Project | `read:site` |
+
+        | Site | `read:site` |
+
+        '
+      operationId: SiteService_GetSite
+      parameters:
+      - name: siteId
+        in: path
+        required: true
+        schema:
+          type: string
+      - name: siteId
+        in: query
+        schema:
+          type: string
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GetSiteResponse'
+      security:
+      - oauth2: &id070
+        - read:site
+      - apiKey: []
+      summary: 'Get site configuration (organization view) [Requires: read:site]'
+      x-scopes: *id070
+      x-auth-type: oauth2 or apiKey
+      x-min-access-level: site:read
+    delete:
+      tags:
+      - SiteService
+      description: 'Delete a site
+
+
+        ### Authorization
+
+
+        An API key or OAuth token must have at least one of the following scopes in
+        order to use this API endpoint:
+
+
+        **API Key Scopes**: `delete:site`
+
+
+        **OAuth Scopes**
+
+
+        | Resource | Scope |
+
+        |----------|-------|
+
+        | Organization | `delete:site` |
+
+        | Project | `delete:site` |
+
+        | Site | `delete:site` |
+
+        '
+      operationId: SiteService_DeleteSite
+      parameters:
+      - name: siteId
+        in: path
+        required: true
+        schema:
+          type: string
+      - name: siteId
+        in: query
+        schema:
+          type: string
+      responses:
+        '200':
+          description: OK
+          content: {}
+      security:
+      - oauth2: &id071
+        - delete:site
+      - apiKey: []
+      summary: 'Delete a site [Requires: delete:site]'
+      x-scopes: *id071
+      x-auth-type: oauth2 or apiKey
+      x-min-access-level: site:admin
+    patch:
+      tags:
+      - SiteService
+      description: 'Update site configuration (organization-editable fields only)
+
+
+        ### Authorization
+
+
+        An API key or OAuth token must have at least one of the following scopes in
+        order to use this API endpoint:
+
+
+        **API Key Scopes**: `write:site`
+
+
+        **OAuth Scopes**
+
+
+        | Resource | Scope |
+
+        |----------|-------|
+
+        | Organization | `write:site` |
+
+        | Project | `write:site` |
+
+        | Site | `write:site` |
+
+        '
+      operationId: SiteService_UpdateSite
+      parameters:
+      - name: siteId
+        in: path
+        required: true
+        schema:
+          type: string
+      - name: siteId
+        in: query
+        schema:
+          type: string
+      - name: updateMask
+        in: query
+        schema:
+          type: string
+          format: field-mask
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SiteConfig'
+        required: true
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UpdateSiteResponse'
+      security:
+      - oauth2: &id072
+        - write:site
+      - apiKey: []
+      summary: 'Update site configuration (organization-editable fields only) [Requires:
+        write:site]'
+      x-scopes: *id072
+      x-auth-type: oauth2 or apiKey
+      x-min-access-level: site:write
+  /v1/sites/{siteId}/deploy:
+    post:
+      tags:
+      - SiteOperationsService
+      description: 'Deploy a site
+
+
+        ### Authorization
+
+
+        An API key or OAuth token must have at least one of the following scopes in
+        order to use this API endpoint:
+
+
+        **API Key Scopes**: `write:site`
+
+
+        **OAuth Scopes**
+
+
+        | Resource | Scope |
+
+        |----------|-------|
+
+        | Organization | `write:site` |
+
+        | Project | `write:site` |
+
+        | Site | `write:site` |
+
+        '
+      operationId: SiteOperationsService_DeploySite
+      parameters:
+      - name: siteId
+        in: path
+        required: true
+        schema:
+          type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DeploySiteRequest'
+        required: true
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DeploySiteResponse'
+      security:
+      - oauth2: &id073
+        - write:site
+      - apiKey: []
+      summary: 'Deploy a site [Requires: write:site]'
+      x-scopes: *id073
+      x-auth-type: oauth2 or apiKey
+      x-min-access-level: site:write
+  /v1/sites/{siteId}/firewall:
+    get:
+      tags:
+      - SiteFirewallService
+      description: 'List firewall rules applied to a specific site
+
+
+        ### Authorization
+
+
+        An API key or OAuth token must have at least one of the following scopes in
+        order to use this API endpoint:
+
+
+        **API Key Scopes**: `read:firewall`
+
+
+        **OAuth Scopes**
+
+
+        | Resource | Scope |
+
+        |----------|-------|
+
+        | Organization | `read:firewall` |
+
+        | Project | `read:firewall` |
+
+        | Site | `read:firewall` |
+
+        '
+      operationId: SiteFirewallService_ListSiteFirewallRules
+      parameters:
+      - name: siteId
+        in: path
+        required: true
+        schema:
+          type: string
+      - name: siteId
+        in: query
+        schema:
+          type: string
+      - name: pageSize
+        in: query
+        schema:
+          type: integer
+          format: int32
+      - name: pageToken
+        in: query
+        schema:
+          type: string
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ListSiteFirewallRulesResponse'
+      security:
+      - oauth2: &id074
+        - read:firewall
+      - apiKey: []
+      summary: 'List firewall rules applied to a specific site [Requires: read:firewall]'
+      x-scopes: *id074
+      x-auth-type: oauth2 or apiKey
+      x-min-access-level: site:read
+    post:
+      tags:
+      - SiteFirewallService
+      description: 'Add firewall rule to a specific site
+
+
+        ### Authorization
+
+
+        An API key or OAuth token must have at least one of the following scopes in
+        order to use this API endpoint:
+
+
+        **API Key Scopes**: `write:firewall`
+
+
+        **OAuth Scopes**
+
+
+        | Resource | Scope |
+
+        |----------|-------|
+
+        | Organization | `write:firewall` |
+
+        | Project | `write:firewall` |
+
+        | Site | `write:firewall` |
+
+        '
+      operationId: SiteFirewallService_CreateSiteFirewallRule
+      parameters:
+      - name: siteId
+        in: path
+        required: true
+        schema:
+          type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateSiteFirewallRuleRequest'
+        required: true
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CreateSiteFirewallRuleResponse'
+      security:
+      - oauth2: &id075
+        - write:firewall
+      - apiKey: []
+      summary: 'Add firewall rule to a specific site [Requires: write:firewall]'
+      x-scopes: *id075
+      x-auth-type: oauth2 or apiKey
+      x-min-access-level: site:write
+  /v1/sites/{siteId}/firewall/{ruleId}:
+    delete:
+      tags:
+      - SiteFirewallService
+      description: 'Remove a firewall rule from a specific site
+
+
+        ### Authorization
+
+
+        An API key or OAuth token must have at least one of the following scopes in
+        order to use this API endpoint:
+
+
+        **API Key Scopes**: `delete:firewall`
+
+
+        **OAuth Scopes**
+
+
+        | Resource | Scope |
+
+        |----------|-------|
+
+        | Organization | `delete:firewall` |
+
+        | Project | `delete:firewall` |
+
+        | Site | `delete:firewall` |
+
+        '
+      operationId: SiteFirewallService_DeleteSiteFirewallRule
+      parameters:
+      - name: siteId
+        in: path
+        required: true
+        schema:
+          type: string
+      - name: ruleId
+        in: path
+        required: true
+        schema:
+          type: string
+      - name: siteId
+        in: query
+        schema:
+          type: string
+      - name: ruleId
+        in: query
+        schema:
+          type: string
+      responses:
+        '200':
+          description: OK
+          content: {}
+      security:
+      - oauth2: &id076
+        - delete:firewall
+      - apiKey: []
+      summary: 'Remove a firewall rule from a specific site [Requires: delete:firewall]'
+      x-scopes: *id076
+      x-auth-type: oauth2 or apiKey
+      x-min-access-level: site:write
+  /v1/sites/{siteId}/members:
+    get:
+      tags:
+      - SiteMemberService
+      description: 'List members of a site
+
+
+        ### Authorization
+
+
+        An API key or OAuth token must have at least one of the following scopes in
+        order to use this API endpoint:
+
+
+        **API Key Scopes**: `read:members`
+
+
+        **OAuth Scopes**
+
+
+        | Resource | Scope |
+
+        |----------|-------|
+
+        | Organization | `read:members` |
+
+        | Project | `read:members` |
+
+        | Site | `read:members` |
+
+        '
+      operationId: SiteMemberService_ListSiteMembers
+      parameters:
+      - name: siteId
+        in: path
+        required: true
+        schema:
+          type: string
+      - name: siteId
+        in: query
+        schema:
+          type: string
+      - name: pageSize
+        in: query
+        schema:
+          type: integer
+          format: int32
+      - name: pageToken
+        in: query
+        schema:
+          type: string
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ListSiteMembersResponse'
+      security:
+      - oauth2: &id077
+        - read:members
+      - apiKey: []
+      summary: 'List members of a site [Requires: read:members]'
+      x-scopes: *id077
+      x-auth-type: oauth2 or apiKey
+      x-min-access-level: site:read
+    post:
+      tags:
+      - SiteMemberService
+      description: 'Add a member to a site
+
+
+        ### Authorization
+
+
+        An API key or OAuth token must have at least one of the following scopes in
+        order to use this API endpoint:
+
+
+        **API Key Scopes**: `write:members`
+
+
+        **OAuth Scopes**
+
+
+        | Resource | Scope |
+
+        |----------|-------|
+
+        | Organization | `write:members` |
+
+        | Project | `write:members` |
+
+        | Site | `write:members` |
+
+        '
+      operationId: SiteMemberService_CreateSiteMember
+      parameters:
+      - name: siteId
+        in: path
+        required: true
+        schema:
+          type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateSiteMemberRequest'
+        required: true
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CreateSiteMemberResponse'
+      security:
+      - oauth2: &id078
+        - write:members
+      - apiKey: []
+      summary: 'Add a member to a site [Requires: write:members]'
+      x-scopes: *id078
+      x-auth-type: oauth2 or apiKey
+      x-min-access-level: site:admin
+  /v1/sites/{siteId}/members/{accountId}:
+    delete:
+      tags:
+      - SiteMemberService
+      description: 'Remove a member from a site
+
+
+        ### Authorization
+
+
+        An API key or OAuth token must have at least one of the following scopes in
+        order to use this API endpoint:
+
+
+        **API Key Scopes**: `delete:members`
+
+
+        **OAuth Scopes**
+
+
+        | Resource | Scope |
+
+        |----------|-------|
+
+        | Organization | `delete:members` |
+
+        | Project | `delete:members` |
+
+        | Site | `delete:members` |
+
+        '
+      operationId: SiteMemberService_DeleteSiteMember
+      parameters:
+      - name: siteId
+        in: path
+        required: true
+        schema:
+          type: string
+      - name: accountId
+        in: path
+        required: true
+        schema:
+          type: string
+      - name: siteId
+        in: query
+        schema:
+          type: string
+      - name: accountId
+        in: query
+        schema:
+          type: string
+      responses:
+        '200':
+          description: OK
+          content: {}
+      security:
+      - oauth2: &id079
+        - delete:members
+      - apiKey: []
+      summary: 'Remove a member from a site [Requires: delete:members]'
+      x-scopes: *id079
+      x-auth-type: oauth2 or apiKey
+      x-min-access-level: site:admin
+    patch:
+      tags:
+      - SiteMemberService
+      description: 'Update a member''s role
+
+
+        ### Authorization
+
+
+        An API key or OAuth token must have at least one of the following scopes in
+        order to use this API endpoint:
+
+
+        **API Key Scopes**: `write:members`
+
+
+        **OAuth Scopes**
+
+
+        | Resource | Scope |
+
+        |----------|-------|
+
+        | Organization | `write:members` |
+
+        | Project | `write:members` |
+
+        | Site | `write:members` |
+
+        '
+      operationId: SiteMemberService_UpdateSiteMember
+      parameters:
+      - name: siteId
+        in: path
+        required: true
+        schema:
+          type: string
+      - name: accountId
+        in: path
+        required: true
+        schema:
+          type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateSiteMemberRequest'
+        required: true
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UpdateSiteMemberResponse'
+      security:
+      - oauth2: &id080
+        - write:members
+      - apiKey: []
+      summary: 'Update a member''s role [Requires: write:members]'
+      x-scopes: *id080
+      x-auth-type: oauth2 or apiKey
+      x-min-access-level: site:admin
+  /v1/sites/{siteId}/secrets:
+    get:
+      tags:
+      - SiteSecretService
+      description: 'List a site''s secrets
+
+
+        ### Authorization
+
+
+        An API key or OAuth token must have at least one of the following scopes in
+        order to use this API endpoint:
+
+
+        **API Key Scopes**: `manage_secrets`
+
+
+        **OAuth Scopes**
+
+
+        | Resource | Scope |
+
+        |----------|-------|
+
+        | Organization | `manage_secrets` |
+
+        | Project | `manage_secrets` |
+
+        | Site | `manage_secrets` |
+
+        '
+      operationId: SiteSecretService_ListSiteSecrets
+      parameters:
+      - name: siteId
+        in: path
+        required: true
+        schema:
+          type: string
+      - name: pageSize
+        in: query
+        schema:
+          type: integer
+          format: int32
+      - name: pageToken
+        in: query
+        schema:
+          type: string
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ListSiteSecretsResponse'
+      security:
+      - oauth2: &id081
+        - manage_secrets
+      - apiKey: []
+      summary: 'List a site''s secrets [Requires: manage_secrets]'
+      x-scopes: *id081
+      x-auth-type: oauth2 or apiKey
+      x-min-access-level: site:write
+    post:
+      tags:
+      - SiteSecretService
+      description: 'Create a site secret
+
+
+        ### Authorization
+
+
+        An API key or OAuth token must have at least one of the following scopes in
+        order to use this API endpoint:
+
+
+        **API Key Scopes**: `manage_secrets`
+
+
+        **OAuth Scopes**
+
+
+        | Resource | Scope |
+
+        |----------|-------|
+
+        | Organization | `manage_secrets` |
+
+        | Project | `manage_secrets` |
+
+        | Site | `manage_secrets` |
+
+        '
+      operationId: SiteSecretService_CreateSiteSecret
+      parameters:
+      - name: siteId
+        in: path
+        required: true
+        schema:
+          type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateSiteSecretRequest'
+        required: true
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CreateSiteSecretResponse'
+      security:
+      - oauth2: &id082
+        - manage_secrets
+      - apiKey: []
+      summary: 'Create a site secret [Requires: manage_secrets]'
+      x-scopes: *id082
+      x-auth-type: oauth2 or apiKey
+      x-min-access-level: site:write
+  /v1/sites/{siteId}/secrets/{secretId}:
+    get:
+      tags:
+      - SiteSecretService
+      description: 'Get a site secret
+
+
+        ### Authorization
+
+
+        An API key or OAuth token must have at least one of the following scopes in
+        order to use this API endpoint:
+
+
+        **API Key Scopes**: `manage_secrets`
+
+
+        **OAuth Scopes**
+
+
+        | Resource | Scope |
+
+        |----------|-------|
+
+        | Organization | `manage_secrets` |
+
+        | Project | `manage_secrets` |
+
+        | Site | `manage_secrets` |
+
+        '
+      operationId: SiteSecretService_GetSiteSecret
+      parameters:
+      - name: siteId
+        in: path
+        required: true
+        schema:
+          type: string
+      - name: secretId
+        in: path
+        required: true
+        schema:
+          type: string
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GetSiteSecretResponse'
+      security:
+      - oauth2: &id083
+        - manage_secrets
+      - apiKey: []
+      summary: 'Get a site secret [Requires: manage_secrets]'
+      x-scopes: *id083
+      x-auth-type: oauth2 or apiKey
+      x-min-access-level: site:write
+    put:
+      tags:
+      - SiteSecretService
+      description: 'Update a site secret
+
+
+        ### Authorization
+
+
+        An API key or OAuth token must have at least one of the following scopes in
+        order to use this API endpoint:
+
+
+        **API Key Scopes**: `manage_secrets`
+
+
+        **OAuth Scopes**
+
+
+        | Resource | Scope |
+
+        |----------|-------|
+
+        | Organization | `manage_secrets` |
+
+        | Project | `manage_secrets` |
+
+        | Site | `manage_secrets` |
+
+        '
+      operationId: SiteSecretService_UpdateSiteSecret
+      parameters:
+      - name: siteId
+        in: path
+        required: true
+        schema:
+          type: string
+      - name: secretId
+        in: path
+        required: true
+        schema:
+          type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateSiteSecretRequest'
+        required: true
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UpdateSiteSecretResponse'
+      security:
+      - oauth2: &id084
+        - manage_secrets
+      - apiKey: []
+      summary: 'Update a site secret [Requires: manage_secrets]'
+      x-scopes: *id084
+      x-auth-type: oauth2 or apiKey
+      x-min-access-level: site:write
+    delete:
+      tags:
+      - SiteSecretService
+      description: 'Delete a site secret
+
+
+        ### Authorization
+
+
+        An API key or OAuth token must have at least one of the following scopes in
+        order to use this API endpoint:
+
+
+        **API Key Scopes**: `manage_secrets`
+
+
+        **OAuth Scopes**
+
+
+        | Resource | Scope |
+
+        |----------|-------|
+
+        | Organization | `manage_secrets` |
+
+        | Project | `manage_secrets` |
+
+        | Site | `manage_secrets` |
+
+        '
+      operationId: SiteSecretService_DeleteSiteSecret
+      parameters:
+      - name: siteId
+        in: path
+        required: true
+        schema:
+          type: string
+      - name: secretId
+        in: path
+        required: true
+        schema:
+          type: string
+      responses:
+        '200':
+          description: OK
+          content: {}
+      security:
+      - oauth2: &id085
+        - manage_secrets
+      - apiKey: []
+      summary: 'Delete a site secret [Requires: manage_secrets]'
+      x-scopes: *id085
+      x-auth-type: oauth2 or apiKey
+      x-min-access-level: site:write
+  /v1/sites/{siteId}/status:
+    get:
+      tags:
+      - SiteOperationsService
+      description: 'Get site deployment status
+
+
+        ### Authorization
+
+
+        An API key or OAuth token must have at least one of the following scopes in
+        order to use this API endpoint:
+
+
+        **API Key Scopes**: `read:site`
+
+
+        **OAuth Scopes**
+
+
+        | Resource | Scope |
+
+        |----------|-------|
+
+        | Organization | `read:site` |
+
+        | Project | `read:site` |
+
+        | Site | `read:site` |
+
+        '
+      operationId: SiteOperationsService_GetSiteStatus
+      parameters:
+      - name: siteId
+        in: path
+        required: true
+        schema:
+          type: string
+      - name: siteId
+        in: query
+        schema:
+          type: string
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GetSiteStatusResponse'
+      security:
+      - oauth2: &id086
+        - read:site
+      - apiKey: []
+      summary: 'Get site deployment status [Requires: read:site]'
+      x-scopes: *id086
+      x-auth-type: oauth2 or apiKey
+      x-min-access-level: site:read
+components:
+  schemas:
+    Account:
+      type: object
+      properties:
+        accountId:
+          type: string
+        email:
+          type: string
+        name:
+          type: string
+        githubUsername:
+          type: string
+        role:
+          enum:
+          - ACCOUNT_ROLE_UNSPECIFIED
+          - ACCOUNT_ROLE_USER
+          - ACCOUNT_ROLE_ADMIN
+          type: string
+          format: enum
+        status:
+          enum:
+          - ACCOUNT_STATUS_UNSPECIFIED
+          - ACCOUNT_STATUS_ACTIVE
+          - ACCOUNT_STATUS_SUSPENDED
+          - ACCOUNT_STATUS_DELETED
+          type: string
+          format: enum
+        authMethod:
+          enum:
+          - AUTH_METHOD_UNSPECIFIED
+          - AUTH_METHOD_GOOGLE
+          - AUTH_METHOD_USERPASS
+          - AUTH_METHOD_GCLOUD
+          type: string
+          format: enum
+        verified:
+          type: boolean
+        verifiedAt:
+          type: string
+    AdminCreateOrganizationResponse:
+      type: object
+      properties:
+        organizationId:
+          type: string
+        folder:
+          $ref: '#/components/schemas/AdminFolderConfig'
+    AdminCreateProjectResponse:
+      type: object
+      properties:
+        project:
+          $ref: '#/components/schemas/AdminProjectConfig'
+    AdminCreateSiteResponse:
+      type: object
+      properties:
+        site:
+          $ref: '#/components/schemas/AdminSiteConfig'
+    AdminFolderConfig:
+      type: object
+      properties:
+        config:
+          allOf:
+          - $ref: '#/components/schemas/FolderConfig'
+          description: Organization-safe fields (embedded)
+        gcpParent:
+          type: string
+          description: "Parent resource: folders/{folder_id} or organizations/{org_id}\n\
+            \ Defaults to folder format if not specified"
+        gcpFolderId:
+          type: string
+          description: GCP-managed resources (output from orchestration)
+      description: AdminFolderConfig extends the organization-facing config with internal
+        fields
+    AdminGetAccountByEmailResponse:
+      type: object
+      properties:
+        account:
+          $ref: '#/components/schemas/Account'
+    AdminGetOrganizationResponse:
+      type: object
+      properties:
+        folder:
+          $ref: '#/components/schemas/AdminFolderConfig'
+    AdminGetProjectResponse:
+      type: object
+      properties:
+        project:
+          $ref: '#/components/schemas/AdminProjectConfig'
+    AdminGetSiteResponse:
+      type: object
+      properties:
+        site:
+          $ref: '#/components/schemas/AdminSiteConfig'
+    AdminListAllProjectsResponse:
+      type: object
+      properties:
+        projects:
+          type: array
+          items:
+            $ref: '#/components/schemas/AdminProjectConfig'
+        nextPageToken:
+          type: string
+    AdminListAllSitesResponse:
+      type: object
+      properties:
+        sites:
+          type: array
+          items:
+            $ref: '#/components/schemas/AdminSiteConfig'
+        nextPageToken:
+          type: string
+    AdminListOrganizationProjectsResponse:
+      type: object
+      properties:
+        projectIds:
+          type: array
+          items:
+            type: string
+        nextPageToken:
+          type: string
+    AdminListOrganizationsResponse:
+      type: object
+      properties:
+        organizations:
+          type: array
+          items:
+            $ref: '#/components/schemas/AdminFolderConfig'
+        nextPageToken:
+          type: string
+    AdminListProjectsResponse:
+      type: object
+      properties:
+        projects:
+          type: array
+          items:
+            $ref: '#/components/schemas/AdminProjectConfig'
+        nextPageToken:
+          type: string
+    AdminListSitesResponse:
+      type: object
+      properties:
+        sites:
+          type: array
+          items:
+            $ref: '#/components/schemas/AdminSiteConfig'
+        nextPageToken:
+          type: string
+    AdminProjectConfig:
+      type: object
+      properties:
+        config:
+          allOf:
+          - $ref: '#/components/schemas/ProjectConfig'
+          description: Organization-safe fields (embedded)
+        billingAccount:
+          type: string
+        githubWebhookUrl:
+          type: string
+          description: GitHub integration
+        githubWebhookSecret:
+          type: string
+        hostDockerConfig:
+          type: string
+        gcpProjectId:
+          type: string
+          description: GCP-managed resources (output from orchestration)
+        gcpProjectNumber:
+          type: string
+        githubTeamId:
+          type: string
+        organizationProject:
+          type: boolean
+          description: Flag to identify if this is the organization's libops project
+            (for vault, etc.)
+      description: AdminProjectConfig extends the organization-facing config with
+        sensitive fields
+    AdminSiteConfig:
+      type: object
+      properties:
+        config:
+          allOf:
+          - $ref: '#/components/schemas/SiteConfig'
+          description: Organization-safe fields (embedded)
+        gcpInstanceName:
+          type: string
+          description: Computed/managed fields (output from orchestration)
+        gcpExternalIp:
+          type: string
+        gcpInternalIp:
+          type: string
+      description: AdminSiteConfig extends the organization-facing config with internal
+        GCP details
+    AdminUpdateOrganizationResponse:
+      type: object
+      properties:
+        folder:
+          $ref: '#/components/schemas/AdminFolderConfig'
+    AdminUpdateProjectResponse:
+      type: object
+      properties:
+        project:
+          $ref: '#/components/schemas/AdminProjectConfig'
+    AdminUpdateSiteResponse:
+      type: object
+      properties:
+        site:
+          $ref: '#/components/schemas/AdminSiteConfig'
+    ApiKeyMetadata:
+      type: object
+      properties:
+        apiKeyId:
+          type: string
+        name:
+          type: string
+        description:
+          type: string
+        scopes:
+          type: array
+          items:
+            type: string
+        active:
+          type: boolean
+        createdAt:
+          type: string
+        lastUsedAt:
+          type: string
+    CreateAccountRequest:
+      type: object
+      properties:
+        email:
+          type: string
+        name:
+          type: string
+        githubUsername:
+          type: string
+    CreateAccountResponse:
+      type: object
+      properties:
+        account:
+          $ref: '#/components/schemas/Account'
+    CreateApiKeyRequest:
+      type: object
+      properties:
+        name:
+          type: string
+        description:
+          type: string
+        scopes:
+          type: array
+          items:
+            type: string
+    CreateApiKeyResponse:
+      type: object
+      properties:
+        apiKeyId:
+          type: string
+        apiKey:
+          type: string
+        name:
+          type: string
+        description:
+          type: string
+        scopes:
+          type: array
+          items:
+            type: string
+        createdAt:
+          type: string
+    CreateOrganizationFirewallRuleRequest:
+      type: object
+      properties:
+        organizationId:
+          type: string
+        ruleType:
+          enum:
+          - FIREWALL_RULE_TYPE_UNSPECIFIED
+          - FIREWALL_RULE_TYPE_HTTPS_ALLOWED
+          - FIREWALL_RULE_TYPE_SSH_ALLOWED
+          - FIREWALL_RULE_TYPE_BLOCKED
+          type: string
+          format: enum
+        cidr:
+          type: string
+        name:
+          type: string
+    CreateOrganizationFirewallRuleResponse:
+      type: object
+      properties:
+        rule:
+          $ref: '#/components/schemas/OrganizationFirewallRule'
+    CreateOrganizationMemberRequest:
+      type: object
+      properties:
+        organizationId:
+          type: string
+        accountId:
+          type: string
+        role:
+          type: string
+    CreateOrganizationMemberResponse:
+      type: object
+      properties:
+        member:
+          $ref: '#/components/schemas/MemberDetail'
+    CreateOrganizationResponse:
+      type: object
+      properties:
+        organizationId:
+          type: string
+        folder:
+          $ref: '#/components/schemas/FolderConfig'
+    CreateOrganizationSecretRequest:
+      type: object
+      properties:
+        organizationId:
+          type: string
+        name:
+          type: string
+        value:
+          type: string
+    CreateOrganizationSecretResponse:
+      type: object
+      properties:
+        secret:
+          $ref: '#/components/schemas/OrganizationSecret'
+    CreateProjectFirewallRuleRequest:
+      type: object
+      properties:
+        projectId:
+          type: string
+        ruleType:
+          enum:
+          - FIREWALL_RULE_TYPE_UNSPECIFIED
+          - FIREWALL_RULE_TYPE_HTTPS_ALLOWED
+          - FIREWALL_RULE_TYPE_SSH_ALLOWED
+          - FIREWALL_RULE_TYPE_BLOCKED
+          type: string
+          format: enum
+        cidr:
+          type: string
+        name:
+          type: string
+    CreateProjectFirewallRuleResponse:
+      type: object
+      properties:
+        rule:
+          $ref: '#/components/schemas/ProjectFirewallRule'
+    CreateProjectMemberRequest:
+      type: object
+      properties:
+        projectId:
+          type: string
+        accountId:
+          type: string
+        role:
+          type: string
+    CreateProjectMemberResponse:
+      type: object
+      properties:
+        member:
+          $ref: '#/components/schemas/MemberDetail'
+    CreateProjectResponse:
+      type: object
+      properties:
+        project:
+          $ref: '#/components/schemas/ProjectConfig'
+    CreateProjectSecretRequest:
+      type: object
+      properties:
+        projectId:
+          type: string
+        name:
+          type: string
+        value:
+          type: string
+    CreateProjectSecretResponse:
+      type: object
+      properties:
+        secret:
+          $ref: '#/components/schemas/ProjectSecret'
+    CreateSiteFirewallRuleRequest:
+      type: object
+      properties:
+        siteId:
+          type: string
+        ruleType:
+          enum:
+          - FIREWALL_RULE_TYPE_UNSPECIFIED
+          - FIREWALL_RULE_TYPE_HTTPS_ALLOWED
+          - FIREWALL_RULE_TYPE_SSH_ALLOWED
+          - FIREWALL_RULE_TYPE_BLOCKED
+          type: string
+          format: enum
+        cidr:
+          type: string
+        name:
+          type: string
+    CreateSiteFirewallRuleResponse:
+      type: object
+      properties:
+        rule:
+          $ref: '#/components/schemas/SiteFirewallRule'
+    CreateSiteMemberRequest:
+      type: object
+      properties:
+        siteId:
+          type: string
+        accountId:
+          type: string
+        role:
+          type: string
+    CreateSiteMemberResponse:
+      type: object
+      properties:
+        member:
+          $ref: '#/components/schemas/MemberDetail'
+    CreateSiteResponse:
+      type: object
+      properties:
+        site:
+          $ref: '#/components/schemas/SiteConfig'
+    CreateSiteSecretRequest:
+      type: object
+      properties:
+        siteId:
+          type: string
+        name:
+          type: string
+        value:
+          type: string
+    CreateSiteSecretResponse:
+      type: object
+      properties:
+        secret:
+          $ref: '#/components/schemas/SiteSecret'
+    CreateSshKeyRequest:
+      type: object
+      properties:
+        accountId:
+          type: string
+        publicKey:
+          type: string
+        name:
+          type: string
+    CreateSshKeyResponse:
+      type: object
+      properties:
+        sshKey:
+          $ref: '#/components/schemas/SshKey'
+    DeploySiteRequest:
+      type: object
+      properties:
+        siteId:
+          type: string
+        gitRef:
+          type: string
+    DeploySiteResponse:
+      type: object
+      properties:
+        deploymentId:
+          type: string
+        status:
+          $ref: '#/components/schemas/SiteStatus'
+    FolderConfig:
+      type: object
+      properties:
+        organizationId:
+          type: string
+          format: uuid
+        organizationName:
+          type: string
+        status:
+          enum:
+          - STATUS_UNSPECIFIED
+          - STATUS_ACTIVE
+          - STATUS_PROVISIONING
+          - STATUS_FAILED
+          - STATUS_SUSPENDED
+          - STATUS_DELETED
+          type: string
+          format: enum
+        location:
+          enum:
+          - LOCATION_UNSPECIFIED
+          - LOCATION_ASIA
+          - LOCATION_AU
+          - LOCATION_CA
+          - LOCATION_DE
+          - LOCATION_EU
+          - LOCATION_IN
+          - LOCATION_IT
+          - LOCATION_US
+          type: string
+          description: Organization's preferred Google Cloud location and region
+          format: enum
+        region:
+          type: string
+      description: "FolderConfig is the organization-facing folder/organization configuration\n\
+        \ Contains only safe, non-sensitive fields"
+    GetAccountByEmailResponse:
+      type: object
+      properties:
+        account:
+          $ref: '#/components/schemas/OrganizationAccount'
+    GetAccountResponse:
+      type: object
+      properties:
+        account:
+          $ref: '#/components/schemas/Account'
+    GetOrganizationResponse:
+      type: object
+      properties:
+        folder:
+          $ref: '#/components/schemas/FolderConfig'
+    GetOrganizationSecretResponse:
+      type: object
+      properties:
+        secret:
+          $ref: '#/components/schemas/OrganizationSecret'
+    GetProjectResponse:
+      type: object
+      properties:
+        project:
+          $ref: '#/components/schemas/ProjectConfig'
+    GetProjectSecretResponse:
+      type: object
+      properties:
+        secret:
+          $ref: '#/components/schemas/ProjectSecret'
+    GetSiteResponse:
+      type: object
+      properties:
+        site:
+          $ref: '#/components/schemas/SiteConfig'
+    GetSiteSecretResponse:
+      type: object
+      properties:
+        secret:
+          $ref: '#/components/schemas/SiteSecret'
+    GetSiteStatusResponse:
+      type: object
+      properties:
+        status:
+          $ref: '#/components/schemas/SiteStatus'
+    ListAccountProjectsResponse:
+      type: object
+      properties:
+        organizationIds:
+          type: array
+          items:
+            type: string
+        nextPageToken:
+          type: string
+    ListAccountRepositoriesResponse:
+      type: object
+      properties:
+        repositories:
+          type: array
+          items:
+            $ref: '#/components/schemas/Repository'
+        nextPageToken:
+          type: string
+    ListAccountsResponse:
+      type: object
+      properties:
+        accounts:
+          type: array
+          items:
+            $ref: '#/components/schemas/Account'
+        nextPageToken:
+          type: string
+    ListApiKeysResponse:
+      type: object
+      properties:
+        apiKeys:
+          type: array
+          items:
+            $ref: '#/components/schemas/ApiKeyMetadata'
+        nextPageToken:
+          type: string
+    ListOrganizationFirewallRulesResponse:
+      type: object
+      properties:
+        rules:
+          type: array
+          items:
+            $ref: '#/components/schemas/OrganizationFirewallRule'
+        nextPageToken:
+          type: string
+    ListOrganizationMembersResponse:
+      type: object
+      properties:
+        members:
+          type: array
+          items:
+            $ref: '#/components/schemas/MemberDetail'
+        nextPageToken:
+          type: string
+    ListOrganizationProjectsResponse:
+      type: object
+      properties:
+        projectIds:
+          type: array
+          items:
+            type: string
+        nextPageToken:
+          type: string
+    ListOrganizationSecretsResponse:
+      type: object
+      properties:
+        secrets:
+          type: array
+          items:
+            $ref: '#/components/schemas/OrganizationSecret'
+        nextPageToken:
+          type: string
+    ListOrganizationsResponse:
+      type: object
+      properties:
+        organizations:
+          type: array
+          items:
+            $ref: '#/components/schemas/FolderConfig'
+        nextPageToken:
+          type: string
+    ListProjectFirewallRulesResponse:
+      type: object
+      properties:
+        rules:
+          type: array
+          items:
+            $ref: '#/components/schemas/ProjectFirewallRule'
+        nextPageToken:
+          type: string
+    ListProjectMembersResponse:
+      type: object
+      properties:
+        members:
+          type: array
+          items:
+            $ref: '#/components/schemas/MemberDetail'
+        nextPageToken:
+          type: string
+    ListProjectSecretsResponse:
+      type: object
+      properties:
+        secrets:
+          type: array
+          items:
+            $ref: '#/components/schemas/ProjectSecret'
+        nextPageToken:
+          type: string
+    ListProjectSitesResponse:
+      type: object
+      properties:
+        siteNames:
+          type: array
+          items:
+            type: string
+        nextPageToken:
+          type: string
+    ListProjectsResponse:
+      type: object
+      properties:
+        projects:
+          type: array
+          items:
+            $ref: '#/components/schemas/ProjectConfig'
+        nextPageToken:
+          type: string
+    ListSiteFirewallRulesResponse:
+      type: object
+      properties:
+        rules:
+          type: array
+          items:
+            $ref: '#/components/schemas/SiteFirewallRule'
+        nextPageToken:
+          type: string
+    ListSiteMembersResponse:
+      type: object
+      properties:
+        members:
+          type: array
+          items:
+            $ref: '#/components/schemas/MemberDetail'
+        nextPageToken:
+          type: string
+    ListSiteSecretsResponse:
+      type: object
+      properties:
+        secrets:
+          type: array
+          items:
+            $ref: '#/components/schemas/SiteSecret'
+        nextPageToken:
+          type: string
+    ListSitesResponse:
+      type: object
+      properties:
+        sites:
+          type: array
+          items:
+            $ref: '#/components/schemas/SiteConfig'
+        nextPageToken:
+          type: string
+    ListSshKeysResponse:
+      type: object
+      properties:
+        sshKeys:
+          type: array
+          items:
+            $ref: '#/components/schemas/SshKey'
+        nextPageToken:
+          type: string
+    MemberDetail:
+      type: object
+      properties:
+        accountId:
+          type: string
+        email:
+          type: string
+        name:
+          type: string
+        role:
+          type: string
+        githubUsername:
+          type: string
+        status:
+          enum:
+          - STATUS_UNSPECIFIED
+          - STATUS_ACTIVE
+          - STATUS_PROVISIONING
+          - STATUS_FAILED
+          - STATUS_SUSPENDED
+          - STATUS_DELETED
+          type: string
+          format: enum
+    OrganizationAccount:
+      type: object
+      properties:
+        accountId:
+          type: string
+        email:
+          type: string
+        name:
+          type: string
+        authMethod:
+          enum:
+          - AUTH_METHOD_UNSPECIFIED
+          - AUTH_METHOD_GOOGLE
+          - AUTH_METHOD_USERPASS
+          - AUTH_METHOD_GCLOUD
+          type: string
+          format: enum
+        verified:
+          type: boolean
+    OrganizationFirewallRule:
+      type: object
+      properties:
+        ruleId:
+          type: string
+        organizationId:
+          type: string
+        ruleType:
+          enum:
+          - FIREWALL_RULE_TYPE_UNSPECIFIED
+          - FIREWALL_RULE_TYPE_HTTPS_ALLOWED
+          - FIREWALL_RULE_TYPE_SSH_ALLOWED
+          - FIREWALL_RULE_TYPE_BLOCKED
+          type: string
+          format: enum
+        cidr:
+          type: string
+        name:
+          type: string
+        status:
+          enum:
+          - STATUS_UNSPECIFIED
+          - STATUS_ACTIVE
+          - STATUS_PROVISIONING
+          - STATUS_FAILED
+          - STATUS_SUSPENDED
+          - STATUS_DELETED
+          type: string
+          format: enum
+    OrganizationSecret:
+      type: object
+      properties:
+        secretId:
+          type: string
+        organizationId:
+          type: string
+        name:
+          type: string
+        status:
+          enum:
+          - STATUS_UNSPECIFIED
+          - STATUS_ACTIVE
+          - STATUS_PROVISIONING
+          - STATUS_FAILED
+          - STATUS_SUSPENDED
+          - STATUS_DELETED
+          type: string
+          format: enum
+    ProjectConfig:
+      type: object
+      properties:
+        organizationId:
+          type: string
+          format: uuid
+        projectId:
+          type: string
+          format: uuid
+        projectName:
+          type: string
+        createBranchSites:
+          type: boolean
+          description: Auto-create sites for new branches
+        region:
+          type: string
+          description: GCP deployment configuration
+        zone:
+          type: string
+        machineType:
+          type: string
+        diskSizeGb:
+          type: integer
+          format: int32
+        githubRepo:
+          type: string
+          description: "GitHub repository configuration\n Either github_repo (existing)\
+            \ or github_repo_template (new from template)"
+        githubRepoTemplate:
+          type: string
+        promote:
+          enum:
+          - PROMOTE_STRATEGY_UNSPECIFIED
+          - PROMOTE_STRATEGY_GITHUB_TAG
+          - PROMOTE_STRATEGY_GITHUB_RELEASE
+          type: string
+          description: Promotion strategy
+          format: enum
+        upCmd:
+          type: string
+          description: Docker compose commands
+        initCmd:
+          type: string
+        rolloutCmd:
+          type: array
+          items:
+            type: string
+        status:
+          enum:
+          - STATUS_UNSPECIFIED
+          - STATUS_ACTIVE
+          - STATUS_PROVISIONING
+          - STATUS_FAILED
+          - STATUS_SUSPENDED
+          - STATUS_DELETED
+          type: string
+          description: Status
+          format: enum
+      description: "ProjectConfig is the organization-facing project configuration\n\
+        \ Contains only safe, non-sensitive fields"
+    ProjectFirewallRule:
+      type: object
+      properties:
+        ruleId:
+          type: string
+        projectId:
+          type: string
+        ruleType:
+          enum:
+          - FIREWALL_RULE_TYPE_UNSPECIFIED
+          - FIREWALL_RULE_TYPE_HTTPS_ALLOWED
+          - FIREWALL_RULE_TYPE_SSH_ALLOWED
+          - FIREWALL_RULE_TYPE_BLOCKED
+          type: string
+          format: enum
+        cidr:
+          type: string
+        name:
+          type: string
+        status:
+          enum:
+          - STATUS_UNSPECIFIED
+          - STATUS_ACTIVE
+          - STATUS_PROVISIONING
+          - STATUS_FAILED
+          - STATUS_SUSPENDED
+          - STATUS_DELETED
+          type: string
+          format: enum
+    ProjectSecret:
+      type: object
+      properties:
+        secretId:
+          type: string
+        projectId:
+          type: string
+        name:
+          type: string
+        status:
+          enum:
+          - STATUS_UNSPECIFIED
+          - STATUS_ACTIVE
+          - STATUS_PROVISIONING
+          - STATUS_FAILED
+          - STATUS_SUSPENDED
+          - STATUS_DELETED
+          type: string
+          format: enum
+    Repository:
+      type: object
+      properties:
+        repoName:
+          type: string
+        repoUrl:
+          type: string
+        organizationId:
+          type: string
+        projectId:
+          type: string
+    RevokeApiKeyResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+    SiteConfig:
+      type: object
+      properties:
+        siteId:
+          type: string
+          format: uuid
+        organizationId:
+          type: string
+          format: uuid
+        projectId:
+          type: string
+          format: uuid
+        siteName:
+          type: string
+        githubRef:
+          type: string
+          description: 'GitHub reference: heads/{branch_name}, tags/{tag_name}, or
+            "release"'
+        status:
+          enum:
+          - STATUS_UNSPECIFIED
+          - STATUS_ACTIVE
+          - STATUS_PROVISIONING
+          - STATUS_FAILED
+          - STATUS_SUSPENDED
+          - STATUS_DELETED
+          type: string
+          description: Status (organization-visible)
+          format: enum
+      description: "SiteConfig is the organization-facing site configuration\n Contains\
+        \ only safe, non-sensitive fields"
+    SiteFirewallRule:
+      type: object
+      properties:
+        ruleId:
+          type: string
+        siteId:
+          type: string
+        ruleType:
+          enum:
+          - FIREWALL_RULE_TYPE_UNSPECIFIED
+          - FIREWALL_RULE_TYPE_HTTPS_ALLOWED
+          - FIREWALL_RULE_TYPE_SSH_ALLOWED
+          - FIREWALL_RULE_TYPE_BLOCKED
+          type: string
+          format: enum
+        cidr:
+          type: string
+        name:
+          type: string
+        status:
+          enum:
+          - STATUS_UNSPECIFIED
+          - STATUS_ACTIVE
+          - STATUS_PROVISIONING
+          - STATUS_FAILED
+          - STATUS_SUSPENDED
+          - STATUS_DELETED
+          type: string
+          format: enum
+    SiteSecret:
+      type: object
+      properties:
+        secretId:
+          type: string
+        siteId:
+          type: string
+        name:
+          type: string
+        status:
+          enum:
+          - STATUS_UNSPECIFIED
+          - STATUS_ACTIVE
+          - STATUS_PROVISIONING
+          - STATUS_FAILED
+          - STATUS_SUSPENDED
+          - STATUS_DELETED
+          type: string
+          format: enum
+    SiteStatus:
+      type: object
+      properties:
+        siteId:
+          type: string
+        status:
+          type: string
+        message:
+          type: string
+        deployedAt:
+          type: string
+    SshKey:
+      type: object
+      properties:
+        keyId:
+          type: string
+        accountId:
+          type: string
+        publicKey:
+          type: string
+        name:
+          type: string
+        fingerprint:
+          type: string
+    UpdateAccountRequest:
+      type: object
+      properties:
+        accountId:
+          type: string
+        name:
+          type: string
+        githubUsername:
+          type: string
+        updateMask:
+          type: string
+          format: field-mask
+    UpdateAccountResponse:
+      type: object
+      properties:
+        account:
+          $ref: '#/components/schemas/Account'
+    UpdateOrganizationMemberRequest:
+      type: object
+      properties:
+        organizationId:
+          type: string
+        accountId:
+          type: string
+        role:
+          type: string
+        updateMask:
+          type: string
+          format: field-mask
+    UpdateOrganizationMemberResponse:
+      type: object
+      properties:
+        member:
+          $ref: '#/components/schemas/MemberDetail'
+    UpdateOrganizationResponse:
+      type: object
+      properties:
+        folder:
+          $ref: '#/components/schemas/FolderConfig'
+    UpdateOrganizationSecretRequest:
+      type: object
+      properties:
+        organizationId:
+          type: string
+        secretId:
+          type: string
+        value:
+          type: string
+        updateMask:
+          type: string
+          format: field-mask
+    UpdateOrganizationSecretResponse:
+      type: object
+      properties:
+        secret:
+          $ref: '#/components/schemas/OrganizationSecret'
+    UpdateProjectMemberRequest:
+      type: object
+      properties:
+        projectId:
+          type: string
+        accountId:
+          type: string
+        role:
+          type: string
+        updateMask:
+          type: string
+          format: field-mask
+    UpdateProjectMemberResponse:
+      type: object
+      properties:
+        member:
+          $ref: '#/components/schemas/MemberDetail'
+    UpdateProjectResponse:
+      type: object
+      properties:
+        project:
+          $ref: '#/components/schemas/ProjectConfig'
+    UpdateProjectSecretRequest:
+      type: object
+      properties:
+        projectId:
+          type: string
+        secretId:
+          type: string
+        value:
+          type: string
+        updateMask:
+          type: string
+          format: field-mask
+    UpdateProjectSecretResponse:
+      type: object
+      properties:
+        secret:
+          $ref: '#/components/schemas/ProjectSecret'
+    UpdateSiteMemberRequest:
+      type: object
+      properties:
+        siteId:
+          type: string
+        accountId:
+          type: string
+        role:
+          type: string
+        updateMask:
+          type: string
+          format: field-mask
+    UpdateSiteMemberResponse:
+      type: object
+      properties:
+        member:
+          $ref: '#/components/schemas/MemberDetail'
+    UpdateSiteResponse:
+      type: object
+      properties:
+        site:
+          $ref: '#/components/schemas/SiteConfig'
+    UpdateSiteSecretRequest:
+      type: object
+      properties:
+        siteId:
+          type: string
+        secretId:
+          type: string
+        value:
+          type: string
+        updateMask:
+          type: string
+          format: field-mask
+    UpdateSiteSecretResponse:
+      type: object
+      properties:
+        secret:
+          $ref: '#/components/schemas/SiteSecret'
+  securitySchemes:
+    oauth2:
+      type: oauth2
+      description: OAuth 2.0 authentication via Vault OIDC
+      flows:
+        authorizationCode:
+          authorizationUrl: /auth/oauth/authorize
+          tokenUrl: /auth/oauth/token
+          scopes:
+            read:user: Read user account information
+            write:user: Update user account information
+            read:organizations: Read user's organizations
+            read:organization: Read organization details
+            write:organization: Update organization
+            delete:organization: Delete organization
+            read:projects: Read organization projects
+            create:projects: Create organization projects
+            write:projects: Update organization projects
+            delete:projects: Delete organization projects
+            read:members: Read organization/project/site members
+            write:members: Manage organization/project/site members
+            delete:members: Remove organization/project/site members
+            read:invoices: Read organization invoices
+            read:firewall: Read firewall rules
+            write:firewall: Update firewall rules
+            delete:firewall: Delete firewall rules
+            read:site: Read site details
+            write:site: Update site configuration
+            delete:site: Delete site
+            read:sites: Read project sites
+            write:sites: Update project sites
+            delete:sites: Delete project sites
+            promote_sites: Promote sites between environments
+            read:project: Read project details
+            write:project: Update project
+            delete:project: Delete project
+            manage_secrets: Read, write, and delete secrets
+            admin:system: Full system administrative access
+    apiKey:
+      type: http
+      scheme: bearer
+      bearerFormat: API Key
+      description: 'API key authentication (prefix: libops_)'
+tags:
+- name: AccountService
+  description: AccountService provides limited account lookup for authenticated users
+- name: AdminAccountService
+  description: AdminAccountService manages user accounts (admin only)
+- name: AdminOrganizationService
+  description: AdminOrganizationService manages admin-level organization operations
+    with full access
+- name: AdminProjectService
+  description: AdminProjectService manages admin-level project operations with full
+    access
+- name: AdminSiteService
+  description: AdminSiteService manages admin-level site operations with full access
+- name: FirewallService
+  description: FirewallService manages firewall operations for all sites for a organization
+- name: MemberService
+  description: MemberService manages organization membership operations
+- name: OrganizationSecretService
+  description: OrganizationSecretService manages organization-level secrets
+- name: OrganizationService
+  description: OrganizationService manages organization-facing organization/folder
+    operations
+- name: ProjectFirewallService
+  description: ProjectFirewallService manages firewall operations for all sites in
+    a project
+- name: ProjectMemberService
+  description: ProjectMemberService manages project membership operations
+- name: ProjectSecretService
+  description: ProjectSecretService manages project-level secrets
+- name: ProjectService
+  description: ProjectService manages organization-facing project operations
+- name: SiteFirewallService
+  description: SiteFirewallService manages firewall operations for a specific site
+- name: SiteMemberService
+  description: SiteMemberService manages site membership operations
+- name: SiteOperationsService
+  description: SiteOperationsService manages site deployment and operational tasks
+- name: SiteSecretService
+  description: SiteSecretService manages site-level secrets
+- name: SiteService
+  description: SiteService manages organization-facing site operations
+- name: SshKeyService
+  description: SshKeyService manages SSH keys for accounts

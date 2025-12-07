@@ -1,0 +1,109 @@
+networks:
+  test-network:
+    driver: bridge
+
+volumes:
+  mariadb-test-data: {}
+  vault-test-data: {}
+
+services:
+  mariadb:
+    image: mariadb:12.0.2@sha256:5b6a1eac15b85b981a61afb89aea2a22bf76b5f58809d05f0bcc13ab6ec44cb8
+    networks:
+      - test-network
+    environment:
+      MARIADB_ROOT_PASSWORD: test-root-password
+      MARIADB_DATABASE: libops
+      MARIADB_USER: libops
+      MARIADB_PASSWORD: libops-test-pass
+    volumes:
+      - mariadb-test-data:/var/lib/mysql:rw
+      - ./testdata/00-functions.sql:/docker-entrypoint-initdb.d/00-functions.sql:ro
+      - ./testdata/schema.sql:/docker-entrypoint-initdb.d/01-schema.sql:ro
+      - ./testdata/rbac_seed.sql:/docker-entrypoint-initdb.d/02-seed.sql:ro
+    ports:
+      - "3307:3306"
+    healthcheck:
+      test: ["CMD", "healthcheck.sh", "--connect", "--innodb_initialized"]
+      interval: 5s
+      timeout: 3s
+      retries: 30
+
+  vault:
+    image: hashicorp/vault:1.21.1
+    networks:
+      - test-network
+    environment:
+      VAULT_DEV_ROOT_TOKEN_ID: test-root-token
+      VAULT_DEV_LISTEN_ADDRESS: 0.0.0.0:8200
+      VAULT_ADDR: http://0.0.0.0:8200
+    ports:
+      - "8200:8200"
+    cap_add:
+      - IPC_LOCK
+    volumes:
+      - vault-test-data:/vault/data:rw
+      - ./testdata/vault-init.sh:/vault-init.sh:ro
+    command: server -dev -dev-root-token-id=test-root-token
+    healthcheck:
+      test: ["CMD", "vault", "status"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  vault-init:
+    image: hashicorp/vault:1.21.1
+    networks:
+      - test-network
+    environment:
+      VAULT_ADDR: http://vault:8200
+      VAULT_TOKEN: test-root-token
+    depends_on:
+      vault:
+        condition: service_healthy
+    volumes:
+      - ./testdata/vault-init.sh:/vault-init.sh:ro
+    entrypoint: ["/bin/sh", "/vault-init.sh"]
+
+  api:
+    image: ghcr.io/libops/api:main
+    build:
+      context: ..
+      dockerfile: Dockerfile
+    networks:
+      - test-network
+    environment:
+      DATABASE_URL: libops:libops-test-pass@tcp(mariadb:3306)/libops?parseTime=true
+      VAULT_ADDR: http://vault:8200
+      VAULT_TOKEN: test-root-token
+      OIDC_CLIENT_SECRET: test-client-secret
+      LOG_LEVEL: DEBUG
+    ports:
+      - "8080:8080"
+    depends_on:
+      mariadb:
+        condition: service_healthy
+      vault:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "wget", "--spider", "-q", "http://localhost:8080/health"]
+      interval: 5s
+      timeout: 3s
+      retries: 30
+
+  test-runner:
+    build:
+      context: ..
+      dockerfile: ci/Dockerfile.test
+    networks:
+      - test-network
+    environment:
+      API_URL: http://api:8080
+      VAULT_ADDR: http://vault:8200
+      VAULT_TOKEN: test-root-token
+      DATABASE_URL: libops:libops-test-pass@tcp(mariadb:3306)/libops?parseTime=true
+    depends_on:
+      api:
+        condition: service_healthy
+    command: ["run-tests"]
+    working_dir: /app/ci/test-runner

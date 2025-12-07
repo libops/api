@@ -1,0 +1,15 @@
+version: v2
+plugins:
+  # Generate OpenAPI spec with protoc-gen-openapi
+  # Install: go install github.com/google/gnostic/cmd/protoc-gen-openapi@latest
+  - local: protoc-gen-openapi
+    out: ../openapi
+    strategy: all
+    opt:
+      - naming=json
+      - enum_type=string
+      - output_mode=merged
+      - title=LibOps API
+      - version=1.0.0
+      - description="LibOps control plane API to run docker compose projects on Google Cloud"
+      - default_response=false

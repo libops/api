@@ -1,0 +1,30 @@
+networks:
+  default:
+
+secrets:
+  GOOGLE_APPLICATION_CREDENTIALS:
+    file: "./secrets/GOOGLE_APPLICATION_CREDENTIALS"
+  MARIADB_ROOT_PASSWORD:
+    file: "./secrets/MARIADB_ROOT_PASSWORD"
+
+volumes:
+  mariadb-data: {}
+
+services:
+  api:
+    image: ghcr.io/libops/api:main
+    build: .
+    environment:
+      DATABASE_URL: ${DATABASE_URL}
+    ports:
+      - 80:8080
+  mariadb:
+    image: mariadb:12.0.2@sha256:5b6a1eac15b85b981a61afb89aea2a22bf76b5f58809d05f0bcc13ab6ec44cb8
+    networks:
+      default:
+    environment:
+      MARIADB_ROOT_PASSWORD_FILE: /run/secrets/MARIADB_ROOT_PASSWORD
+    secrets:
+      - source: MARIADB_ROOT_PASSWORD
+    volumes:
+      - mariadb-data:/var/lib/mysql:rw

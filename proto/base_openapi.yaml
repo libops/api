@@ -1,0 +1,58 @@
+openapi: 3.1.0
+info:
+  title: LibOps API
+  version: 2.0.0
+  description: |
+    LibOps control plane API for managing GCP infrastructure.
+
+    ## API Protocols
+
+    This API is built with ConnectRPC and supports multiple protocols:
+    - **gRPC** (HTTP/2 with protocol buffers) - Best performance
+    - **gRPC-Web** (browser-compatible) - For web apps
+    - **Connect Protocol** (HTTP/JSON) - REST-like, easy to use
+
+    ## Connect Protocol
+
+    All RPC methods are available at:
+    ```
+    POST /libops.v1.ServiceName/MethodName
+    Content-Type: application/json
+    ```
+
+    Example:
+    ```bash
+    curl -X POST https://api.libops.io/libops.v1.CustomerService/GetCustomer \
+      -H "Content-Type: application/json" \
+      -H "Authorization: Bearer YOUR_TOKEN" \
+      -d '{"customerId": "uuid-here"}'
+    ```
+
+    ## Authentication
+
+    All requests require a Bearer token in the Authorization header.
+
+  contact:
+    name: LibOps Support
+    url: https://libops.io
+    email: support@libops.io
+  license:
+    name: Apache 2.0
+    url: https://www.apache.org/licenses/LICENSE-2.0.html
+
+servers:
+  - url: https://api.libops.io
+    description: Production server
+  - url: http://localhost:8080
+    description: Local development server
+
+security:
+  - bearerAuth: []
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: API authentication token obtained from OAuth flow

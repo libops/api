@@ -1,0 +1,414 @@
+syntax = "proto3";
+
+package libops.v1;
+
+import "google/api/annotations.proto";
+import "google/protobuf/empty.proto";
+import "google/protobuf/field_mask.proto";
+import "libops/v1/options/scope.proto";
+import "libops/v1/admin/project.proto";
+import "libops/v1/admin/organization.proto";
+import "libops/v1/admin/site.proto";
+
+option go_package = "github.com/libops/platform/proto/libops/v1;libopsv1";
+
+// AdminOrganizationService manages admin-level organization operations with full access
+service AdminOrganizationService {
+  // Get organization configuration (admin view - includes sensitive fields)
+  rpc GetOrganization(AdminGetOrganizationRequest) returns (AdminGetOrganizationResponse) {
+    option (libops.v1.options.required_scope) = { resource: RESOURCE_TYPE_SYSTEM, level: ACCESS_LEVEL_ADMIN, oauth_scopes: "admin:system" };
+    option (google.api.http) = {
+      get: "/admin/v1/organizations/{organizationId}"
+    };
+  }
+
+  // Create a new organization (admin - can set all fields)
+  rpc CreateOrganization(AdminCreateOrganizationRequest) returns (AdminCreateOrganizationResponse) {
+    option (libops.v1.options.required_scope) = { resource: RESOURCE_TYPE_SYSTEM, level: ACCESS_LEVEL_ADMIN, oauth_scopes: "admin:system" };
+    option (google.api.http) = {
+      post: "/admin/v1/organizations"
+      body: "folder"
+    };
+  }
+
+  // Update organization metadata (admin - can update all fields)
+  rpc UpdateOrganization(AdminUpdateOrganizationRequest) returns (AdminUpdateOrganizationResponse) {
+    option (libops.v1.options.required_scope) = { resource: RESOURCE_TYPE_SYSTEM, level: ACCESS_LEVEL_ADMIN, oauth_scopes: "admin:system" };
+    option (google.api.http) = {
+      put: "/admin/v1/organizations/{organizationId}"
+      body: "folder"
+    };
+  }
+
+  // Delete a organization (must have no projects)
+  rpc DeleteOrganization(AdminDeleteOrganizationRequest) returns (google.protobuf.Empty) {
+    option (libops.v1.options.required_scope) = { resource: RESOURCE_TYPE_SYSTEM, level: ACCESS_LEVEL_ADMIN, oauth_scopes: "admin:system" };
+    option (google.api.http) = {
+      delete: "/admin/v1/organizations/{organizationId}"
+    };
+  }
+
+  // List all organizations (admin view)
+  rpc ListOrganizations(AdminListOrganizationsRequest) returns (AdminListOrganizationsResponse) {
+    option (libops.v1.options.required_scope) = { resource: RESOURCE_TYPE_SYSTEM, level: ACCESS_LEVEL_ADMIN, oauth_scopes: "admin:system" };
+    option (google.api.http) = {
+      get: "/admin/v1/organizations"
+    };
+  }
+
+  // List projects for a organization (admin view)
+  rpc ListOrganizationProjects(AdminListOrganizationProjectsRequest) returns (AdminListOrganizationProjectsResponse) {
+    option (libops.v1.options.required_scope) = { resource: RESOURCE_TYPE_SYSTEM, level: ACCESS_LEVEL_ADMIN, oauth_scopes: "admin:system" };
+    option (google.api.http) = {
+      get: "/admin/v1/organizations/{organizationId}/projects"
+    };
+  }
+}
+
+// AdminSiteService manages admin-level site operations with full access
+service AdminSiteService {
+  // List sites (admin view)
+  rpc ListSites(AdminListSitesRequest) returns (AdminListSitesResponse) {
+    option (libops.v1.options.required_scope) = { resource: RESOURCE_TYPE_SYSTEM, level: ACCESS_LEVEL_ADMIN, oauth_scopes: "admin:system" };
+    option (google.api.http) = {
+      get: "/admin/v1/sites"
+    };
+  }
+
+  // Get site configuration (admin view - includes internal GCP details)
+  rpc GetSite(AdminGetSiteRequest) returns (AdminGetSiteResponse) {
+    option (libops.v1.options.required_scope) = { resource: RESOURCE_TYPE_SYSTEM, level: ACCESS_LEVEL_ADMIN, oauth_scopes: "admin:system" };
+    option (google.api.http) = {
+      get: "/admin/v1/sites/{siteId}"
+    };
+  }
+
+  // Create a new site (admin - can set all fields)
+  rpc CreateSite(AdminCreateSiteRequest) returns (AdminCreateSiteResponse) {
+    option (libops.v1.options.required_scope) = { resource: RESOURCE_TYPE_SYSTEM, level: ACCESS_LEVEL_ADMIN, oauth_scopes: "admin:system" };
+    option (google.api.http) = {
+      post: "/admin/v1/sites"
+      body: "site"
+    };
+  }
+
+  // Update site configuration (admin - can update all fields)
+  rpc UpdateSite(AdminUpdateSiteRequest) returns (AdminUpdateSiteResponse) {
+    option (libops.v1.options.required_scope) = { resource: RESOURCE_TYPE_SYSTEM, level: ACCESS_LEVEL_ADMIN, oauth_scopes: "admin:system" };
+    option (google.api.http) = {
+      patch: "/admin/v1/sites/{siteId}"
+      body: "site"
+    };
+  }
+
+  // Delete a site
+  rpc DeleteSite(AdminDeleteSiteRequest) returns (google.protobuf.Empty) {
+    option (libops.v1.options.required_scope) = { resource: RESOURCE_TYPE_SYSTEM, level: ACCESS_LEVEL_ADMIN, oauth_scopes: "admin:system" };
+    option (google.api.http) = {
+      delete: "/admin/v1/sites/{siteId}"
+    };
+  }
+
+  // List all sites across all organizations/projects (admin only)
+  rpc ListAllSites(AdminListAllSitesRequest) returns (AdminListAllSitesResponse) {
+    option (libops.v1.options.required_scope) = { resource: RESOURCE_TYPE_SYSTEM, level: ACCESS_LEVEL_ADMIN, oauth_scopes: "admin:system" };
+    option (google.api.http) = {
+      get: "/admin/v1/sites/all"
+    };
+  }
+}
+
+// AdminProjectService manages admin-level project operations with full access
+service AdminProjectService {
+  // Get project configuration (admin view - includes sensitive fields)
+  rpc GetProject(AdminGetProjectRequest) returns (AdminGetProjectResponse) {
+    option (libops.v1.options.required_scope) = { resource: RESOURCE_TYPE_SYSTEM, level: ACCESS_LEVEL_ADMIN, oauth_scopes: "admin:system" };
+    option (google.api.http) = {
+      get: "/admin/v1/projects/{projectId}"
+    };
+  }
+
+  // Create a new project (admin - can set all fields)
+  rpc CreateProject(AdminCreateProjectRequest) returns (AdminCreateProjectResponse) {
+    option (libops.v1.options.required_scope) = { resource: RESOURCE_TYPE_SYSTEM, level: ACCESS_LEVEL_ADMIN, oauth_scopes: "admin:system" };
+    option (google.api.http) = {
+      post: "/admin/v1/projects"
+      body: "project"
+    };
+  }
+
+  // Update project configuration (admin - can update all fields)
+  rpc UpdateProject(AdminUpdateProjectRequest) returns (AdminUpdateProjectResponse) {
+    option (libops.v1.options.required_scope) = { resource: RESOURCE_TYPE_SYSTEM, level: ACCESS_LEVEL_ADMIN, oauth_scopes: "admin:system" };
+    option (google.api.http) = {
+      put: "/admin/v1/projects/{projectId}"
+      body: "project"
+    };
+  }
+
+  // Delete a project (must have no sites)
+  rpc DeleteProject(AdminDeleteProjectRequest) returns (google.protobuf.Empty) {
+    option (libops.v1.options.required_scope) = { resource: RESOURCE_TYPE_SYSTEM, level: ACCESS_LEVEL_ADMIN, oauth_scopes: "admin:system" };
+    option (google.api.http) = {
+      delete: "/admin/v1/projects/{projectId}"
+    };
+  }
+
+  // List projects for a organization (admin view)
+  rpc ListProjects(AdminListProjectsRequest) returns (AdminListProjectsResponse) {
+    option (libops.v1.options.required_scope) = { resource: RESOURCE_TYPE_SYSTEM, level: ACCESS_LEVEL_ADMIN, oauth_scopes: "admin:system" };
+    option (google.api.http) = {
+      get: "/admin/v1/projects"
+    };
+  }
+
+  // List all projects across all organizations (admin only)
+  rpc ListAllProjects(AdminListAllProjectsRequest) returns (AdminListAllProjectsResponse) {
+    option (libops.v1.options.required_scope) = { resource: RESOURCE_TYPE_SYSTEM, level: ACCESS_LEVEL_ADMIN, oauth_scopes: "admin:system" };
+    option (google.api.http) = {
+      get: "/admin/v1/projects/all"
+    };
+  }
+}
+
+// ==============================================================================
+// REQUEST/RESPONSE - GetProject (Admin)
+// ==============================================================================
+
+message AdminGetProjectRequest {
+  string organization_id = 1;
+  string project_id = 2;
+}
+
+message AdminGetProjectResponse {
+  libops.v1.admin.AdminProjectConfig project = 1;
+}
+
+// ==============================================================================
+// REQUEST/RESPONSE - CreateProject (Admin)
+// ==============================================================================
+
+message AdminCreateProjectRequest {
+  string organization_id = 1;
+  libops.v1.admin.AdminProjectConfig project = 2;
+}
+
+message AdminCreateProjectResponse {
+  libops.v1.admin.AdminProjectConfig project = 1;
+}
+
+// ==============================================================================
+// REQUEST/RESPONSE - UpdateProject (Admin)
+// ==============================================================================
+
+message AdminUpdateProjectRequest {
+  string organization_id = 1;
+  string project_id = 2;
+  libops.v1.admin.AdminProjectConfig project = 3;
+  google.protobuf.FieldMask update_mask = 4;
+}
+
+message AdminUpdateProjectResponse {
+  libops.v1.admin.AdminProjectConfig project = 1;
+}
+
+// ==============================================================================
+// REQUEST/RESPONSE - DeleteProject (Admin)
+// ==============================================================================
+
+message AdminDeleteProjectRequest {
+  string organization_id = 1;
+  string project_id = 2;
+}
+
+// ==============================================================================
+// REQUEST/RESPONSE - ListProjects (Admin)
+// ==============================================================================
+
+message AdminListProjectsRequest {
+  optional string organization_id = 1;
+  int32 page_size = 2;
+  string page_token = 3;
+}
+
+message AdminListProjectsResponse {
+  repeated libops.v1.admin.AdminProjectConfig projects = 1;
+  string next_page_token = 2;
+}
+
+// ==============================================================================
+// REQUEST/RESPONSE - ListAllProjects (Admin Only)
+// ==============================================================================
+
+message AdminListAllProjectsRequest {
+  int32 page_size = 1;
+  string page_token = 2;
+  optional string filter = 3;  // e.g., "organization_id=foo" or "billing_account=bar"
+}
+
+message AdminListAllProjectsResponse {
+  repeated libops.v1.admin.AdminProjectConfig projects = 1;
+  string next_page_token = 2;
+}
+
+// ==============================================================================
+// REQUEST/RESPONSE - GetOrganization (Admin)
+// ==============================================================================
+
+message AdminGetOrganizationRequest {
+  string organization_id = 1;
+}
+
+message AdminGetOrganizationResponse {
+  libops.v1.admin.AdminFolderConfig folder = 1;
+}
+
+// ==============================================================================
+// REQUEST/RESPONSE - CreateOrganization (Admin)
+// ==============================================================================
+
+message AdminCreateOrganizationRequest {
+  libops.v1.admin.AdminFolderConfig folder = 1;
+}
+
+message AdminCreateOrganizationResponse {
+  string organization_id = 1;
+  libops.v1.admin.AdminFolderConfig folder = 2;
+}
+
+// ==============================================================================
+// REQUEST/RESPONSE - UpdateOrganization (Admin)
+// ==============================================================================
+
+message AdminUpdateOrganizationRequest {
+  string organization_id = 1;
+  libops.v1.admin.AdminFolderConfig folder = 2;
+  google.protobuf.FieldMask update_mask = 3;
+}
+
+message AdminUpdateOrganizationResponse {
+  libops.v1.admin.AdminFolderConfig folder = 1;
+}
+
+// ==============================================================================
+// REQUEST/RESPONSE - DeleteOrganization (Admin)
+// ==============================================================================
+
+message AdminDeleteOrganizationRequest {
+  string organization_id = 1;
+}
+
+// ==============================================================================
+// REQUEST/RESPONSE - ListOrganizations (Admin)
+// ==============================================================================
+
+message AdminListOrganizationsRequest {
+  int32 page_size = 1;
+  string page_token = 2;
+  optional string filter = 3;  // e.g., "gcp_parent=folders/123"
+}
+
+message AdminListOrganizationsResponse {
+  repeated libops.v1.admin.AdminFolderConfig organizations = 1;
+  string next_page_token = 2;
+}
+
+// ==============================================================================
+// REQUEST/RESPONSE - ListOrganizationProjects (Admin)
+// ==============================================================================
+
+message AdminListOrganizationProjectsRequest {
+  string organization_id = 1;
+  int32 page_size = 2;
+  string page_token = 3;
+}
+
+message AdminListOrganizationProjectsResponse {
+  repeated string project_ids = 1;
+  string next_page_token = 2;
+}
+
+// ==============================================================================
+// REQUEST/RESPONSE - GetSite (Admin)
+// ==============================================================================
+
+message AdminGetSiteRequest {
+  string organization_id = 1;
+  string project_id = 2;
+  string site_name = 3;
+}
+
+message AdminGetSiteResponse {
+  libops.v1.admin.AdminSiteConfig site = 1;
+}
+
+// ==============================================================================
+// REQUEST/RESPONSE - CreateSite (Admin)
+// ==============================================================================
+
+message AdminCreateSiteRequest {
+  string organization_id = 1;
+  string project_id = 2;
+  libops.v1.admin.AdminSiteConfig site = 3;
+}
+
+message AdminCreateSiteResponse {
+  libops.v1.admin.AdminSiteConfig site = 1;
+}
+
+// ==============================================================================
+// REQUEST/RESPONSE - UpdateSite (Admin)
+// ==============================================================================
+
+message AdminUpdateSiteRequest {
+  string organization_id = 1;
+  string project_id = 2;
+  string site_name = 3;
+  libops.v1.admin.AdminSiteConfig site = 4;
+  google.protobuf.FieldMask update_mask = 5;
+}
+
+message AdminUpdateSiteResponse {
+  libops.v1.admin.AdminSiteConfig site = 1;
+}
+
+// ==============================================================================
+// REQUEST/RESPONSE - DeleteSite (Admin)
+// ==============================================================================
+
+message AdminDeleteSiteRequest {
+  string organization_id = 1;
+  string project_id = 2;
+  string site_name = 3;
+}
+
+// ==============================================================================
+// REQUEST/RESPONSE - ListSites (Admin)
+// ==============================================================================
+
+message AdminListSitesRequest {
+  optional string organization_id = 1;
+  optional string project_id = 2;
+  int32 page_size = 3;
+  string page_token = 4;
+}
+
+message AdminListSitesResponse {
+  repeated libops.v1.admin.AdminSiteConfig sites = 1;
+  string next_page_token = 2;
+}
+
+// ==============================================================================
+// REQUEST/RESPONSE - ListAllSites (Admin Only)
+// ==============================================================================
+
+message AdminListAllSitesRequest {
+  int32 page_size = 1;
+  string page_token = 2;
+  optional string filter = 3;  // e.g., "organization_id=foo" or "status=active"
+}
+
+message AdminListAllSitesResponse {
+  repeated libops.v1.admin.AdminSiteConfig sites = 1;
+  string next_page_token = 2;
+}

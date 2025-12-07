@@ -1,0 +1,148 @@
+syntax = "proto3";
+
+package libops.v1;
+
+import "google/api/annotations.proto";
+import "libops/v1/options/scope.proto";
+import "libops/v1/common/types.proto";
+
+option go_package = "github.com/libops/platform/proto/libops/v1;libopsv1";
+
+// AccountService provides limited account lookup for authenticated users
+service AccountService {
+  // Get account information by email (for Terraform provider lookups)
+  rpc GetAccountByEmail(GetAccountByEmailRequest) returns (GetAccountByEmailResponse) {
+    option (google.api.http) = {
+      get: "/v1/accounts/{email}"
+    };
+    option (libops.v1.options.required_scope) = {
+      resource: RESOURCE_TYPE_ACCOUNT
+      level: ACCESS_LEVEL_READ
+      allow_parent_access: true
+      oauth_scopes: "read:user"
+    };
+  }
+
+  // Create an API key for the authenticated user
+  rpc CreateApiKey(CreateApiKeyRequest) returns (CreateApiKeyResponse) {
+    option (google.api.http) = {
+      post: "/v1/api-keys"
+      body: "*"
+    };
+    option (libops.v1.options.required_scope) = {
+      resource: RESOURCE_TYPE_ACCOUNT
+      level: ACCESS_LEVEL_WRITE
+      oauth_scopes: "write:user"
+    };
+  }
+
+  // List API keys for the authenticated user
+  rpc ListApiKeys(ListApiKeysRequest) returns (ListApiKeysResponse) {
+    option (google.api.http) = {
+      get: "/v1/api-keys"
+    };
+    option (libops.v1.options.required_scope) = {
+      resource: RESOURCE_TYPE_ACCOUNT
+      level: ACCESS_LEVEL_READ
+      oauth_scopes: "read:user"
+    };
+  }
+
+  // Revoke an API key for the authenticated user
+  rpc RevokeApiKey(RevokeApiKeyRequest) returns (RevokeApiKeyResponse) {
+    option (google.api.http) = {
+      delete: "/v1/api-keys/{api_key_id}"
+    };
+    option (libops.v1.options.required_scope) = {
+      resource: RESOURCE_TYPE_ACCOUNT
+      level: ACCESS_LEVEL_WRITE
+      oauth_scopes: "write:user"
+    };
+  }
+}
+
+// ==============================================================================
+// MESSAGES - Account (Organization View)
+// ==============================================================================
+
+message OrganizationAccount {
+  string account_id = 1;       // Unique account identifier (UUID)
+  string email = 2;            // User's email address
+  string name = 3;             // Display name
+  common.AuthMethod auth_method = 4;  // How the user authenticates
+  bool verified = 5;           // Email verification status
+}
+
+// ==============================================================================
+// REQUEST/RESPONSE - GetAccountByEmail
+// ==============================================================================
+
+message GetAccountByEmailRequest {
+  string email = 1;
+}
+
+message GetAccountByEmailResponse {
+  OrganizationAccount account = 1;
+}
+
+// ==============================================================================
+// MESSAGES - API Key Management
+// ==============================================================================
+
+message ApiKeyMetadata {
+  string api_key_id = 1;       // UUID of the API key
+  string name = 2;             // User-friendly name
+  string description = 3;      // Optional description
+  repeated string scopes = 4;  // Scope restrictions (empty = no restrictions)
+  bool active = 5;             // Whether the key is active
+  int64 created_at = 6;        // Unix timestamp
+  int64 last_used_at = 7;      // Unix timestamp (0 if never used)
+  // NOTE: The actual key value is NOT included
+}
+
+// ==============================================================================
+// REQUEST/RESPONSE - CreateApiKey
+// ==============================================================================
+
+message CreateApiKeyRequest {
+  string name = 1;              // User-friendly name for the key
+  string description = 2;       // Optional description
+  repeated string scopes = 3;   // Optional scope restrictions (e.g., ["read:organization", "write:project"])
+  // NO account_id field - always creates for the authenticated user
+}
+
+message CreateApiKeyResponse {
+  string api_key_id = 1;        // UUID of the created key
+  string api_key = 2;           // The actual key value (only returned once!)
+  string name = 3;
+  string description = 4;
+  repeated string scopes = 5;
+  int64 created_at = 6;
+}
+
+// ==============================================================================
+// REQUEST/RESPONSE - ListApiKeys
+// ==============================================================================
+
+message ListApiKeysRequest {
+  int32 page_size = 1;
+  string page_token = 2;
+  // NO account_id filter - always lists the authenticated user's keys
+}
+
+message ListApiKeysResponse {
+  repeated ApiKeyMetadata api_keys = 1;
+  string next_page_token = 2;
+}
+
+// ==============================================================================
+// REQUEST/RESPONSE - RevokeApiKey
+// ==============================================================================
+
+message RevokeApiKeyRequest {
+  string api_key_id = 1;  // UUID of the key to revoke
+}
+
+message RevokeApiKeyResponse {
+  bool success = 1;
+}

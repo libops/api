@@ -1,0 +1,222 @@
+syntax = "proto3";
+
+package libops.v1;
+
+import "google/api/annotations.proto";
+import "google/protobuf/empty.proto";
+import "google/protobuf/field_mask.proto";
+import "libops/v1/options/scope.proto";
+import "libops/v1/common/types.proto";
+
+option go_package = "github.com/libops/platform/proto/libops/v1;libopsv1";
+
+// AdminAccountService manages user accounts (admin only)
+service AdminAccountService {
+  // Get account information by ID
+  rpc GetAccount(GetAccountRequest) returns (GetAccountResponse) {
+    option (libops.v1.options.required_scope) = { resource: RESOURCE_TYPE_SYSTEM, level: ACCESS_LEVEL_ADMIN, oauth_scopes: "admin:system" };
+    option (google.api.http) = {
+      get: "/admin/v1/accounts/{accountId}"
+    };
+  }
+
+  // Get account information by email
+  rpc GetAccountByEmail(AdminGetAccountByEmailRequest) returns (AdminGetAccountByEmailResponse) {
+    option (libops.v1.options.required_scope) = { resource: RESOURCE_TYPE_SYSTEM, level: ACCESS_LEVEL_ADMIN, oauth_scopes: "admin:system" };
+    option (google.api.http) = {
+      get: "/admin/v1/accounts/email/{email}"
+    };
+  }
+
+  // Create a new account
+  rpc CreateAccount(CreateAccountRequest) returns (CreateAccountResponse) {
+    option (libops.v1.options.required_scope) = { resource: RESOURCE_TYPE_SYSTEM, level: ACCESS_LEVEL_ADMIN, oauth_scopes: "admin:system" };
+    option (google.api.http) = {
+      post: "/admin/v1/accounts"
+      body: "*"
+    };
+  }
+
+  // Update account information
+  rpc UpdateAccount(UpdateAccountRequest) returns (UpdateAccountResponse) {
+    option (libops.v1.options.required_scope) = { resource: RESOURCE_TYPE_SYSTEM, level: ACCESS_LEVEL_ADMIN, oauth_scopes: "admin:system" };
+    option (google.api.http) = {
+      put: "/admin/v1/accounts/{accountId}"
+      body: "*"
+    };
+  }
+
+  // Delete an account
+  rpc DeleteAccount(DeleteAccountRequest) returns (google.protobuf.Empty) {
+    option (libops.v1.options.required_scope) = { resource: RESOURCE_TYPE_SYSTEM, level: ACCESS_LEVEL_ADMIN, oauth_scopes: "admin:system" };
+    option (google.api.http) = {
+      delete: "/admin/v1/accounts/{accountId}"
+    };
+  }
+
+  // List accounts (admin only)
+  rpc ListAccounts(ListAccountsRequest) returns (ListAccountsResponse) {
+    option (libops.v1.options.required_scope) = { resource: RESOURCE_TYPE_SYSTEM, level: ACCESS_LEVEL_ADMIN, oauth_scopes: "admin:system" };
+    option (google.api.http) = {
+      get: "/admin/v1/accounts"
+    };
+  }
+
+  // List projects for an account
+  rpc ListAccountProjects(ListAccountProjectsRequest) returns (ListAccountProjectsResponse) {
+    option (libops.v1.options.required_scope) = { resource: RESOURCE_TYPE_SYSTEM, level: ACCESS_LEVEL_ADMIN, oauth_scopes: "admin:system" };
+    option (google.api.http) = {
+      get: "/admin/v1/accounts/{accountId}/projects"
+    };
+  }
+
+  // List repositories for an account
+  rpc ListAccountRepositories(ListAccountRepositoriesRequest) returns (ListAccountRepositoriesResponse) {
+    option (libops.v1.options.required_scope) = { resource: RESOURCE_TYPE_SYSTEM, level: ACCESS_LEVEL_ADMIN, oauth_scopes: "admin:system" };
+    option (google.api.http) = {
+      get: "/admin/v1/accounts/{accountId}/repositories"
+    };
+  }
+}
+
+// ==============================================================================
+// MESSAGES - Account (Admin View)
+// ==============================================================================
+
+message Account {
+  string account_id = 1;       // Unique account identifier (UUID)
+  string email = 2;            // User's email address
+  string name = 3;             // Display name
+  optional string github_username = 4;  // GitHub username for integration
+  AccountRole role = 5;        // System-wide role
+  AccountStatus status = 6;    // Account status
+  common.AuthMethod auth_method = 7;  // How the user authenticates
+  bool verified = 8;           // Email verification status
+  optional string verified_at = 9;  // Timestamp when verified (RFC3339)
+}
+
+enum AccountRole {
+  ACCOUNT_ROLE_UNSPECIFIED = 0;
+  ACCOUNT_ROLE_USER = 1;       // Regular user
+  ACCOUNT_ROLE_ADMIN = 2;      // LibOps admin
+}
+
+enum AccountStatus {
+  ACCOUNT_STATUS_UNSPECIFIED = 0;
+  ACCOUNT_STATUS_ACTIVE = 1;
+  ACCOUNT_STATUS_SUSPENDED = 2;
+  ACCOUNT_STATUS_DELETED = 3;
+}
+
+// ==============================================================================
+// REQUEST/RESPONSE - GetAccount
+// ==============================================================================
+
+message GetAccountRequest {
+  string account_id = 1;
+}
+
+message GetAccountResponse {
+  Account account = 1;
+}
+
+// ==============================================================================
+// REQUEST/RESPONSE - GetAccountByEmail (Admin)
+// ==============================================================================
+
+message AdminGetAccountByEmailRequest {
+  string email = 1;
+}
+
+message AdminGetAccountByEmailResponse {
+  Account account = 1;
+}
+
+// ==============================================================================
+// REQUEST/RESPONSE - CreateAccount
+// ==============================================================================
+
+message CreateAccountRequest {
+  string email = 1;
+  string name = 2;
+  optional string github_username = 3;
+}
+
+message CreateAccountResponse {
+  Account account = 1;
+}
+
+// ==============================================================================
+// REQUEST/RESPONSE - UpdateAccount
+// ==============================================================================
+
+message UpdateAccountRequest {
+  string account_id = 1;
+  optional string name = 2;
+  optional string github_username = 3;
+  google.protobuf.FieldMask update_mask = 4;
+}
+
+message UpdateAccountResponse {
+  Account account = 1;
+}
+
+// ==============================================================================
+// REQUEST/RESPONSE - DeleteAccount
+// ==============================================================================
+
+message DeleteAccountRequest {
+  string account_id = 1;
+}
+
+// ==============================================================================
+// REQUEST/RESPONSE - ListAccounts
+// ==============================================================================
+
+message ListAccountsRequest {
+  int32 page_size = 1;
+  string page_token = 2;
+  optional AccountStatus status = 3;  // Filter by status
+}
+
+message ListAccountsResponse {
+  repeated Account accounts = 1;
+  string next_page_token = 2;
+}
+
+// ==============================================================================
+// REQUEST/RESPONSE - ListAccountProjects
+// ==============================================================================
+
+message ListAccountProjectsRequest {
+  string account_id = 1;
+  int32 page_size = 2;
+  string page_token = 3;
+}
+
+message ListAccountProjectsResponse {
+  repeated string organization_ids = 1;  // List of organization IDs the account has access to
+  string next_page_token = 2;
+}
+
+// ==============================================================================
+// REQUEST/RESPONSE - ListAccountRepositories
+// ==============================================================================
+
+message ListAccountRepositoriesRequest {
+  string account_id = 1;
+  int32 page_size = 2;
+  string page_token = 3;
+}
+
+message Repository {
+  string repo_name = 1;
+  string repo_url = 2;
+  string organization_id = 3;
+  string project_id = 4;
+}
+
+message ListAccountRepositoriesResponse {
+  repeated Repository repositories = 1;
+  string next_page_token = 2;
+}
