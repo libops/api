@@ -51,7 +51,7 @@ func New(deps *Dependencies) http.Handler {
 	mux := http.NewServeMux()
 
 	// Per-route rate limiters (these apply IN ADDITION to the global limiter)
-	// The global limiter (100 req/min) will be applied to all routes in the middleware chain
+	// The global limiter (300 req/min) will be applied to all routes in the middleware chain
 	// These per-route limiters add stricter limits where needed
 	authLimiter := NewRateLimiter(rate.Limit(20), 50)   // 20 rps, burst 50 (auth endpoints)
 	apiKeyLimiter := NewRateLimiter(rate.Limit(10), 50) // 10 rps, burst 50 (API key management)
@@ -146,7 +146,7 @@ func New(deps *Dependencies) http.Handler {
 	}
 
 	// Create global rate limiter (100 requests per minute per IP)
-	globalRateLimiter := NewRateLimiter(rate.Limit(100), 100)
+	globalRateLimiter := NewRateLimiter(rate.Limit(300), 300)
 
 	var handler http.Handler = mux
 

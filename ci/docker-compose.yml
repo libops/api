@@ -11,6 +11,7 @@ services:
     image: mariadb:12.0.2@sha256:5b6a1eac15b85b981a61afb89aea2a22bf76b5f58809d05f0bcc13ab6ec44cb8
     networks:
       - test-network
+    command: --innodb-use-native-aio=1
     environment:
       MARIADB_ROOT_PASSWORD: test-root-password
       MARIADB_DATABASE: libops

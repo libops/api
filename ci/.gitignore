@@ -1,6 +1,5 @@
 # Ignore test runner build artifacts
 test-runner/test-runner
-test-runner/go.sum
 
 # Ignore any local test data overrides
 testdata/*.local.sql

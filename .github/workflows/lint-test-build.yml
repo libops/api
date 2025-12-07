@@ -50,9 +50,6 @@ jobs:
         if: failure()
         run: |
           cd ci
-          echo "=== API Logs ==="
-          docker compose logs api
-          echo ""
           echo "=== Test Runner Logs ==="
           docker compose logs test-runner
           echo ""
