@@ -3,4 +3,12 @@
   extends: [
     'github>libops/renovate-config:default.json5',
   ],
+  packageRules: [
+    {
+      matchPackageNames: [
+        'github.com/libops/api/proto'
+      ],
+      enabled: false,
+    },
+  ],
 }
