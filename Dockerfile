@@ -37,9 +37,12 @@ SHELL ["/bin/bash", "-o", "pipefail", "-c"]
 
 WORKDIR /app
 
-RUN apt-get update && apt-get install curl --yes && \
+ARG TARGETARCH
+ARG ARCH_SUFFIX=${TARGETARCH}
+RUN if [ "${TARGETARCH}" = "amd64" ]; then ARCH_SUFFIX="x64"; fi && \
+    apt-get update && apt-get install curl --yes && \
     curl -sL \
-    https://github.com/tailwindlabs/tailwindcss/releases/download/v4.1.18/tailwindcss-linux-x64 \
+    "https://github.com/tailwindlabs/tailwindcss/releases/download/v4.1.18/tailwindcss-linux-${ARCH_SUFFIX}" \
     -o /app/tailwindcss && \
     chmod +x /app/tailwindcss
 
