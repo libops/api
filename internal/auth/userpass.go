@@ -82,7 +82,7 @@ func (c *UserpassClient) VerifyEmail(ctx context.Context, email, tokenString str
 	userPath := fmt.Sprintf("auth/%s/users/%s", c.vaultMountPoint, vaultUsername)
 	data := map[string]any{
 		"password": token.PasswordHash,
-		"policies": []string{"default", "organization-policy"},
+		"policies": []string{"default", "libops-user"},
 	}
 
 	_, err = c.vaultClient.GetAPIClient().Logical().Write(userPath, data)

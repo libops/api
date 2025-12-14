@@ -141,7 +141,7 @@ func (s *AccountService) CreateApiKey(
 
 	return connect.NewResponse(&libopsv1.CreateApiKeyResponse{
 		ApiKeyId:    keyMeta.PublicID,
-		ApiKey:      apiKey, // Only returned once!
+		ApiKey:      apiKey,
 		Name:        req.Msg.Name,
 		Description: req.Msg.Description,
 		Scopes:      req.Msg.Scopes,
@@ -251,8 +251,8 @@ func (s *AccountService) RevokeApiKey(
 		return nil, connect.NewError(connect.CodeNotFound, fmt.Errorf("API key not found"))
 	}
 
-	// Revoke the key (set active=false)
-	err = s.repo.RevokeAPIKey(ctx, req.Msg.ApiKeyId)
+	// Revoke the key (set active=false and delete from Vault)
+	err = s.apiKeyManager.DeactivateAPIKey(ctx, req.Msg.ApiKeyId)
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInternal, fmt.Errorf("failed to revoke API key: %w", err))
 	}

@@ -72,7 +72,7 @@ vault write identity/oidc/client/libops-api \
 vault write identity/oidc/provider/libops-api \
   allowed_client_ids="*" \
   scopes="openid,email,profile" \
-  issuer_host="http://vault:8200"
+  issuer_host="http://vault.libops.io"
 
 # Create an OIDC role for token generation
 # This binds the key and template for direct token requests
@@ -103,6 +103,18 @@ for FILE in policies/*; do
   ROLE=${FILE%%.*}
   vault policy write "$ROLE" "policies/$FILE"
 done
+
+# Create production userpass users (matching seed data in conf/mariadb/seed.sql)
+# These correspond to the accounts seeded in the database
+echo "Creating production userpass users..."
+
+# joe@libops.io - Account ID 1, entity ID e0000000-0000-0000-0000-000000000001
+vault write auth/userpass/users/joe_libops.io password="ChangeMe123!" policies="libops-user"
+vault write identity/entity name="joe@libops.io" metadata="email=joe@libops.io" metadata="account_id=1"
+entity_id=$(vault read -field=id identity/entity/name/joe@libops.io)
+accessor=$(vault auth list | grep "^userpass/" | awk '{print $3}')
+vault write identity/entity-alias name="joe_libops.io" canonical_id="$entity_id" mount_accessor="$accessor"
+echo "Created user: joe_libops.io (entity: $entity_id)"
 
 echo "Vault initialization complete!"
 

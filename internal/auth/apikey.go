@@ -4,11 +4,14 @@ package auth
 
 import (
 	"context"
+	"crypto/rand"
 	"database/sql"
+	"encoding/base64"
 	"encoding/json"
 	"errors"
 	"fmt"
 	"log/slog"
+	"strings"
 	"time"
 
 	"github.com/go-sql-driver/mysql"
@@ -43,9 +46,14 @@ func NewAPIKeyManager(vaultClient *vault.Client, querier db.Querier, auditLogger
 func (akm *APIKeyManager) CreateAPIKey(ctx context.Context, accountID int64, accountUUID, name, description string, scopes []string, expiresAt *time.Time, createdBy int64) (string, *db.GetAPIKeyByUUIDRow, error) {
 	keyUUID := uuid.New()
 
-	// Format: libops_{keyUUID_no_dashes}_{accountUUID_no_dashes}
-	// The secret itself encodes the metadata, no additional random component needed
-	secretValue := formatAPIKeySecret(keyUUID.String(), accountUUID)
+	// Generate a random secret component (64 bytes = 512 bits of entropy)
+	randomSecret, err := generateRandomSecret(64)
+	if err != nil {
+		return "", nil, fmt.Errorf("failed to generate random secret: %w", err)
+	}
+
+	// Format: libops_{accountUUID_no_dashes}_{keyUUID_no_dashes}_{randomSecret}
+	secretValue := formatAPIKeySecret(accountUUID, keyUUID.String(), randomSecret)
 
 	var expiresAtSQL sql.NullTime
 	if expiresAt != nil {
@@ -63,7 +71,7 @@ func (akm *APIKeyManager) CreateAPIKey(ctx context.Context, accountID int64, acc
 
 	// The UNIQUE constraint on api_key_uuid provides atomic collision detection
 	// If a duplicate UUID is generated (extremely unlikely), the INSERT will fail
-	err := akm.db.CreateAPIKey(ctx, db.CreateAPIKeyParams{
+	err = akm.db.CreateAPIKey(ctx, db.CreateAPIKeyParams{
 		PublicID:  keyUUID.String(),
 		AccountID: accountID,
 		Name:      name,
@@ -91,8 +99,9 @@ func (akm *APIKeyManager) CreateAPIKey(ctx context.Context, accountID int64, acc
 		return "", nil, fmt.Errorf("failed to create API key in database: %w", err)
 	}
 
-	// Store in Vault: keys/{secretValue} (no additional metadata needed - it's in the key)
-	err = akm.keysStore.StoreKey(ctx, secretValue)
+	// Store the random secret in Vault at keys/{accountUUID}/{keyUUID}
+	// This allows us to validate that the user knows the secret during auth
+	err = akm.keysStore.StoreKey(ctx, accountUUID, keyUUID.String(), randomSecret)
 	if err != nil {
 		_ = akm.db.DeleteAPIKey(ctx, keyUUID.String())
 		return "", nil, fmt.Errorf("failed to store API key in Vault: %w", err)
@@ -114,21 +123,21 @@ func (akm *APIKeyManager) CreateAPIKey(ctx context.Context, accountID int64, acc
 // ValidateAPIKey validates an API key secret and returns account information.
 // It also updates the last_used_at timestamp for the API key.
 func (akm *APIKeyManager) ValidateAPIKey(ctx context.Context, secretValue string) (*APIKeyInfo, error) {
-	// Parse embedded UUIDs from the API key secret
-	keyUUID, accountUUID, err := parseAPIKeySecret(secretValue)
+	// Parse embedded UUIDs and random secret from the API key
+	accountUUID, keyUUID, randomSecret, err := parseAPIKeySecret(secretValue)
 	if err != nil {
 		slog.Error("ValidateAPIKey: failed to parse API key format", "error", err)
 		return nil, fmt.Errorf("invalid API key")
 	}
 
-	// Verify the key exists in Vault (confirms it hasn't been deleted)
-	exists, err := akm.keysStore.KeyExists(ctx, secretValue)
+	// Verify the random secret matches what's stored in Vault at keys/{accountUUID}/{keyUUID}
+	storedSecret, err := akm.keysStore.GetKeySecret(ctx, accountUUID, keyUUID)
 	if err != nil {
-		slog.Error("ValidateAPIKey: Vault lookup failed", "error", err)
+		slog.Error("ValidateAPIKey: Vault lookup failed", "error", err, "key_uuid", keyUUID, "account_uuid", accountUUID)
 		return nil, fmt.Errorf("invalid API key")
 	}
-	if !exists {
-		slog.Error("ValidateAPIKey: API key not found in Vault", "key_uuid", keyUUID)
+	if storedSecret != randomSecret {
+		slog.Error("ValidateAPIKey: secret mismatch", "key_uuid", keyUUID)
 		return nil, fmt.Errorf("invalid API key")
 	}
 
@@ -202,22 +211,40 @@ func (akm *APIKeyManager) ListAPIKeys(ctx context.Context, accountID int64) ([]d
 	})
 }
 
-// DeactivateAPIKey deactivates an API key.
+// DeactivateAPIKey deactivates an API key and removes it from Vault.
+// This prevents the key from being used for authentication.
 func (akm *APIKeyManager) DeactivateAPIKey(ctx context.Context, keyUUID string) error {
 	keyUUIDParsed, err := uuid.Parse(keyUUID)
 	if err != nil {
 		return fmt.Errorf("invalid key UUID: %w", err)
 	}
+
+	// Get the key to retrieve the account UUID for Vault deletion
+	key, err := akm.db.GetAPIKeyByUUID(ctx, keyUUIDParsed.String())
+	if err != nil {
+		return fmt.Errorf("failed to get API key: %w", err)
+	}
+
+	// Get the account UUID
+	account, err := akm.db.GetAccountByID(ctx, key.AccountID)
+	if err != nil {
+		return fmt.Errorf("failed to get account: %w", err)
+	}
+
+	// Delete from Vault first (if it fails, the key remains active in DB)
+	if err := akm.keysStore.DeleteKey(ctx, account.PublicID, keyUUIDParsed.String()); err != nil {
+		slog.Error("failed to delete API key from Vault", "key_uuid", keyUUID, "account_uuid", account.PublicID, "error", err)
+		// Continue anyway - the DB deactivation is the source of truth
+	}
+
+	// Deactivate in database
 	return akm.db.UpdateAPIKeyActive(ctx, db.UpdateAPIKeyActiveParams{
 		Active:   false,
 		PublicID: keyUUIDParsed.String(),
 	})
 }
 
-// DeleteAPIKey removes an API key from the database.
-// Note: The corresponding Vault entry cannot be deleted without the secret value,
-// which is only shown once at creation. Orphaned Vault entries are cleaned up
-// by a background job that compares Vault keys with active database records.
+// DeleteAPIKey removes an API key from both the database and Vault.
 func (akm *APIKeyManager) DeleteAPIKey(ctx context.Context, keyUUID string) error {
 	key, err := akm.GetAPIKey(ctx, keyUUID)
 	if err != nil {
@@ -229,6 +256,19 @@ func (akm *APIKeyManager) DeleteAPIKey(ctx context.Context, keyUUID string) erro
 		return fmt.Errorf("invalid key UUID: %w", err)
 	}
 
+	// Get the account UUID for Vault deletion
+	account, err := akm.db.GetAccountByID(ctx, key.AccountID)
+	if err != nil {
+		return fmt.Errorf("failed to get account: %w", err)
+	}
+
+	// Delete from Vault first
+	if err := akm.keysStore.DeleteKey(ctx, account.PublicID, keyUUIDParsed.String()); err != nil {
+		slog.Error("failed to delete API key from Vault", "key_uuid", keyUUID, "account_uuid", account.PublicID, "error", err)
+		// Continue anyway - the DB deletion is the source of truth
+	}
+
+	// Delete from database
 	err = akm.db.DeleteAPIKey(ctx, keyUUIDParsed.String())
 	if err != nil {
 		return fmt.Errorf("failed to delete API key from database: %w", err)
@@ -253,49 +293,44 @@ func (akm *APIKeyManager) GetAPIKey(ctx context.Context, keyUUID string) (*db.Ge
 }
 
 // formatAPIKeySecret creates an API key in the format:
-// libops_{keyUUID_no_dashes}_{accountUUID_no_dashes}
-// Example: libops_075913e793285264b6846ae0163b8096_01052d4d93be51a39684c357297533cd
-func formatAPIKeySecret(keyUUID, accountUUID string) string {
-	keyUUIDNoDashes := stripUUIDDashes(keyUUID)
+// libops_{accountUUID_no_dashes}_{keyUUID_no_dashes}_{randomSecret}
+// Example: libops_01052d4d93be51a39684c357297533cd_075913e793285264b6846ae0163b8096_Kq3xY9zT...
+func formatAPIKeySecret(accountUUID, keyUUID, randomSecret string) string {
 	accountUUIDNoDashes := stripUUIDDashes(accountUUID)
-	return fmt.Sprintf("libops_%s_%s", keyUUIDNoDashes, accountUUIDNoDashes)
+	keyUUIDNoDashes := stripUUIDDashes(keyUUID)
+	return fmt.Sprintf("libops_%s_%s_%s", accountUUIDNoDashes, keyUUIDNoDashes, randomSecret)
 }
 
-// parseAPIKeySecret extracts the key UUID and account UUID from an API key secret.
-// Format: libops_{keyUUID_no_dashes}_{accountUUID_no_dashes}
-// Returns the UUIDs in standard format (with dashes).
-func parseAPIKeySecret(secretValue string) (keyUUID, accountUUID string, err error) {
+// parseAPIKeySecret extracts the account UUID, key UUID, and random secret from an API key secret.
+// Format: libops_{accountUUID_no_dashes}_{keyUUID_no_dashes}_{randomSecret}
+// Returns the UUIDs in standard format (with dashes) and the random secret.
+func parseAPIKeySecret(secretValue string) (accountUUID, keyUUID, randomSecret string, err error) {
 	parts := splitAPIKeySecret(secretValue)
-	if len(parts) != 3 || parts[0] != "libops" {
-		return "", "", fmt.Errorf("invalid API key format: expected libops_{keyUUID}_{accountUUID}")
+	if len(parts) < 4 || parts[0] != "libops" {
+		return "", "", "", fmt.Errorf("invalid API key format: expected libops_{accountUUID}_{keyUUID}_{secret}")
 	}
 
-	keyUUID, err = formatUUIDWithDashes(parts[1])
+	accountUUID, err = formatUUIDWithDashes(parts[1])
 	if err != nil {
-		return "", "", fmt.Errorf("invalid key UUID: %w", err)
+		return "", "", "", fmt.Errorf("invalid account UUID: %w", err)
 	}
 
-	accountUUID, err = formatUUIDWithDashes(parts[2])
+	keyUUID, err = formatUUIDWithDashes(parts[2])
 	if err != nil {
-		return "", "", fmt.Errorf("invalid account UUID: %w", err)
+		return "", "", "", fmt.Errorf("invalid key UUID: %w", err)
 	}
 
-	return keyUUID, accountUUID, nil
+	randomSecret = strings.Join(parts[3:], "_")
+	if len(randomSecret) == 0 {
+		return "", "", "", fmt.Errorf("invalid API key format: missing random secret")
+	}
+
+	return accountUUID, keyUUID, randomSecret, nil
 }
 
 // stripUUIDDashes removes dashes from a UUID and converts to lowercase.
 func stripUUIDDashes(uuidStr string) string {
-	result := make([]byte, 0, 32)
-	for i := 0; i < len(uuidStr); i++ {
-		c := uuidStr[i]
-		if c != '-' {
-			if c >= 'A' && c <= 'Z' {
-				c = c + ('a' - 'A')
-			}
-			result = append(result, c)
-		}
-	}
-	return string(result)
+	return strings.ToLower(strings.ReplaceAll(uuidStr, "-", ""))
 }
 
 // formatUUIDWithDashes adds dashes to a UUID string (32 hex chars) to standard format.
@@ -314,23 +349,20 @@ func formatUUIDWithDashes(noDashes string) (string, error) {
 }
 
 // splitAPIKeySecret splits the secret on underscores.
-// Expected format: libops_{keyUUID}_{accountUUID} (3 parts, 2 underscores)
+// Expected format: libops_{keyUUID}_{accountUUID}_{secret} (4 parts, 3 underscores)
 func splitAPIKeySecret(secretValue string) []string {
-	parts := make([]string, 0, 3)
-	start := 0
-	underscoreCount := 0
+	return strings.Split(secretValue, "_")
+}
 
-	for i := 0; i < len(secretValue); i++ {
-		if secretValue[i] == '_' {
-			parts = append(parts, secretValue[start:i])
-			start = i + 1
-			underscoreCount++
-		}
+// generateRandomSecret generates a cryptographically secure random secret.
+// The secret is base64url encoded (URL-safe, no padding) for easy transmission.
+func generateRandomSecret(numBytes int) (string, error) {
+	bytes := make([]byte, numBytes)
+	if _, err := rand.Read(bytes); err != nil {
+		return "", fmt.Errorf("failed to generate random bytes: %w", err)
 	}
-	if start < len(secretValue) {
-		parts = append(parts, secretValue[start:])
-	}
-	return parts
+	// Use URL-safe base64 encoding without padding
+	return base64.RawURLEncoding.EncodeToString(bytes), nil
 }
 
 // isDuplicateKeyError checks if an error is a MySQL duplicate key error (1062).

@@ -5,6 +5,7 @@ import (
 	"log/slog"
 	"os"
 	"path/filepath"
+	"strings"
 	"time"
 )
 
@@ -82,7 +83,16 @@ func (v *VaultLoader) readSecretFile(path string) (string, error) {
 	if err != nil {
 		return "", err
 	}
-	return string(data), nil
+	// Trim whitespace and newlines from secrets
+	// This is important because vault-agent and other tools often write trailing newlines
+	value := string(data)
+	return trimSecret(value), nil
+}
+
+// trimSecret removes leading/trailing whitespace from secrets
+func trimSecret(s string) string {
+	// Remove common whitespace characters that can appear in secret files
+	return strings.TrimSpace(s)
 }
 
 // waitForSecret waits for a secret file to appear, up to the timeout

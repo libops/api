@@ -34,7 +34,9 @@ services:
     volumes:
       - ./conf/docs/nginx.conf:/etc/nginx/conf.d/default.conf:ro
     networks:
-      - default
+      default:
+        aliases:
+          - docs.libops.io
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:80/health"]
       interval: 10s
@@ -46,12 +48,16 @@ services:
     build: .
     environment:
       API_BASE_URL: ${API_BASE_URL:-https://api.libops.io}
-      VAULT_ADDR: ${VAULT_ADDR:-http://vault:8200}
+      VAULT_ADDR: http://vault.libops.io
       MARIADB_PASSWORD_FILE: /run/secrets/MARIADB_PASSWORD
     secrets:
       - source: MARIADB_PASSWORD
     volumes:
       - vault-secrets:/vault/secrets:r
+    networks:
+      default:
+        aliases:
+          - api.libops.io
     healthcheck:
       interval: 10s
       timeout: 5s
@@ -85,7 +91,6 @@ services:
     image: hashicorp/vault:1.21@sha256:f4e2687b72858a9e2160c344c9fa1ef74c07f21a89a8c00534ab64d3f187b927
     command: ["server", "-config", "/etc/vault/server.hcl"]
     environment:
-      VAULT_ADDR: ${VAULT_ADDR:-http://vault:8200}
       GOOGLE_APPLICATION_CREDENTIALS: /run/secrets/GOOGLE_APPLICATION_CREDENTIALS
     networks:
       default:
@@ -106,7 +111,7 @@ services:
     build:
       context: ./conf/vault-agent
     environment:
-      VAULT_ADDR: ${VAULT_ADDR:-http://vault:8200}
+      VAULT_ADDR: http://vault:8200
     secrets:
       - source: GOOGLE_APPLICATION_CREDENTIALS
     volumes:
@@ -125,6 +130,7 @@ services:
       --ping=true
       --entryPoints.http.address=:80
       --entryPoints.https.transport.respondingTimeouts.readTimeout=60
+      --entryPoints.http.forwardedHeaders.trustedIPs=10.0.0.0/8
       --providers.docker=true
       --providers.docker.network=default
       --providers.docker.exposedByDefault=false
@@ -133,15 +139,10 @@ services:
       - "80:80"
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock:z
-      - ./conf/traefik/config.tmpl:/etc/traefik/config.yaml:ro
+      - ./conf/traefik/config.yaml:/etc/traefik/config.yaml:ro
     healthcheck:
       test: traefik healthcheck --ping
     networks:
       default:
-    depends_on:
-      vault:
-        condition: service_healthy
-      api:
-        condition: service_healthy
-      docs:
-        condition: service_healthy
+        aliases:
+          - vault.libops.io

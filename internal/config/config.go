@@ -81,7 +81,7 @@ func Load() (*Config, error) {
 
 		AllowedOrigins: parseAllowedOrigins(loader.LoadEnvWithDefault("ALLOWED_ORIGINS", baseUrl)),
 
-		VaultAddr:         loader.LoadEnvWithDefault("VAULT_ADDR", "http://vault:8200"),
+		VaultAddr:         loader.LoadEnvWithDefault("VAULT_ADDR", "http://vault.libops.io"),
 		VaultToken:        vaultToken,
 		VaultOIDCProvider: loader.LoadEnvWithDefault("VAULT_OIDC_PROVIDER", "libops-api"),
 

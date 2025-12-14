@@ -14,9 +14,9 @@ SELECT
     UNHEX(REPLACE('10000000-0000-0000-0000-000000000001', '-', '')),
     'joe@libops.io',
     'Joe Corall',
-    'google',
+    'userpass',
     TRUE,
-    'e0000000-0000-0000-0000-000000000001',
+    NULL,
     NOW()
 FROM
     DUAL
@@ -30,7 +30,7 @@ SELECT
     'Joe Corall (external)',
     'google',
     TRUE,
-    'e0000000-0000-0000-0000-000000000002',
+    NULL,
     NOW()
 FROM
     DUAL

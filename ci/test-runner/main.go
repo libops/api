@@ -30,32 +30,32 @@ var (
 	vaultToken = getEnv("VAULT_TOKEN", "test-root-token")
 
 	// Test user API keys (from rbac_seed.sql and vault-init.sh)
-	// Format: libops_{keyUUID_no_dashes}_{accountUUID_no_dashes}
+	// Format: libops_{accountUUID_no_dashes}_{keyUUID_no_dashes}_{randomSecret}
 	apiKeys = map[string]string{
-		// Full scope keys
-		"admin":       "libops_075913e793285264b6846ae0163b8096_01052d4d93be51a39684c357297533cd",
-		"art":         "libops_0f05b4b9f40c5ca89f3904de42ae87e4_fdf35d32bbb35ea3abf2410da575e169",
-		"jerry":       "libops_726186be6ad85257a1bd2e4689db11d0_964b5eb020375263883ce939c6916d7d",
-		"elaine":      "libops_b3f360ca79955db2b88b3e178cd7ae8a_863fb60a808450fe82aeefa113231bef",
-		"george":      "libops_0c9522b721975d87b010ac1bc506f79a_d0bfd25745725036b5aa038743be4715",
-		"kramer":      "libops_94581ae623e358698770db7cb74e5391_516e3bb4bfbe5dda9cc9d0e00ce7b6f2",
-		"pennypacker": "libops_58c99883c3145c6ebfa8e072502e43bd_42b6846e501f51539aca210d8d84f946",
-		"newman":      "libops_3ccc3cc2e5c0530b8f0a6fb24cd8566b_e60f6db8521a5fc3aaccceb3f50b6f7b",
-		"bob":         "libops_63cd920a70905e0eb46d840a933e2c70_94656683e36658b8a39132e0c54ca37e",
-		"joe":         "libops_890e09765b435ff8a673921a920e7c2a_0f439d32e0655a20a08e22dd6793948a",
-		"puddy":       "libops_eb181a1b7dc953c29981ba91a3ebf24a_22f490238dfe57c795dbdd0f8cae04a7",
-		"soup":        "libops_43527224d0f85344803fec80f80ed0a0_ff2098bd1a335db9806937f2bf5bdba7",
-		"babu":        "libops_2032b34886ae5805b08c3c2cf065ef82_a551424b91ed5636a53bcdb50660d4c9",
-		"leo":         "libops_ce22e781d2ad5d7abccc7dd122e791c8_351fcf8bd637596cbe1e8bdd90dbc4eb",
-		"jackie":      "libops_578e1fcfb4975bffbbf4436835457f73_af54b89e5533585ab3b70003b7e6dcc2",
-		"peterman":    "libops_2c3cfb5bc99454c99cb992321bd353cb_dfe2b1a880005b6788ad881b036fa4f9",
-		"no-access":   "libops_567df9dc244e561e93c13082534eeec7_e543554b5af05d97ac8f09608bcfa7b8",
+		// Full scope keys - format updated to include random secret
+		"admin":       "libops_01052d4d93be51a39684c357297533cd_075913e793285264b6846ae0163b8096_test_secret_admin_full",
+		"art":         "libops_fdf35d32bbb35ea3abf2410da575e169_0f05b4b9f40c5ca89f3904de42ae87e4_test_secret_art_full",
+		"jerry":       "libops_964b5eb020375263883ce939c6916d7d_726186be6ad85257a1bd2e4689db11d0_test_secret_jerry_full",
+		"elaine":      "libops_863fb60a808450fe82aeefa113231bef_b3f360ca79955db2b88b3e178cd7ae8a_test_secret_elaine_full",
+		"george":      "libops_d0bfd25745725036b5aa038743be4715_0c9522b721975d87b010ac1bc506f79a_test_secret_george_full",
+		"kramer":      "libops_516e3bb4bfbe5dda9cc9d0e00ce7b6f2_94581ae623e358698770db7cb74e5391_test_secret_kramer_full",
+		"pennypacker": "libops_42b6846e501f51539aca210d8d84f946_58c99883c3145c6ebfa8e072502e43bd_test_secret_pennypacker_full",
+		"newman":      "libops_e60f6db8521a5fc3aaccceb3f50b6f7b_3ccc3cc2e5c0530b8f0a6fb24cd8566b_test_secret_newman_full",
+		"bob":         "libops_94656683e36658b8a39132e0c54ca37e_63cd920a70905e0eb46d840a933e2c70_test_secret_bob_full",
+		"joe":         "libops_0f439d32e0655a20a08e22dd6793948a_890e09765b435ff8a673921a920e7c2a_test_secret_joe_full",
+		"puddy":       "libops_22f490238dfe57c795dbdd0f8cae04a7_eb181a1b7dc953c29981ba91a3ebf24a_test_secret_puddy_full",
+		"soup":        "libops_ff2098bd1a335db9806937f2bf5bdba7_43527224d0f85344803fec80f80ed0a0_test_secret_soup_full",
+		"babu":        "libops_a551424b91ed5636a53bcdb50660d4c9_2032b34886ae5805b08c3c2cf065ef82_test_secret_babu_full",
+		"leo":         "libops_351fcf8bd637596cbe1e8bdd90dbc4eb_ce22e781d2ad5d7abccc7dd122e791c8_test_secret_leo_full",
+		"jackie":      "libops_af54b89e5533585ab3b70003b7e6dcc2_578e1fcfb4975bffbbf4436835457f73_test_secret_jackie_full",
+		"peterman":    "libops_dfe2b1a880005b6788ad881b036fa4f9_2c3cfb5bc99454c99cb992321bd353cb_test_secret_peterman_full",
+		"no-access":   "libops_e543554b5af05d97ac8f09608bcfa7b8_567df9dc244e561e93c13082534eeec7_test_secret_noaccess_full",
 
 		// Limited scope keys
-		"admin-limited": "libops_d76a9ff9334c548d8ba94063ddb96cf9_01052d4d93be51a39684c357297533cd",
-		"art-limited":   "libops_c19811014bbf5f90b38b901c06fdaad6_fdf35d32bbb35ea3abf2410da575e169",
-		"bob-limited":   "libops_7dd4d68f85f45dbebed083e639a8fab2_94656683e36658b8a39132e0c54ca37e",
-		"soup-limited":  "libops_b6b4b341e1e55242a33d684e4da7ad07_ff2098bd1a335db9806937f2bf5bdba7",
+		"admin-limited": "libops_01052d4d93be51a39684c357297533cd_d76a9ff9334c548d8ba94063ddb96cf9_test_secret_admin_limited",
+		"art-limited":   "libops_fdf35d32bbb35ea3abf2410da575e169_c19811014bbf5f90b38b901c06fdaad6_test_secret_art_limited",
+		"bob-limited":   "libops_94656683e36658b8a39132e0c54ca37e_7dd4d68f85f45dbebed083e639a8fab2_test_secret_bob_limited",
+		"soup-limited":  "libops_ff2098bd1a335db9806937f2bf5bdba7_b6b4b341e1e55242a33d684e4da7ad07_test_secret_soup_limited",
 	}
 
 	// Test user credentials (email:password) - derived from vault-init.sh
@@ -1051,14 +1051,18 @@ func (tr *TestRunner) testAPIKeyManagement(ctx context.Context) {
 		if adminKeySecret == "" {
 			return fmt.Errorf("expected API key secret to be returned")
 		}
-		// Verify new format: libops_{keyUUID}_{accountUUID}
+		// Verify new format: libops_{accountUUID}_{keyUUID}_{randomSecret}
 		parts := strings.Split(adminKeySecret, "_")
-		if len(parts) != 3 || parts[0] != "libops" {
-			return fmt.Errorf("expected API key format 'libops_{keyUUID}_{accountUUID}', got: %s", adminKeySecret)
+		if len(parts) < 4 || parts[0] != "libops" {
+			return fmt.Errorf("expected API key format 'libops_{accountUUID}_{keyUUID}_{randomSecret}', got: %s", adminKeySecret)
 		}
 		if len(parts[1]) != 32 || len(parts[2]) != 32 {
-			return fmt.Errorf("expected 32-char hex UUIDs in API key, got key_uuid=%d chars, account_uuid=%d chars", len(parts[1]), len(parts[2]))
+			return fmt.Errorf("expected 32-char hex UUIDs in API key, got account_uuid=%d chars, key_uuid=%d chars", len(parts[1]), len(parts[2]))
 		}
+		if len(parts[3]) == 0 {
+			return fmt.Errorf("expected random secret component in API key, got empty string")
+		}
+		slog.Info("DEBUG: " + adminKeySecret)
 		// Store for later use
 		apiKeys["admin-limited"] = adminKeySecret
 		fmt.Printf(green("    ✓ Created key %s\n"), adminKeyID)

@@ -156,6 +156,9 @@ func New(deps *Dependencies) http.Handler {
 	// Apply request ID middleware first
 	handler = middleware.RequestIDMiddleware(handler)
 
+	// Apply Connect GET defaults (encoding=proto, message=)
+	handler = middleware.ConnectGetDefaultsMiddleware(handler)
+
 	// Apply global rate limiter
 	handler = globalRateLimiter.LimitByIP(handler)
 

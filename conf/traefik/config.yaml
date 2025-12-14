@@ -1,41 +1,34 @@
 http:
   routers:
     docs-redirect:
-      rule: (Host(`dash.libops.io` || Host(`api.libops.io`)) && Path(`/`)
+      rule: (Header(`X-Forwarded-Host`, `dash.libops.io`) || Header(`X-Forwarded-Host`, `api.libops.io`)) && Path(`/`)
       entryPoints:
         - http
       priority: 99
-      service: api-docs-noop@internal
+      service: noop@internal
       middlewares:
         - docs-redirect
 
     api:
-      rule: Host(`api.libops.io`) && (PathPrefix(`/v1`) || PathPrefix(`/auth`))
+      rule: Host(`api.libops.io`) || Header(`X-Forwarded-Host`, `api.libops.io`) || Header(`X-Forwarded-Host`, `dash.libops.io`)
       entryPoints:
         - http
       priority: 90
       service: api
 
     vault:
-      rule: Host(`vault`) || (Host(`api.libops.io`) && (PathPrefix(`/ui/vault/identity/oidc/`) || PathPrefix(`/ui/assets/`) || PathPrefix(`/ui/sw-registration`)))
+      rule: Host(`vault.libops.io`) || Host(`vault`) || (Header(`X-Forwarded-Host`, `vault.libops.io`) && (PathPrefix(`/ui/vault/identity/oidc/`) || PathPrefix(`/ui/assets/`) || PathPrefix(`/ui/sw-registration`)))
       entryPoints:
         - http
       priority: 80
       service: vault
 
     docs:
-      rule: Host(`docs.libops.io`)
+      rule: Host(`docs.libops.io`) || Header(`X-Forwarded-Host`, `docs.libops.io`)
       entryPoints:
         - http
       priority: 10
       service: docs
-
-    dash:
-      rule: Host(`dash.libops.io`) && !PathPrefix(`/v1`) && !PathPrefix(`/auth`)
-      entryPoints:
-        - http
-      priority: 10
-      service: api
 
   middlewares:
     docs-redirect:

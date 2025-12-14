@@ -284,6 +284,8 @@ function setupFormHandler() {
 
         try {
             const data = await window.apiKeys.createAPIKey(name, description);
+            console.log('API Key Response:', data);
+            console.log('API Key Secret:', data.apiKey);
             closeCreateModal();
             // Show the secret in the modal
             document.getElementById('api-key-secret').value = data.apiKey;

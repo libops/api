@@ -151,3 +151,37 @@ func CorsMiddleware(handler http.Handler, allowedOrigins []string) http.Handler 
 	})
 	return corsHandler.Handler(handler)
 }
+
+// ConnectGetDefaultsMiddleware adds default query parameters for Connect GET requests.
+// For idempotent Connect RPC methods (with NO_SIDE_EFFECTS), it sets:
+// - encoding=proto (if not specified)
+// - message= (empty, if not specified)
+func ConnectGetDefaultsMiddleware(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		// Only apply to GET requests on Connect RPC paths
+		if r.Method == http.MethodGet && strings.Contains(r.URL.Path, "libops.v1.") {
+			query := r.URL.Query()
+
+			// Set default encoding to proto if not specified
+			if !query.Has("encoding") {
+				query.Set("encoding", "json")
+			}
+
+			// Set default message to empty string if not specified
+			if !query.Has("message") {
+				encoding := query.Get("encoding")
+				switch encoding {
+				case "json":
+					query.Set("message", "{}")
+				case "proto":
+					query.Set("message", "")
+				}
+			}
+
+			// Update the request URL with the modified query
+			r.URL.RawQuery = query.Encode()
+		}
+
+		next.ServeHTTP(w, r)
+	})
+}
