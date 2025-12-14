@@ -1,0 +1,22 @@
+syntax = "proto3";
+
+package libops.v1.admin;
+
+import "libops/v1/common/organization.proto";
+
+option go_package = "github.com/libops/platform/proto/libops/v1/admin;adminv1";
+
+// AdminFolderConfig extends the organization-facing config with internal fields
+message AdminFolderConfig {
+  // Organization-safe fields (embedded)
+  libops.v1.common.FolderConfig config = 1;
+
+  // --- Admin-Only Fields ---
+
+  // Parent resource: folders/{folder_id} or organizations/{org_id}
+  // Defaults to folder format if not specified
+  string gcp_parent = 2;
+
+  // GCP-managed resources (output from orchestration)
+  optional string gcp_folder_id = 3;  // Set by orchestration after folder creation
+}

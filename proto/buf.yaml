@@ -1,0 +1,14 @@
+version: v2
+modules:
+  - path: .
+deps:
+  - buf.build/googleapis/googleapis
+  - buf.build/gnostic/gnostic
+lint:
+  use:
+    - STANDARD
+    - COMMENTS
+breaking:
+  use:
+    - FILE
+  ignore_unstable_packages: true

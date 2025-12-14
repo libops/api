@@ -1,0 +1,47 @@
+syntax = "proto3";
+
+package libops.v1.common;
+
+import "gnostic/openapi/v3/annotations.proto";
+import "libops/v1/common/types.proto";
+
+option go_package = "github.com/libops/platform/proto/libops/v1/common;commonv1";
+
+// ProjectConfig is the organization-facing project configuration
+// Contains only safe, non-sensitive fields
+message ProjectConfig {
+  string organization_id = 1 [(gnostic.openapi.v3.property) = {format: "uuid"}];
+  string project_id = 2 [(gnostic.openapi.v3.property) = {format: "uuid"}];
+  string project_name = 3;
+
+  // Auto-create sites for new branches
+  bool create_branch_sites = 4;
+
+  // GCP deployment configuration
+  string region = 5;              // GCP region (e.g., "us-central1")
+  string zone = 6;                // GCP zone (e.g., "us-central1-f")
+  string machine_type = 7;        // GCP machine type (e.g., "e2-standard-2")
+  int32 disk_size_gb = 8;         // Disk size in GB
+
+  // GitHub repository configuration
+  // Either github_repo (existing) or github_repo_template (new from template)
+  optional string github_repo = 9;           // Existing GitHub repository URL
+  optional string github_repo_template = 10; // GitHub template repository URL
+
+  // Promotion strategy
+  PromoteStrategy promote = 11;   // How to promote code to production
+
+  // Docker compose commands
+  string up_cmd = 13;              // Command to start containers (default: "docker compose up --remove-orphans -d")
+  string init_cmd = 14;            // Command to run on initial setup (default: "")
+  repeated string rollout_cmd = 15; // Commands to run during rollout (default: ["docker compose pull", "docker compose up --remove-orphans -d"])
+
+  // Status
+  Status status = 16;
+}
+
+enum PromoteStrategy {
+  PROMOTE_STRATEGY_UNSPECIFIED = 0;
+  PROMOTE_STRATEGY_GITHUB_TAG = 1;      // Promote on git tags
+  PROMOTE_STRATEGY_GITHUB_RELEASE = 2;  // Promote on GitHub releases
+}

@@ -1,0 +1,37 @@
+version: v2
+managed:
+  enabled: true
+  override:
+    - file_option: go_package_prefix
+      value: github.com/libops/api/proto
+  disable:
+    - module: buf.build/googleapis/googleapis
+    - module: buf.build/gnostic/gnostic
+plugins:
+  # Generate Go protobuf code
+  - remote: buf.build/protocolbuffers/go
+    out: .
+    opt:
+      - paths=source_relative
+
+  # Generate ConnectRPC Go code
+  - remote: buf.build/connectrpc/go
+    out: .
+    opt:
+      - paths=source_relative
+
+  # Generate Protobuf TypeScript/JavaScript message code for the web dashboard.
+  - remote: buf.build/bufbuild/es:v1.10.0
+    out: ../web/src/proto
+    opt:
+      - target=ts
+    include_imports: true
+    include_wkt: true
+
+  # Generate ConnectRPC TypeScript/JavaScript code for the web dashboard.
+  - remote: buf.build/connectrpc/es:v1.6.1
+    out: ../web/src/proto
+    opt:
+      - target=ts
+    include_imports: true
+    include_wkt: true

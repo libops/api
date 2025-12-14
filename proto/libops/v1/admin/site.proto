@@ -1,0 +1,20 @@
+syntax = "proto3";
+
+package libops.v1.admin;
+
+import "libops/v1/common/site.proto";
+
+option go_package = "github.com/libops/platform/proto/libops/v1/admin;adminv1";
+
+// AdminSiteConfig extends the organization-facing config with internal GCP details
+message AdminSiteConfig {
+  // Organization-safe fields (embedded)
+  libops.v1.common.SiteConfig config = 1;
+
+  // --- Admin-Only Fields ---
+
+  // Computed/managed fields (output from orchestration)
+  optional string gcp_instance_name = 2;   // GCE instance name
+  optional string gcp_external_ip = 3;     // External IP address
+  optional string gcp_internal_ip = 4;     // Internal IP address
+}

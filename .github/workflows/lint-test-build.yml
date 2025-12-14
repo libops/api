@@ -1,0 +1,94 @@
+name: build-push
+on:
+  push:
+  workflow_dispatch:
+
+jobs:
+  lint-test:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6
+
+      - name: Set up Go
+        uses: actions/setup-go@4dc6199c7b1a012772edbd06daecab0f50c9053c # v6
+        with:
+          go-version: ">=1.25.3"
+
+      - name: Cache Go tools
+        uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830 # v4
+        with:
+          path: |
+            ~/go/pkg/mod
+            ~/go/bin
+          key: ${{ runner.os }}-golang-${{ hashFiles('go.sum', 'Makefile') }}
+          restore-keys: |
+            ${{ runner.os }}-golang-
+
+      - name: golangci-lint
+        uses: golangci/golangci-lint-action@1e7e51e771db61008b38414a730f564565cf7c20 # v9
+        with:
+          version: latest
+          install-only: true
+
+      - name: setup
+        run: make install-tools
+
+      - name: lint
+        run: make lint
+
+      - name: test
+        run: make test
+
+      #- name: check contract
+      #  run: make proto-breaking
+
+  push:
+    needs: [lint-test]
+    uses: libops/.github/.github/workflows/build-push-ghcr.yaml@main
+    permissions:
+      contents: read
+      packages: write
+    secrets: inherit
+
+  codecov:
+    needs: [lint-test]
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6
+
+      - name: Set up Go
+        uses: actions/setup-go@4dc6199c7b1a012772edbd06daecab0f50c9053c # v6
+        with:
+          go-version: ">=1.25.3"
+
+      - name: coverage
+        run: go test -v -coverprofile=coverage.out -covermode=atomic ./internal/...
+
+      - name: upload coverage to codecov
+        uses: codecov/codecov-action@5a1091511ad55cbe89839c7260b706298ca349f7 # v5
+        with:
+          files: ./coverage.out
+          fail_ci_if_error: true
+        env:
+          CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
+
+  integration-test:
+    needs: [lint-test]
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6
+
+      - run: make integration-test
+
+      - name: Display test logs on failure
+        if: failure()
+        run: |
+          cd ci
+          echo "=== API Logs ==="
+          docker compose logs api
+          echo ""
+          echo "=== Vault Logs ==="
+          docker compose logs vault
+          echo ""
+          echo "=== MariaDB Logs ==="
+          docker compose logs mariadb

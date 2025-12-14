@@ -1,0 +1,35 @@
+FROM golang:1.25-alpine3.22 AS builder
+
+WORKDIR /build/api/ci/dash-tests
+COPY ci/dash-tests/go.mod ci/dash-tests/go.sum* ./
+RUN --mount=type=cache,target=/go/pkg/mod \
+    go mod download
+
+COPY ci/dash-tests/*.go ./
+
+RUN --mount=type=cache,target=/root/.cache/go-build \
+    CGO_ENABLED=0 go build -ldflags="-s -w" -o /dash-tests .
+
+
+FROM alpine:3.22
+
+# Install Chrome dependencies
+RUN apk add --no-cache \
+    ca-certificates \
+    wget \
+    chromium \
+    chromium-chromedriver \
+    nss \
+    freetype \
+    harfbuzz \
+    ttf-freefont
+
+# Set Chrome path for chromedp
+ENV CHROME_BIN=/usr/bin/chromium-browser
+ENV CHROME_PATH=/usr/bin/chromium-browser
+
+WORKDIR /app
+
+COPY --from=builder /dash-tests /app/dash-tests
+
+ENTRYPOINT ["/app/dash-tests"]

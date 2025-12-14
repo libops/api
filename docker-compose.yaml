@@ -1,0 +1,147 @@
+networks:
+  default:
+
+secrets:
+  MARIADB_ROOT_PASSWORD:
+    file: "./secrets/MARIADB_ROOT_PASSWORD"
+  MARIADB_PASSWORD:
+    file: "./secrets/MARIADB_PASSWORD"
+  GOOGLE_APPLICATION_CREDENTIALS:
+    file: "./secrets/GOOGLE_APPLICATION_CREDENTIALS"
+
+volumes:
+  mariadb-data: {}
+  vault-secrets: {}
+  vault-data: {}
+
+services:
+  init:
+    image: ghcr.io/libops/api-init:main
+    build:
+      context: ./conf/init
+    environment:
+      VAULT_ADDR: ${VAULT_ADDR:-http://vault:8200}
+    profiles: [none]
+    restart: no
+    volumes:
+      - ./secrets:/secrets:rw
+      - ./docker-compose.yaml:/docker-compose.yaml:ro
+    depends_on:
+      vault:
+        condition: service_healthy
+  docs:
+    image: nginx:alpine
+    volumes:
+      - ./conf/docs/nginx.conf:/etc/nginx/conf.d/default.conf:ro
+    networks:
+      - default
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:80/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
+  api:
+    image: ghcr.io/libops/api:main
+    build: .
+    environment:
+      API_BASE_URL: ${API_BASE_URL:-https://api.libops.io}
+      VAULT_ADDR: ${VAULT_ADDR:-http://vault:8200}
+      MARIADB_PASSWORD_FILE: /run/secrets/MARIADB_PASSWORD
+    secrets:
+      - source: MARIADB_PASSWORD
+    volumes:
+      - vault-secrets:/vault/secrets:r
+    healthcheck:
+      interval: 10s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
+    depends_on:
+      - mariadb
+      - vault
+  mariadb:
+    image: mariadb:12.1.2@sha256:e1bcd6f85781f4a875abefb11c4166c1d79e4237c23de597bf0df81fec225b40
+    networks:
+      default:
+    environment:
+      MARIADB_ROOT_PASSWORD_FILE: /run/secrets/MARIADB_ROOT_PASSWORD
+      MARIADB_PASSWORD_FILE: /run/secrets/MARIADB_PASSWORD
+      MARIADB_USER: libops
+      MARIADB_DATABASE: libops
+    secrets:
+      - source: MARIADB_ROOT_PASSWORD
+      - source: MARIADB_PASSWORD
+    volumes:
+      - mariadb-data:/var/lib/mysql:rw
+      - ./db/schema.sql:/docker-entrypoint-initdb.d/01-schema.sql:ro
+      - ./conf/mariadb/seed.sql:/docker-entrypoint-initdb.d/02-seed.sql:ro
+    healthcheck:
+      test: ["CMD", "healthcheck.sh", "--connect", "--innodb_initialized"]
+      interval: 5s
+      timeout: 3s
+      retries: 30
+  vault:
+    image: hashicorp/vault:1.21@sha256:f4e2687b72858a9e2160c344c9fa1ef74c07f21a89a8c00534ab64d3f187b927
+    command: ["server", "-config", "/etc/vault/server.hcl"]
+    environment:
+      VAULT_ADDR: ${VAULT_ADDR:-http://vault:8200}
+      GOOGLE_APPLICATION_CREDENTIALS: /run/secrets/GOOGLE_APPLICATION_CREDENTIALS
+    networks:
+      default:
+    cap_add:
+      - IPC_LOCK
+    volumes:
+      - vault-data:/vault/data:rw
+      - ./conf/vault/server.hcl:/etc/vault/server.hcl:r
+    secrets:
+      - source: GOOGLE_APPLICATION_CREDENTIALS
+    healthcheck:
+      test: ["CMD", "wget", "-q", "--spider", "http://vault:8200/v1/sys/health"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+  vault-agent:
+    image: ghcr.io/libops/api-vault-agent:main
+    build:
+      context: ./conf/vault-agent
+    environment:
+      VAULT_ADDR: ${VAULT_ADDR:-http://vault:8200}
+    secrets:
+      - source: GOOGLE_APPLICATION_CREDENTIALS
+    volumes:
+      - vault-secrets:/vault/secrets:rw
+    networks:
+      default:
+    depends_on:
+      vault:
+        condition: service_healthy
+  traefik:
+    image: traefik:v3.6.2@sha256:aaf0f6185419a50c74651448c1a5bf4606bd2d2ddb7b8749eed505d55bf8b8ea
+    command: >-
+      --api.insecure=true
+      --api.dashboard=true
+      --api.debug=true
+      --ping=true
+      --entryPoints.http.address=:80
+      --entryPoints.https.transport.respondingTimeouts.readTimeout=60
+      --providers.docker=true
+      --providers.docker.network=default
+      --providers.docker.exposedByDefault=false
+      --providers.file.filename=/etc/traefik/config.yaml
+    ports:
+      - "80:80"
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:z
+      - ./conf/traefik/config.tmpl:/etc/traefik/config.yaml:ro
+    healthcheck:
+      test: traefik healthcheck --ping
+    networks:
+      default:
+    depends_on:
+      vault:
+        condition: service_healthy
+      api:
+        condition: service_healthy
+      docs:
+        condition: service_healthy

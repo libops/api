@@ -1,0 +1,14 @@
+openapi: 3.1.2
+info:
+  title: LibOps API
+  version: 1.0.0
+  description: LibOps control plane API to run docker compose projects on Google Cloud
+  contact:
+    name: LibOps
+    url: https://github.com/libops/api
+  license:
+    name: MIT
+    url: https://github.com/libops/api/blob/main/LICENSE
+servers:
+  - url: https://api.libops.io
+    description: Production server

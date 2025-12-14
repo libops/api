@@ -1,0 +1,13 @@
+version: v2
+plugins:
+  # Generate OpenAPI spec for ConnectRPC with protoc-gen-connect-openapi
+  # Install: go install github.com/sudorandom/protoc-gen-connect-openapi/cmd/protoc-gen-connect-openapi@latest
+  - local: protoc-gen-connect-openapi
+    out: ../openapi
+    strategy: all
+    opt:
+      - format=yaml
+      - base=openapi-base.yaml
+      - path=openapi.yaml
+      - features=connectrpc;gnostic;protovalidate
+      - allow-get

@@ -1,0 +1,5 @@
+# Ignore test runner build artifacts
+test-runner/test-runner
+
+# Ignore any local test data overrides
+testdata/*.local.sql

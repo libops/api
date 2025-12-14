@@ -1,0 +1,68 @@
+syntax = "proto3";
+
+package libops.v1.options;
+
+import "google/protobuf/descriptor.proto";
+
+option go_package = "github.com/libops/platform/proto/libops/v1/options;optionsv1";
+
+// ResourceType represents the hierarchical level of a resource
+// The hierarchy is: SYSTEM > ORGANIZATION > PROJECT > SITE
+enum ResourceType {
+  RESOURCE_TYPE_UNSPECIFIED = 0;
+  RESOURCE_TYPE_SYSTEM = 1;       // System-wide operations (admin only)
+  RESOURCE_TYPE_ACCOUNT = 2;      // Account/user level
+  RESOURCE_TYPE_ORGANIZATION = 3; // Organization level
+  RESOURCE_TYPE_PROJECT = 4;      // Project level
+  RESOURCE_TYPE_SITE = 5;         // Site level
+}
+
+// AccessLevel represents the type of access required
+// Higher levels include permissions of lower levels
+// ADMIN > WRITE > READ
+enum AccessLevel {
+  ACCESS_LEVEL_UNSPECIFIED = 0;
+  ACCESS_LEVEL_READ = 1;   // Read-only access
+  ACCESS_LEVEL_WRITE = 2;  // Read and write access
+  ACCESS_LEVEL_ADMIN = 3;  // Full administrative access
+}
+
+// ScopeRule defines the authorization requirements for an RPC method
+// This annotation tells the authorization middleware what level of access is required
+message ScopeRule {
+  // The resource type this method operates on
+  ResourceType resource = 1;
+
+  // The minimum access level required
+  AccessLevel level = 2;
+
+  // Optional: if true, allows parent resource access to satisfy this requirement
+  // For example, ORGANIZATION_ADMIN can access PROJECT_READ if allow_parent_access=true
+  // Default is true to maintain hierarchical access model
+  bool allow_parent_access = 3;
+
+  // OAuth scope strings required for this endpoint
+  // These are the actual OAuth 2.0 scope values that will appear in documentation
+  // Example: ["read:organization", "read:members"]
+  repeated string oauth_scopes = 4;
+
+  // Optional: field name in the request message containing the resource ID to check membership
+  // If specified, the interceptor will automatically check membership for this resource
+  // Examples: "organization_id", "project_id", "site_id"
+  // The interceptor will extract this field from the request and verify the user is a member
+  string resource_id_field = 5;
+
+  // Optional: for create operations, this specifies the parent resource field to check
+  // Example: for CreateProject, parent_resource_id_field = "organization_id"
+  // This ensures user is a member of the parent before allowing creation
+  string parent_resource_id_field = 6;
+
+  // Optional: the parent resource type (only needed if parent_resource_id_field is set)
+  ResourceType parent_resource = 7;
+}
+
+// Extend MethodOptions to allow annotating RPCs with scope requirements
+extend google.protobuf.MethodOptions {
+  // The scope rule that applies to this RPC method
+  ScopeRule required_scope = 50002; // Pick a unique field number (50001 is used by audit)
+}

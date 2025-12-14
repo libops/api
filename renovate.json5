@@ -1,0 +1,14 @@
+{
+  $schema: 'https://docs.renovatebot.com/renovate-schema.json',
+  extends: [
+    'github>libops/renovate-config:default.json5',
+  ],
+  packageRules: [
+    {
+      matchPackageNames: [
+        'github.com/libops/api/proto'
+      ],
+      enabled: false,
+    },
+  ],
+}

@@ -1,0 +1,170 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>libops - Sign In</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        .container { max-width: 400px; }
+        input:focus { border-color: #3b82f6; box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.5); }
+        .hidden { display: none; }
+    </style>
+</head>
+<body class="bg-gray-50 flex items-center justify-center min-h-screen">
+    <div class="container p-6 bg-white rounded-xl shadow-2xl space-y-6">
+        <h1 class="text-3xl font-bold text-center text-gray-800">libops</h1>
+
+        {{if .Verified}}
+        <div class="bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded relative" role="alert">
+            <span class="block sm:inline">Email verified successfully! You can now log in.</span>
+        </div>
+        {{end}}
+
+        {{if .Error}}
+        <div class="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative" role="alert">
+            <span class="block sm:inline">{{.Error}}</span>
+        </div>
+        {{end}}
+
+        {{if .Message}}
+        <div class="bg-blue-100 border border-blue-400 text-blue-700 px-4 py-3 rounded relative" role="alert">
+            <span class="block sm:inline">{{.Message}}</span>
+        </div>
+        {{end}}
+
+        <!-- Login Form (default view) -->
+        <div id="login-view">
+            <!-- Google Sign In -->
+            <div class="space-y-4">
+                <h2 class="text-xl font-semibold text-gray-700">Sign in with Google</h2>
+                <a href="/auth/google{{if .RedirectURI}}?redirect_uri={{.RedirectURI}}{{if .State}}&state={{.State}}{{end}}{{end}}" class="w-full flex items-center justify-center px-4 py-3 border border-transparent text-sm font-medium rounded-lg text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition duration-150">
+                    <svg class="w-5 h-5 mr-2" fill="currentColor" viewBox="0 0 48 48">
+                        <path d="M24 9.5c3.54 0 6.71 1.22 9.21 3.65l6.85-6.85C35.91 3.2 30.7 1 24 1 14.57 1 6.8 6.55 3.1 14.7l7.98 6.19C13.23 13.9 18.67 9.5 24 9.5z" fill="#EA4335"/>
+                        <path d="M46.9 24.5c0-1.63-.14-3.19-.43-4.65H24v9.16h13.62c-.6 3.09-2.27 5.67-4.66 7.47l6.52 5.08c3.84-3.56 6.02-8.81 6.02-15.06z" fill="#4285F4"/>
+                        <path d="M10.97 27.28c-.28-.84-.44-1.74-.44-2.7 0-.96.16-1.86.44-2.7l-7.98-6.19C3.7 17.45 2 20.84 2 24.5s1.7 7.05 4.99 9.89l7.98-6.19z" fill="#FBBC05"/>
+                        <path d="M24 43.5c5.33 0 9.87-1.8 13.16-4.82l-6.52-5.08c-2.39 1.8-5.77 2.91-9.64 2.91-5.33 0-9.87-3.48-11.53-8.49l-7.98 6.19C6.8 41.45 14.57 47 24 47c5.67 0 10.74-2.19 14.55-5.7l-6.85-6.85C30.7 41.7 27.54 43.5 24 43.5z" fill="#34A853"/>
+                    </svg>
+                    Sign in with Google
+                </a>
+            </div>
+
+            <div class="relative flex py-5 items-center">
+                <div class="flex-grow border-t border-gray-300"></div>
+                <span class="flex-shrink mx-4 text-gray-500 text-sm">OR</span>
+                <div class="flex-grow border-t border-gray-300"></div>
+            </div>
+
+            <!-- Username/Password Login -->
+            <div class="space-y-4">
+                <h2 class="text-xl font-semibold text-gray-700">Email & Password</h2>
+                <form action="/auth/userpass/login" method="POST" class="space-y-4">
+                    {{if .RedirectURI}}
+                    <input type="hidden" name="redirect_uri" value="{{.RedirectURI}}">
+                    {{end}}
+                    {{if .State}}
+                    <input type="hidden" name="state" value="{{.State}}">
+                    {{end}}
+                    <div>
+                        <label for="login-email" class="block text-sm font-medium text-gray-700">Email</label>
+                        <input type="email" id="login-email" name="email" required class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-lg shadow-sm placeholder-gray-400 focus:outline-none sm:text-sm">
+                    </div>
+                    <div>
+                        <label for="login-password" class="block text-sm font-medium text-gray-700">Password</label>
+                        <input type="password" id="login-password" name="password" required class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-lg shadow-sm placeholder-gray-400 focus:outline-none sm:text-sm">
+                    </div>
+                    <button type="submit" class="w-full flex justify-center py-2 px-4 border border-transparent rounded-lg shadow-sm text-sm font-medium text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 transition duration-150">
+                        Log In
+                    </button>
+                </form>
+            </div>
+
+            <!-- Link to Registration -->
+            <div class="text-center pt-4 border-t border-gray-200">
+                <p class="text-sm text-gray-600">
+                    Don't have an account?
+                    <a href="#" onclick="showRegister(); return false;" class="font-medium text-blue-600 hover:text-blue-500">
+                        Create one
+                    </a>
+                </p>
+            </div>
+        </div>
+
+        <!-- Registration Form (hidden by default) -->
+        <div id="register-view" class="hidden">
+            <!-- Google Sign Up -->
+            <div class="space-y-4">
+                <h2 class="text-xl font-semibold text-gray-700">Sign up with Google</h2>
+                <a href="/auth/google?register=true{{if .RedirectURI}}&redirect_uri={{.RedirectURI}}{{if .State}}&state={{.State}}{{end}}{{end}}" class="w-full flex items-center justify-center px-4 py-3 border border-transparent text-sm font-medium rounded-lg text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition duration-150">
+                    <svg class="w-5 h-5 mr-2" fill="currentColor" viewBox="0 0 48 48">
+                        <path d="M24 9.5c3.54 0 6.71 1.22 9.21 3.65l6.85-6.85C35.91 3.2 30.7 1 24 1 14.57 1 6.8 6.55 3.1 14.7l7.98 6.19C13.23 13.9 18.67 9.5 24 9.5z" fill="#EA4335"/>
+                        <path d="M46.9 24.5c0-1.63-.14-3.19-.43-4.65H24v9.16h13.62c-.6 3.09-2.27 5.67-4.66 7.47l6.52 5.08c3.84-3.56 6.02-8.81 6.02-15.06z" fill="#4285F4"/>
+                        <path d="M10.97 27.28c-.28-.84-.44-1.74-.44-2.7 0-.96.16-1.86.44-2.7l-7.98-6.19C3.7 17.45 2 20.84 2 24.5s1.7 7.05 4.99 9.89l7.98-6.19z" fill="#FBBC05"/>
+                        <path d="M24 43.5c5.33 0 9.87-1.8 13.16-4.82l-6.52-5.08c-2.39 1.8-5.77 2.91-9.64 2.91-5.33 0-9.87-3.48-11.53-8.49l-7.98 6.19C6.8 41.45 14.57 47 24 47c5.67 0 10.74-2.19 14.55-5.7l-6.85-6.85C30.7 41.7 27.54 43.5 24 43.5z" fill="#34A853"/>
+                    </svg>
+                    Sign up with Google
+                </a>
+            </div>
+
+            <div class="relative flex py-5 items-center">
+                <div class="flex-grow border-t border-gray-300"></div>
+                <span class="flex-shrink mx-4 text-gray-500 text-sm">OR</span>
+                <div class="flex-grow border-t border-gray-300"></div>
+            </div>
+
+            <!-- Username/Password Registration -->
+            <div class="space-y-4">
+                <h2 class="text-xl font-semibold text-gray-700">Create Account</h2>
+                <form action="/auth/userpass/register" method="POST" class="space-y-4">
+                    {{if .RedirectURI}}
+                    <input type="hidden" name="redirect_uri" value="{{.RedirectURI}}">
+                    {{end}}
+                    {{if .State}}
+                    <input type="hidden" name="state" value="{{.State}}">
+                    {{end}}
+                    <div>
+                        <label for="register-email" class="block text-sm font-medium text-gray-700">Email</label>
+                        <input type="email" id="register-email" name="email" required class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-lg shadow-sm placeholder-gray-400 focus:outline-none sm:text-sm">
+                    </div>
+                    <div>
+                        <label for="register-password" class="block text-sm font-medium text-gray-700">Password</label>
+                        <input type="password" id="register-password" name="password" required minlength="8" class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-lg shadow-sm placeholder-gray-400 focus:outline-none sm:text-sm">
+                        <p class="mt-1 text-xs text-gray-500">At least 8 characters with uppercase, lowercase, number, and special character</p>
+                    </div>
+                    <button type="submit" class="w-full flex justify-center py-2 px-4 border border-transparent rounded-lg shadow-sm text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition duration-150">
+                        Create Account
+                    </button>
+                </form>
+            </div>
+
+            <!-- Link to Login -->
+            <div class="text-center pt-4 border-t border-gray-200">
+                <p class="text-sm text-gray-600">
+                    Already have an account?
+                    <a href="#" onclick="showLogin(); return false;" class="font-medium text-blue-600 hover:text-blue-500">
+                        Sign in
+                    </a>
+                </p>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        function showRegister() {
+            document.getElementById('login-view').classList.add('hidden');
+            document.getElementById('register-view').classList.remove('hidden');
+        }
+
+        function showLogin() {
+            document.getElementById('register-view').classList.add('hidden');
+            document.getElementById('login-view').classList.remove('hidden');
+        }
+
+        // Show register view if URL has ?register=true
+        if (window.location.search.includes('register=true')) {
+            showRegister();
+        }
+    </script>
+    <script src="/static/token.js"></script>
+</body>
+</html>

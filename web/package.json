@@ -1,0 +1,33 @@
+{
+  "name": "web-dashboard",
+  "version": "1.0.0",
+  "description": "Frontend for the LibOps dashboard",
+  "main": "index.js",
+  "scripts": {
+    "build": "vite build",
+    "dev": "vite build --watch",
+    "lint": "eslint src --ext .ts",
+    "lint:fix": "eslint src --ext .ts --fix",
+    "type-check": "tsc --noEmit",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "@bufbuild/protobuf": "^1.10.0",
+    "@connectrpc/connect": "^1.6.0",
+    "@connectrpc/connect-web": "^1.6.0",
+    "terser": "^5.44.1"
+  },
+  "devDependencies": {
+    "@bufbuild/protoc-gen-es": "^1.10.0",
+    "@connectrpc/protoc-gen-connect-es": "^1.6.1",
+    "@types/node": "^22.10.5",
+    "@typescript-eslint/eslint-plugin": "^6.21.0",
+    "@typescript-eslint/parser": "^6.21.0",
+    "eslint": "^8.57.0",
+    "typescript": "^5.7.2",
+    "vite": "^7.2.7"
+  }
+}

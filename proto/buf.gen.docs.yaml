@@ -1,0 +1,7 @@
+version: v2
+plugins:
+  # Generate Markdown documentation
+  - remote: buf.build/pseudomuto/doc:v1.5.1
+    out: ../docs/api
+    opt:
+      - markdown,services.md
