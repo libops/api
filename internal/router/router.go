@@ -308,10 +308,14 @@ func registerDashboardRoutes(mux *http.ServeMux, dashHandler *dash.Handler) {
 
 // registerAuthRoutes adds authentication endpoints.
 func registerAuthRoutes(mux *http.ServeMux, authHandler *auth.Handler) {
-	mux.HandleFunc("/auth/login", authHandler.HandleLogin)
-	mux.HandleFunc("/auth/google", authHandler.HandleGoogleLogin) // Simplified Google login
-	mux.HandleFunc("/auth/callback", authHandler.HandleCallback)
-	mux.HandleFunc("/auth/logout", authHandler.HandleLogout)
+	// OAuth routes via Goth
+	mux.HandleFunc("GET /auth/google", authHandler.HandleGoogleLoginV2)          // Google OAuth
+	mux.HandleFunc("GET /auth/github", authHandler.HandleGitHubLogin)            // GitHub OAuth
+	mux.HandleFunc("GET /auth/callback/google", authHandler.HandleOAuthCallback) // Google callback
+	mux.HandleFunc("GET /auth/callback/github", authHandler.HandleOAuthCallback) // GitHub callback
+
+	// Common auth routes
+	mux.HandleFunc("/logout", authHandler.HandleLogout)
 	mux.HandleFunc("/auth/me", authHandler.HandleMe)
 	mux.HandleFunc("GET /auth/verify", authHandler.HandleVerifyEmail) // Email verification endpoint
 }

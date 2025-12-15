@@ -256,7 +256,8 @@ func isPublicEndpoint(path string) bool {
 		"/auth/verify",
 		"/auth/login",
 		"/auth/callback",
-		"/auth/google",
+		"/auth/callback/github",
+		"/auth/callback/google",
 		"/auth/logout",
 	}
 

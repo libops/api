@@ -207,28 +207,46 @@ func setupAuth(cfg *config.Config, queries db.Querier) (
 
 	jwtValidator.SetAPIKeyManager(apiKeyManager)
 
-	// Initialize OIDC client
-	// Uses APIBaseURL (not VaultAddr) since browsers access OIDC endpoints via Traefik
-	oidcClient, err := auth.NewOIDCClient(&auth.OIDCConfig{
-		VaultAddr:         cfg.VaultAddr,
-		VaultOIDCProvider: cfg.VaultOIDCProvider,
-		ClientID:          cfg.OIDCClientID,
-		ClientSecret:      cfg.OIDCClientSecret,
-		RedirectURL:       cfg.OIDCRedirectURL,
-		Scopes:            []string{"openid", "email", "profile"},
-	})
-	if err != nil {
-		return nil, nil, nil, nil, nil, nil, nil, nil, fmt.Errorf("failed to initialize OIDC client: %w", err)
-	}
-
 	emailVerifier := auth.NewEmailVerifier(queries, nil, cfg.APIBaseURL) // nil = no email sender (dev mode)
 
 	userpassClient := auth.NewUserpassClient(vaultClient, "userpass", queries, emailVerifier)
 
 	authorizer := auth.NewAuthorizer(queries)
 
+	// Initialize Goth OAuth manager (if configured)
+	var gothManager *auth.GothOAuthManager
+	if cfg.GoogleClientID != "" || cfg.GitHubClientID != "" {
+		var googleCfg, githubCfg *auth.ProviderConfig
+
+		if cfg.GoogleClientID != "" {
+			googleCfg = &auth.ProviderConfig{
+				ClientID:     cfg.GoogleClientID,
+				ClientSecret: cfg.GoogleClientSecret,
+				CallbackURL:  cfg.GoogleCallbackURL,
+			}
+		}
+
+		if cfg.GitHubClientID != "" {
+			githubCfg = &auth.ProviderConfig{
+				ClientID:     cfg.GitHubClientID,
+				ClientSecret: cfg.GitHubClientSecret,
+				CallbackURL:  cfg.GitHubCallbackURL,
+			}
+		}
+
+		var err error
+		gothManager, err = auth.NewGothOAuthManager(googleCfg, githubCfg, queries)
+		if err != nil {
+			slog.Warn("Failed to initialize Goth OAuth manager", "error", err)
+		} else {
+			slog.Info("Goth OAuth manager initialized",
+				"google_configured", googleCfg != nil,
+				"github_configured", githubCfg != nil)
+		}
+	}
+
 	// Initialize auth handler
-	authHandler := auth.NewHandler(oidcClient, userpassClient, jwtValidator, sessionManager, queries, vaultClient, cfg.VaultOIDCProvider)
+	authHandler := auth.NewHandler(userpassClient, jwtValidator, sessionManager, queries, vaultClient, cfg.VaultOIDCProvider, gothManager, libopsTokenIssuer)
 
 	slog.Info("Authentication enabled",
 		"vault", cfg.VaultAddr,

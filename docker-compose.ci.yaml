@@ -1,0 +1,154 @@
+# Docker Compose override for CI integration tests
+# Usage: docker compose -f docker-compose.yaml -f docker-compose.ci.yaml up
+#
+# This file overrides production config with test-specific settings:
+# - Uses Vault dev mode with test root token
+# - Mounts CI test data and scripts
+# - Exposes ports for debugging
+# - Includes test runner services
+
+secrets: !override
+  MARIADB_ROOT_PASSWORD:
+    environment: USER
+  MARIADB_PASSWORD: !override
+    environment: USER
+  GOOGLE_APPLICATION_CREDENTIALS:
+    environment: HOME
+
+services:
+  # Override mariadb with test configuration
+  mariadb:
+    command: --innodb-use-native-aio=1 # Required for GHA runners
+    environment:
+      MARIADB_ROOT_PASSWORD_FILE: /tmp/mdb-root
+      MARIADB_PASSWORD_FILE: /tmp/mdb
+    secrets: [] # Don't use secrets in CI
+    volumes:
+      - mariadb-data:/var/lib/mysql:rw
+      - ./ci/testdata/00-functions.sql:/docker-entrypoint-initdb.d/00-functions.sql:ro
+      - ./ci/testdata/schema.sql:/docker-entrypoint-initdb.d/01-schema.sql:ro
+      - ./ci/testdata/rbac_seed.sql:/docker-entrypoint-initdb.d/02-seed.sql:ro
+      - ./ci/mdb-root:/tmp/mdb-root:ro
+      - ./ci/mdb:/tmp/mdb:ro
+    ports:
+      - "3306:3306"
+
+  # Override vault with dev mode for testing
+  vault:
+    command:
+      - "server"
+      - "-dev"
+      - "-dev-root-token-id=test-root-token"
+      - "-config=/etc/vault/server.hcl"
+    environment:
+      VAULT_DEV_ROOT_TOKEN_ID: test-root-token
+      VAULT_DEV_LISTEN_ADDRESS: 0.0.0.0:8200
+      VAULT_ADDR: http://0.0.0.0:8200
+      VAULT_LOG_LEVEL: debug
+      VAULT_LOG_REQUESTS_LEVEL: debug
+    secrets: [] # Don't use secrets in CI
+    volumes:
+      - vault-data:/vault/data:rw
+      - ./conf/vault/local.hcl:/etc/vault/server.hcl:r
+    ports:
+      - "8200:8200"
+
+  # Vault initialization service for CI
+  vault-init:
+    image: hashicorp/vault:1.21@sha256:f4e2687b72858a9e2160c344c9fa1ef74c07f21a89a8c00534ab64d3f187b927
+    environment:
+      VAULT_ADDR: http://vault:8200
+      VAULT_TOKEN: test-root-token
+    depends_on:
+      vault:
+        condition: service_healthy
+    volumes:
+      - ./ci/testdata/vault-init.sh:/vault-init.sh:ro
+    entrypoint: ["/bin/sh", "/vault-init.sh"]
+    restart: no
+
+  # Override api with test configuration
+  api:
+    environment:
+      API_BASE_URL: http://traefik:80
+      API_OIDC_BASE_URL: https://localhost:8080
+      MARIADB_PASSWORD_FILE: /tmp/mdb
+      VAULT_ADDR: http://vault:8200
+      LOG_LEVEL: DEBUG
+      LIBOPS_ENV: development
+      CUSTOMER_VAULT_ADDR: http://vault:8200
+      CUSTOMER_VAULT_TOKEN: test-root-token
+    secrets: [] # Don't use secrets in CI
+    volumes:
+      - vault-secrets:/vault/secrets:r
+      - ./ci/mdb:/tmp/mdb:r
+    ports:
+      - "8080:8080"
+
+  # Enable vault-agent in local dev with token file auth
+  vault-agent:
+    environment:
+      ENVIRONMENT: local
+      VAULT_ADDR: http://vault:8200
+    secrets: [] # Don't use secrets in CI
+    volumes:
+      - vault-secrets:/vault/secrets:rw
+      - ./ci/vault-root-token:/tmp/vault-root-token:ro
+
+  # Disable init service in CI (use vault-init instead)
+  init:
+    profiles: [disabled]
+
+  # Disable docs service in CI
+  docs:
+    profiles: [disabled]
+
+  # Override traefik for CI (simpler config)
+  traefik:
+    ports:
+      - "80:80"
+
+  # Test runner service
+  test-runner:
+    build:
+      context: .
+      dockerfile: ci/Dockerfile.test
+    networks:
+      - default
+    environment:
+      API_URL: http://api:8080
+      VAULT_ADDR: http://vault:8200
+      VAULT_TOKEN: test-root-token
+      DATABASE_URL: libops:libops-test-pass@tcp(mariadb:3306)/libops?parseTime=true
+    depends_on:
+      api:
+        condition: service_healthy
+    command: ["run-tests"]
+    working_dir: /app/ci/test-runner
+
+  # Chrome headless for dashboard E2E tests
+  chrome:
+    image: chromedp/headless-shell:stable
+    networks:
+      - default
+    ports:
+      - "9222:9222"
+    cap_add:
+      - SYS_ADMIN
+    shm_size: 2gb
+
+  # Dashboard E2E test service
+  dash-tests:
+    build:
+      context: .
+      dockerfile: ci/Dockerfile.dash-tests
+    networks:
+      - default
+    environment:
+      DASHBOARD_URL: http://api:8080
+      HEADLESS: "true"
+    depends_on:
+      api:
+        condition: service_healthy
+    command: ["run-tests"]
+    working_dir: /app/ci/dash-tests

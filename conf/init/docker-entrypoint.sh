@@ -41,22 +41,6 @@ enable_secrets secret
 OIDC_PATH="oidc"
 enable_auth "$OIDC_PATH" oidc
 
-if [ -n "${GOOGLE_OIDC_CLIENT_ID:-}" ] && [ -n "${GOOGLE_OIDC_CLIENT_SECRET:-}" ] && [ -n "${OIDC_CALLBACK_URI:-}" ]; then
-    vault_write_idempotent auth/"$OIDC_PATH"/config \
-        oidc_discovery_url="https://accounts.google.com" \
-        oidc_client_id="$GOOGLE_OIDC_CLIENT_ID" \
-        oidc_client_secret="$GOOGLE_OIDC_CLIENT_SECRET" \
-        default_role="customer"
-
-    vault_write_idempotent auth/"$OIDC_PATH"/role/customer \
-        role_type="oidc" \
-        user_claim="email" \
-        token_policies="customer" \
-        oidc_scopes="openid,https://www.googleapis.com/auth/userinfo.email,https://www.googleapis.com/auth/userinfo.profile" \
-        allowed_redirect_uris="$OIDC_CALLBACK_URI" \
-        bound_audiences="$GOOGLE_OIDC_CLIENT_ID"
-fi
-
 vault write identity/oidc/key/libops-api \
   allowed_client_ids="*" \
   verification_ttl="2h" \
@@ -83,6 +67,8 @@ vault write identity/oidc/role/libops-api \
 
 
 enable_auth userpass userpass
+
+# allow api vault agent to get a vault token
 enable_auth jwt jwt
 vault write auth/jwt/config \
     oidc_discovery_url="https://accounts.google.com" \
@@ -98,6 +84,15 @@ vault write auth/jwt/role/libops-api -<<EOF
 }
 EOF
 
+# Create a token role that allows the API to create entity tokens with specific policies
+vault write auth/token/roles/entity-token \
+    allowed_policies="default,libops-user" \
+    allowed_entity_aliases="*" \
+    orphan=true \
+    renewable=true \
+    token_type="service"
+
+# create policies defined in our policy dir
 for FILE in policies/*; do
   FILE=$(basename "$FILE")
   ROLE=${FILE%%.*}
@@ -109,7 +104,8 @@ done
 echo "Creating production userpass users..."
 
 # joe@libops.io - Account ID 1, entity ID e0000000-0000-0000-0000-000000000001
-vault write auth/userpass/users/joe_libops.io password="ChangeMe123!" policies="libops-user"
+PASS=$(cat /dev/urandom | LC_ALL=C tr -dc 'a-zA-Z0-9' | fold -w 32 | head -n 1)
+vault write auth/userpass/users/joe_libops.io password="$PASS" policies="libops-user"
 vault write identity/entity name="joe@libops.io" metadata="email=joe@libops.io" metadata="account_id=1"
 entity_id=$(vault read -field=id identity/entity/name/joe@libops.io)
 accessor=$(vault auth list | grep "^userpass/" | awk '{print $3}')

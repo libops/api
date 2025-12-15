@@ -65,10 +65,10 @@ if [ "$BULK" = true ]; then
     exit 1
   fi
   echo -e "${YELLOW}Using bulk seed data (200+ organizations)${NC}"
-  COMPOSE_FILES="-f docker-compose.yml -f docker-compose.bulk.yml"
+  COMPOSE_FILES="-f ../docker-compose.yaml -f ../docker-compose.ci.yaml -f ../docker-compose.bulk.yaml"
 else
   echo -e "${YELLOW}Using core seed data (3 organizations)${NC}"
-  COMPOSE_FILES="-f docker-compose.yml"
+  COMPOSE_FILES="-f ../docker-compose.yaml -f ../docker-compose.ci.yaml"
 fi
 
 # Build images if requested

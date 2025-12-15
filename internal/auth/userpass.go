@@ -7,12 +7,12 @@ import (
 	"fmt"
 	"log/slog"
 	"net/http"
+	"net/url"
 	"regexp"
 	"strings"
 	"time"
 
 	"github.com/hashicorp/vault/api/auth/userpass"
-	"golang.org/x/crypto/bcrypt"
 
 	"github.com/libops/api/internal/db"
 	"github.com/libops/api/internal/validation"
@@ -49,13 +49,87 @@ func (c *UserpassClient) Register(ctx context.Context, email, password string) (
 		return nil, fmt.Errorf("internal server error")
 	}
 
-	// Hash password immediately upon receipt
-	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
-	if err != nil {
-		return nil, fmt.Errorf("failed to hash password: %w", err)
+	// 1. Create Vault User
+	vaultUsername := strings.ReplaceAll(email, "@", "_")
+	userPath := fmt.Sprintf("auth/%s/users/%s", c.vaultMountPoint, vaultUsername)
+	data := map[string]any{
+		"password": password,
+		"policies": []string{"default", "libops-user"},
 	}
 
-	token, err := c.emailVerifier.CreateVerificationToken(ctx, email, string(hashedPassword))
+	_, err = c.vaultClient.GetAPIClient().Logical().Write(userPath, data)
+	if err != nil {
+		slog.Error("failed to create vault user", "err", err)
+		return nil, fmt.Errorf("internal server error")
+	}
+
+	// 2. Create Account (Unverified, no Entity ID yet)
+	err = c.db.CreateAccount(ctx, db.CreateAccountParams{
+		Email:          email,
+		Name:           sql.NullString{Valid: false},
+		GithubUsername: sql.NullString{Valid: false},
+		VaultEntityID:  sql.NullString{Valid: false},
+		AuthMethod:     "userpass",
+		Verified:       false,
+		VerifiedAt:     sql.NullTime{Valid: false},
+	})
+	if err != nil {
+		slog.Error("failed to create account", "err", err)
+		return nil, fmt.Errorf("internal server error")
+	}
+
+	// 3. Get Account to retrieve IDs for metadata
+	account, err := c.db.GetAccountByEmail(ctx, email)
+	if err != nil {
+		slog.Error("failed to get created account", "err", err)
+		return nil, fmt.Errorf("internal server error")
+	}
+
+	// 4. Create Entity with metadata
+	// The account_id metadata is critical for OIDC token generation
+	accountUUID := strings.ReplaceAll(strings.ToLower(account.PublicID), "-", "")
+	entityMetadata := map[string]string{
+		"email":        email,
+		"account_id":   fmt.Sprintf("%d", account.ID),
+		"account_uuid": accountUUID,
+	}
+
+	entityID, err := c.vaultClient.CreateEntity(ctx, email, entityMetadata, []string{"default", "libops-user"})
+	if err != nil {
+		slog.Error("failed to create entity", "err", err)
+		return nil, fmt.Errorf("internal server error")
+	}
+
+	// 5. Create Alias
+	mountAccessor, err := c.vaultClient.GetAuthMountAccessor(ctx, "userpass")
+	if err != nil {
+		slog.Error("failed to get userpass mount accessor", "err", err)
+		return nil, fmt.Errorf("internal server error")
+	}
+
+	if err := c.vaultClient.CreateEntityAlias(ctx, entityID, mountAccessor, vaultUsername); err != nil {
+		slog.Error("failed to create entity alias", "err", err)
+		return nil, fmt.Errorf("internal server error")
+	}
+
+	// 6. Update Account with Entity ID
+	err = c.db.UpdateAccount(ctx, db.UpdateAccountParams{
+		Email:          account.Email,
+		Name:           account.Name,
+		GithubUsername: account.GithubUsername,
+		VaultEntityID:  sql.NullString{String: entityID, Valid: true},
+		AuthMethod:     account.AuthMethod,
+		Verified:       account.Verified,
+		VerifiedAt:     account.VerifiedAt,
+		PublicID:       account.PublicID,
+	})
+	if err != nil {
+		slog.Error("failed to update account with entity ID", "err", err)
+		return nil, fmt.Errorf("internal server error")
+	}
+
+	// 7. Create Token
+	token, err := c.emailVerifier.CreateVerificationToken(ctx, email, "")
 	if err != nil {
 		slog.Error("failed to create verification token", "err", err)
 		return nil, fmt.Errorf("internal server error")
@@ -64,45 +138,34 @@ func (c *UserpassClient) Register(ctx context.Context, email, password string) (
 	return token, nil
 }
 
-// VerifyEmail verifies the email and creates the Vault user.
+// VerifyEmail verifies the email and activates the account.
 func (c *UserpassClient) VerifyEmail(ctx context.Context, email, tokenString string) error {
 	if err := c.emailVerifier.VerifyToken(ctx, email, tokenString); err != nil {
 		slog.Error("invalid verification token", "err", err)
 		return fmt.Errorf("invalid verification token")
 	}
 
-	token, err := c.emailVerifier.GetToken(ctx, email, tokenString)
+	// Fetch existing account to update it
+	account, err := c.db.GetAccountByEmail(ctx, email)
 	if err != nil {
-		slog.Error("failed to get verification token", "err", err)
+		slog.Error("failed to get account for verification", "err", err)
 		return fmt.Errorf("internal server error")
 	}
 
-	// Create user in Vault (replace @ with _ in username)
-	vaultUsername := strings.ReplaceAll(email, "@", "_")
-	userPath := fmt.Sprintf("auth/%s/users/%s", c.vaultMountPoint, vaultUsername)
-	data := map[string]any{
-		"password": token.PasswordHash,
-		"policies": []string{"default", "libops-user"},
-	}
-
-	_, err = c.vaultClient.GetAPIClient().Logical().Write(userPath, data)
-	if err != nil {
-		slog.Error("failed to create vault user", "err", err)
-		return fmt.Errorf("internal server error")
-	}
-
+	// Update account verification status
 	now := sql.NullTime{Time: time.Now(), Valid: true}
-	err = c.db.CreateAccount(ctx, db.CreateAccountParams{
-		Email:          email,
-		Name:           sql.NullString{Valid: false},
-		GithubUsername: sql.NullString{Valid: false},
-		VaultEntityID:  sql.NullString{Valid: false}, // Will be populated on first login
-		AuthMethod:     "userpass",
-		Verified:       true, // Verified after email verification completes
+	err = c.db.UpdateAccount(ctx, db.UpdateAccountParams{
+		Email:          account.Email,
+		Name:           account.Name,
+		GithubUsername: account.GithubUsername,
+		VaultEntityID:  account.VaultEntityID,
+		AuthMethod:     account.AuthMethod,
+		Verified:       true,
 		VerifiedAt:     now,
+		PublicID:       account.PublicID,
 	})
 	if err != nil {
-		slog.Error("failed to create account", "err", err)
+		slog.Error("failed to update account verification status", "err", err)
 		return fmt.Errorf("internal server error")
 	}
 
@@ -124,7 +187,14 @@ func (c *UserpassClient) Login(ctx context.Context, email, password string) (*Va
 		return nil, fmt.Errorf("internal server error")
 	}
 
-	authInfo, err := c.vaultClient.GetAPIClient().Auth().Login(ctx, userpassAuth)
+	// Clone the client to avoid modifying the shared client's token
+	clonedClient, err := c.vaultClient.Clone()
+	if err != nil {
+		slog.Error("failed to clone vault client", "err", err)
+		return nil, fmt.Errorf("internal server error")
+	}
+
+	authInfo, err := clonedClient.GetAPIClient().Auth().Login(ctx, userpassAuth)
 	if err != nil {
 		slog.Error("login failed", "err", err)
 		return nil, fmt.Errorf("login failed")
@@ -174,7 +244,8 @@ func (c *UserpassClient) HandleRegister(w http.ResponseWriter, r *http.Request) 
 	}
 
 	if err := r.ParseForm(); err != nil {
-		http.Error(w, "Error parsing form data", http.StatusBadRequest)
+		slog.Warn("Error parsing form data", "err", err)
+		http.Redirect(w, r, "/login?register=true&error=Invalid form data", http.StatusSeeOther)
 		return
 	}
 
@@ -182,73 +253,36 @@ func (c *UserpassClient) HandleRegister(w http.ResponseWriter, r *http.Request) 
 	password := r.FormValue("password")
 
 	if email == "" || password == "" {
-		http.Error(w, "Email and password are required", http.StatusBadRequest)
+		http.Redirect(w, r, "/login?register=true&error=Email and password are required", http.StatusSeeOther)
 		return
 	}
 
 	if err := validatePasswordComplexity(password); err != nil {
-		http.Error(w, "Invalid request", http.StatusBadRequest)
+		slog.Info("Password complexity validation failed", "email", email, "err", err)
+		http.Redirect(w, r, fmt.Sprintf("/login?register=true&error=%s", url.QueryEscape(err.Error())), http.StatusSeeOther)
 		return
 	}
 
 	if err := validation.Email(email); err != nil {
 		slog.Warn("Invalid email format", "email", email, "err", err)
-		http.Error(w, err.Error(), http.StatusBadRequest)
+		http.Redirect(w, r, fmt.Sprintf("/login?register=true&error=%s", url.QueryEscape(err.Error())), http.StatusSeeOther)
 		return
 	}
 
 	token, err := c.Register(r.Context(), email, password)
 	if err != nil {
 		slog.Error("Registration failed", "err", err)
-		http.Error(w, "Registration failed", http.StatusBadRequest)
+		http.Redirect(w, r, "/login?register=true&error=Registration failed", http.StatusSeeOther)
 		return
 	}
 
 	if err := c.emailVerifier.SendVerificationEmail(email, token.Token); err != nil {
 		slog.Error("Failed to send verification email", "err", err)
-		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+		http.Redirect(w, r, "/login?register=true&error=Internal Server Error", http.StatusSeeOther)
 		return
 	}
 
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(http.StatusCreated)
-	if _, err := fmt.Fprintf(w, `{"message": "Registration successful. Please check your email to verify your account.", "email": "%s"}`, email); err != nil {
-		slog.Error("Failed to write response", "err", err)
-	}
-}
-
-// HandleLogin handles userpass login requests.
-func (c *UserpassClient) HandleLogin(w http.ResponseWriter, r *http.Request) {
-	if r.Method != http.MethodPost {
-		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
-		return
-	}
-
-	if err := r.ParseForm(); err != nil {
-		http.Error(w, "Error parsing form data", http.StatusBadRequest)
-		return
-	}
-
-	email := r.FormValue("email")
-	password := r.FormValue("password")
-
-	if email == "" || password == "" {
-		http.Error(w, "Email and password are required", http.StatusBadRequest)
-		return
-	}
-
-	tokenResp, err := c.Login(r.Context(), email, password)
-	if err != nil {
-		http.Error(w, "Login failed. Check username/password.", http.StatusUnauthorized)
-		return
-	}
-
-	setAuthCookieWithExpiry(w, tokenResp.VaultToken, tokenResp.LeaseDuration)
-
-	w.Header().Set("Content-Type", "application/json")
-	if _, err := fmt.Fprintf(w, `{"success": true, "redirect": "/dashboard"}`); err != nil {
-		slog.Error("Failed to write response", "err", err)
-	}
+	http.Redirect(w, r, "/login?message=Registration successful. Please check your email to verify your account.", http.StatusSeeOther)
 }
 
 // HandleVerifyEmail handles email verification requests.
@@ -352,24 +386,6 @@ func (c *UserpassClient) HandleResendVerification(w http.ResponseWriter, r *http
 	if _, err := fmt.Fprint(w, successMessage); err != nil {
 		slog.Error("Failed to write response", "err", err)
 	}
-}
-
-// setAuthCookieWithExpiry sets the authentication cookie with expiry.
-func setAuthCookieWithExpiry(w http.ResponseWriter, token string, leaseDuration int) {
-	maxAge := leaseDuration
-	if maxAge == 0 {
-		maxAge = 3600 // Default to 1 hour
-	}
-
-	http.SetCookie(w, &http.Cookie{
-		Name:     "vault_token",
-		Value:    token,
-		Path:     "/",
-		MaxAge:   maxAge,
-		HttpOnly: true,
-		Secure:   true, // Set to true in production with HTTPS
-		SameSite: http.SameSiteLaxMode,
-	})
 }
 
 // validatePasswordComplexity checks if a password meets the complexity requirements.

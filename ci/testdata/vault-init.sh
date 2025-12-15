@@ -14,9 +14,7 @@ enable_secrets() {
     fi
 }
 
-# Enable KV v2 secrets engine for organization secrets
 enable_secrets "secret-organization"
-enable_secrets "secret-global"
 enable_secrets "secret-project"
 enable_secrets "secret-site"
 
@@ -43,15 +41,88 @@ vault write identity/oidc/client/libops-api redirect_uris='http://api:8080/auth/
 vault write identity/oidc/provider/libops-api allowed_client_ids='*' scopes='openid,email,profile' issuer_host='http://vault:8200'
 vault write identity/oidc/role/libops-api key='libops-api' template='{"account_id": {{identity.entity.metadata.account_id}},"email": {{identity.entity.metadata.email}},"name": {{identity.entity.name}}}' ttl='1h'
 
+# Create a token role that allows the API to create entity tokens with specific policies
+vault write auth/token/roles/entity-token \
+    allowed_policies="default,libops-user" \
+    allowed_entity_aliases="*" \
+    orphan=true \
+    renewable=true \
+    token_type="service"
+
 # Create libops-user policy
 vault policy write libops-user - <<EOF
 path "identity/oidc/token/libops-api" {
   capabilities = ["read", "update"]
 }
-path "keys/*" {
-  capabilities = ["create", "update", "read"]
+path "keys/{{identity.entity.metadata.account_uuid}}/*" {
+  capabilities = ["create", "update", "read", "delete", "list"]
+}
+path "secret-organization/*" {
+  capabilities = ["create", "update", "read", "delete", "list"]
+}
+path "secret-project/*" {
+  capabilities = ["create", "update", "read", "delete", "list"]
+}
+path "secret-site/*" {
+  capabilities = ["create", "update", "read", "delete", "list"]
 }
 
+EOF
+
+vault policy write api - <<EOF
+path "keys/*" {
+  capabilities = ["create", "read", "update", "delete", "list"]
+}
+
+path "identity/oidc/client/libops-api" {
+  capabilities = [ "read" ]
+}
+
+path "identity/entity" {
+  capabilities = [ "create", "update" ]
+}
+
+path "identity/entity/id/*" {
+  capabilities = [ "create", "read", "update", "delete" ]
+}
+
+path "identity/entity-alias" {
+  capabilities = [ "create", "update" ]
+}
+
+path "identity/entity-alias/id/*" {
+  capabilities = [ "read", "update", "delete", "list" ]
+}
+
+path "auth/userpass/users/*" {
+  capabilities = [ "create", "read", "update", "delete", "list" ]
+}
+
+path "auth/token/create/entity-token" {
+  capabilities = [ "create", "update"]
+}
+
+path "sys/auth" {
+  capabilities = ["read", "list"]
+}
+
+path "secret/libops-api" {
+  capabilities = ["read", "list"]
+}
+
+path "secret/libops-api/*" {
+  capabilities = ["read"]
+}
+
+path "secret-organization/*" {
+  capabilities = ["create", "update", "read", "delete", "list"]
+}
+path "secret-project/*" {
+  capabilities = ["create", "update", "read", "delete", "list"]
+}
+path "secret-site/*" {
+  capabilities = ["create", "update", "read", "delete", "list"]
+}
 EOF
 
 create_test_user() {
@@ -59,34 +130,38 @@ create_test_user() {
     password=$2
     account_id=$3
     entity_name=$4
+    account_uuid=$5
+
+    # Convert UUID to lowercase no-dashes format for account_uuid metadata
+    account_uuid_no_dashes=$(echo "$account_uuid" | tr -d '-' | tr '[:upper:]' '[:lower:]')
 
     vault_username=$(echo "$email" | tr '@' '_')
     vault write "auth/userpass/users/$vault_username" password="$password" policies="libops-user"
-    vault write identity/entity name="$entity_name" metadata="email=$email" metadata="account_id=$account_id"
+    vault write identity/entity name="$entity_name" metadata="email=$email" metadata="account_id=$account_id" metadata="account_uuid=$account_uuid_no_dashes"
     entity_id=$(vault read -field=id identity/entity/name/$entity_name)
     accessor=$(vault auth list | grep "^userpass/" | awk '{print $3}')
     vault write identity/entity-alias name="$vault_username" canonical_id="$entity_id" mount_accessor=$accessor
-    echo "Created user: $vault_username ($entity_id)"
+    echo "Created user: $vault_username ($entity_id) with account_uuid=$account_uuid_no_dashes"
 }
 
 echo 'Creating users...'
-create_test_user "admin@libops.io" "password123" "1" "entity-admin@libops.io"
-create_test_user "art.vandelay@vandelay.com" "password123" "2" "entity-art.vandelay@vandelay.com"
-create_test_user "jerry.seinfeld@vandelay.com" "password123" "3" "entity-jerry.seinfeld@vandelay.com"
-create_test_user "elaine.benes@vandelay.com" "password123" "4" "entity-elaine.benes@vandelay.com"
-create_test_user "george.costanza@vandelay.com" "password123" "5" "entity-george.costanza@vandelay.com"
-create_test_user "cosmo.kramer@vandelay.com" "password123" "6" "entity-cosmo.kramer@vandelay.com"
-create_test_user "h.e.pennypacker@pennypacker.com" "password123" "7" "entity-h.e.pennypacker@pennypacker.com"
-create_test_user "newman@pennypacker.com" "password123" "8" "entity-newman@pennypacker.com"
-create_test_user "bob.sacamano@vandelay.com" "password123" "9" "entity-bob.sacamano@vandelay.com"
-create_test_user "joe.davola@vandelay.com" "password123" "10" "entity-joe.davola@vandelay.com"
-create_test_user "soup.nazi@vandelay.com" "password123" "11" "entity-soup.nazi@vandelay.com"
-create_test_user "babu.bhatt@vandelay.com" "password123" "12" "entity-babu.bhatt@vandelay.com"
-create_test_user "jackie.chiles@pennypacker.com" "password123" "13" "entity-jackie.chiles@pennypacker.com"
-create_test_user "j.peterman@pennypacker.com" "password123" "14" "entity-j.peterman@pennypacker.com"
-create_test_user "david.puddy@vandelay.com" "password123" "15" "entity-david.puddy@vandelay.com"
-create_test_user "uncle.leo@vandelay.com" "password123" "16" "entity-uncle.leo@vandelay.com"
-create_test_user "noaccess@test.com" "password123" "17" "entity-noaccess@test.com"
+create_test_user "admin@libops.io" "password123" "1" "entity-admin@libops.io" "01052d4d-93be-51a3-9684-c357297533cd"
+create_test_user "art.vandelay@vandelay.com" "password123" "2" "entity-art.vandelay@vandelay.com" "fdf35d32-bbb3-5ea3-abf2-410da575e169"
+create_test_user "jerry.seinfeld@vandelay.com" "password123" "3" "entity-jerry.seinfeld@vandelay.com" "964b5eb0-2037-5263-883c-e939c6916d7d"
+create_test_user "elaine.benes@vandelay.com" "password123" "4" "entity-elaine.benes@vandelay.com" "863fb60a-8084-50fe-82ae-efa113231bef"
+create_test_user "george.costanza@vandelay.com" "password123" "5" "entity-george.costanza@vandelay.com" "d0bfd257-4572-5036-b5aa-038743be4715"
+create_test_user "cosmo.kramer@vandelay.com" "password123" "6" "entity-cosmo.kramer@vandelay.com" "516e3bb4-bfbe-5dda-9cc9-d0e00ce7b6f2"
+create_test_user "h.e.pennypacker@pennypacker.com" "password123" "7" "entity-h.e.pennypacker@pennypacker.com" "42b6846e-501f-5153-9aca-210d8d84f946"
+create_test_user "newman@pennypacker.com" "password123" "8" "entity-newman@pennypacker.com" "e60f6db8-521a-5fc3-aacc-ceb3f50b6f7b"
+create_test_user "bob.sacamano@vandelay.com" "password123" "9" "entity-bob.sacamano@vandelay.com" "94656683-e366-58b8-a391-32e0c54ca37e"
+create_test_user "joe.davola@vandelay.com" "password123" "10" "entity-joe.davola@vandelay.com" "0f439d32-e065-5a20-a08e-22dd6793948a"
+create_test_user "soup.nazi@vandelay.com" "password123" "11" "entity-soup.nazi@vandelay.com" "ff2098bd-1a33-5db9-8069-37f2bf5bdba7"
+create_test_user "babu.bhatt@vandelay.com" "password123" "12" "entity-babu.bhatt@vandelay.com" "a551424b-91ed-5636-a53b-cdb50660d4c9"
+create_test_user "jackie.chiles@pennypacker.com" "password123" "13" "entity-jackie.chiles@pennypacker.com" "af54b89e-5533-585a-b3b7-0003b7e6dcc2"
+create_test_user "j.peterman@pennypacker.com" "password123" "14" "entity-j.peterman@pennypacker.com" "dfe2b1a8-8000-5b67-88ad-881b036fa4f9"
+create_test_user "david.puddy@vandelay.com" "password123" "15" "entity-david.puddy@vandelay.com" "22f49023-8dfe-57c7-95db-dd0f8cae04a7"
+create_test_user "uncle.leo@vandelay.com" "password123" "16" "entity-uncle.leo@vandelay.com" "351fcf8b-d637-596c-be1e-8bdd90dbc4eb"
+create_test_user "noaccess@test.com" "password123" "17" "entity-noaccess@test.com" "e543554b-5af0-5d97-ac8f-09608bcfa7b8"
 
 echo 'Creating API keys with format: libops_{accountUUID_no_dashes}_{keyUUID_no_dashes}_{randomSecret}...'
 # Helper function to create API key in new format

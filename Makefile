@@ -78,15 +78,15 @@ integration-test-bulk: generate-bulk-seed ## Run integration tests with bulk see
 	@echo "Integration tests with bulk data complete"
 
 integration-test-logs: ## View integration test logs
-	@cd ci && docker compose logs -f
+	@docker compose -f docker-compose.yaml -f docker-compose.ci.yaml logs -f
 
 integration-test-clean: ## Clean up integration test environment
 	@echo "Cleaning integration test environment..."
-	@cd ci && docker compose down -v
+	@docker compose -f docker-compose.yaml -f docker-compose.ci.yaml down -v
 	@echo "Integration test environment cleaned"
 
 integration-test-db: ## Access integration test database
-	@cd ci && docker compose exec mariadb mysql -u libops -plibops-test-pass libops
+	@docker compose -f docker-compose.yaml -f docker-compose.ci.yaml exec mariadb mysql -u libops -plibops-test-pass libops
 
 ##@ Cleanup
 

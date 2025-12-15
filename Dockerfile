@@ -67,6 +67,11 @@ COPY --from=frontend /app/static/js/main.bundle.js ./web/static/js/main.bundle.j
 
 COPY openapi/ ./openapi/
 
+RUN chown -R goapp . && \
+    find . -type d -exec chmod 550 {} \; && \
+    find . -type f -exec chmod 440 {} \; && \
+    chmod +x /app/binary
+
 EXPOSE 8080
 
 HEALTHCHECK CMD /bin/bash -c 'curl -sf http://localhost:8080/health'

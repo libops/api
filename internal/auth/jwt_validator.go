@@ -114,8 +114,10 @@ func (v *VaultJWTValidator) Middleware(next http.Handler) http.Handler {
 		if tokenString == "" {
 			if cookie, err := r.Cookie("vault_token"); err == nil {
 				tokenString = cookie.Value
+				slog.Debug("Found vault_token cookie", "path", r.URL.Path)
 			} else if cookie, err := r.Cookie("id_token"); err == nil {
 				tokenString = cookie.Value
+				slog.Debug("Found id_token cookie", "path", r.URL.Path)
 			}
 		}
 
@@ -153,8 +155,9 @@ func (v *VaultJWTValidator) Middleware(next http.Handler) http.Handler {
 		if err != nil {
 			// Token present but invalid.
 			// To avoid redirect loops, we just log it and don't set the user in context.
-			slog.Debug("Invalid JWT token", "err", err)
+			slog.Warn("Invalid JWT token", "err", err, "path", r.URL.Path)
 		} else {
+			slog.Debug("JWT token validated successfully", "account_id", userInfo.AccountID, "path", r.URL.Path)
 			ctx = context.WithValue(ctx, UserContextKey, userInfo)
 		}
 
@@ -205,11 +208,9 @@ func (v *VaultJWTValidator) ValidateToken(ctx context.Context, tokenString strin
 	if err != nil {
 		return nil, fmt.Errorf("unable to get email from jwt: %w", err)
 	}
+
 	var name string
-	_ = token.Get("name", &name)
-	if err != nil {
-		return nil, fmt.Errorf("unable to get name from jwt: %w", err)
-	}
+	_ = token.Get("name", &name) // Name is optional
 	// Try to get Account ID if available in custom claims
 	var accountID int64
 	var rawAccountID any
@@ -220,9 +221,12 @@ func (v *VaultJWTValidator) ValidateToken(ctx context.Context, tokenString strin
 		case int64:
 			accountID = v
 		case string:
-			_, err = fmt.Sscanf(v, "%d", &accountID)
-			if err != nil {
-				return nil, fmt.Errorf("unable to get account_id from jwt: %w", err)
+			// Handle empty string - leave accountID as 0
+			if v != "" {
+				_, err = fmt.Sscanf(v, "%d", &accountID)
+				if err != nil {
+					return nil, fmt.Errorf("unable to get account_id from jwt: %w", err)
+				}
 			}
 		}
 	}

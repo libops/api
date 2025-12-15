@@ -48,8 +48,15 @@ services:
     build: .
     environment:
       API_BASE_URL: ${API_BASE_URL:-https://api.libops.io}
+      API_OIDC_BASE_URL: ${API_OIDC_BASE_URL:-https://dash.libops.io}
       VAULT_ADDR: http://vault.libops.io
       MARIADB_PASSWORD_FILE: /run/secrets/MARIADB_PASSWORD
+      GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID}
+      GOOGLE_CLIENT_SECRET: ${GOOGLE_CLIENT_SECRET}
+      GITHUB_CLIENT_ID: ${GITHUB_CLIENT_ID}
+      GITHUB_CLIENT_SECRET: ${GITHUB_CLIENT_SECRET}
+      LIBOPS_ENV: ${LIBOPS_ENV:-development}
+      LOG_LEVEL: ${LOG_LEVEL:-INFO}
     secrets:
       - source: MARIADB_PASSWORD
     volumes:
@@ -64,8 +71,10 @@ services:
       retries: 3
       start_period: 10s
     depends_on:
-      - mariadb
-      - vault
+      mariadb:
+        condition: service_healthy
+      vault-agent:
+        condition: service_started
   mariadb:
     image: mariadb:12.1.2@sha256:e1bcd6f85781f4a875abefb11c4166c1d79e4237c23de597bf0df81fec225b40
     networks:
@@ -98,7 +107,7 @@ services:
       - IPC_LOCK
     volumes:
       - vault-data:/vault/data:rw
-      - ./conf/vault/server.hcl:/etc/vault/server.hcl:r
+      - ./conf/vault/default.hcl:/etc/vault/server.hcl:r
     secrets:
       - source: GOOGLE_APPLICATION_CREDENTIALS
     healthcheck:

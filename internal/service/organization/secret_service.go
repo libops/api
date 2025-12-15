@@ -27,9 +27,8 @@ var secretNameRegex = regexp.MustCompile(`^[A-Z][A-Z0-9_]*$`)
 
 // OrganizationSecretService implements the OrganizationSecretService API.
 type OrganizationSecretService struct {
-	db           db.Querier
-	auditLogger  *audit.Logger
-	vaultClients map[int64]*vault.Client // Cached vault clients per organization
+	db          db.Querier
+	auditLogger *audit.Logger
 }
 
 // Compile-time check to ensure OrganizationSecretService implements the interface.
@@ -38,19 +37,13 @@ var _ libopsv1connect.OrganizationSecretServiceHandler = (*OrganizationSecretSer
 // NewOrganizationSecretService creates a new OrganizationSecretService instance.
 func NewOrganizationSecretService(querier db.Querier, auditLogger *audit.Logger) *OrganizationSecretService {
 	return &OrganizationSecretService{
-		db:           querier,
-		auditLogger:  auditLogger,
-		vaultClients: make(map[int64]*vault.Client),
+		db:          querier,
+		auditLogger: auditLogger,
 	}
 }
 
 // GetOrganizationVaultClient returns or creates a Vault client for the organization.
 func (s *OrganizationSecretService) GetOrganizationVaultClient(ctx context.Context, organizationID int64) (*vault.Client, error) {
-	// Check cache first
-	if client, ok := s.vaultClients[organizationID]; ok {
-		return client, nil
-	}
-
 	// Get organization's libops project (where vault server runs)
 	project, err := s.db.GetOrganizationProjectByOrganizationID(ctx, organizationID)
 	if err != nil {
@@ -69,16 +62,10 @@ func (s *OrganizationSecretService) GetOrganizationVaultClient(ctx context.Conte
 		region = project.GcpRegion.String
 	}
 
-	vaultURL := vault.GetOrganizationVaultURL(projectNumber, region)
-
-	// Create new vault client
-	client, err := vault.NewClientFromAddr(vaultURL)
+	client, err := vault.NewCustomerVaultClient(ctx, organizationID, projectNumber, region)
 	if err != nil {
-		return nil, fmt.Errorf("failed to create vault client: %w", err)
+		return nil, fmt.Errorf("failed to create customer vault client: %w", err)
 	}
-
-	// Cache the client
-	s.vaultClients[organizationID] = client
 
 	return client, nil
 }

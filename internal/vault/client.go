@@ -19,6 +19,11 @@ type Config struct {
 	Token   string // Optional: for service-level operations
 }
 
+const (
+	jwtFilePath = "/vault/secrets/GOOGLE_ACCESS_TOKEN"
+	roleName    = "libops-api"
+)
+
 // NewClient creates a new Vault client wrapper.
 func NewClient(config *Config) (*Client, error) {
 	vaultConfig := api.DefaultConfig()

@@ -24,9 +24,8 @@ import (
 
 // SiteSecretService implements the SiteSecretService API.
 type SiteSecretService struct {
-	db           db.Querier
-	auditLogger  *audit.Logger
-	vaultClients map[int64]*vault.Client // Cached vault clients per organization (sites share organization vault)
+	db          db.Querier
+	auditLogger *audit.Logger
 }
 
 // Compile-time check to ensure SiteSecretService implements the interface.
@@ -35,19 +34,13 @@ var _ libopsv1connect.SiteSecretServiceHandler = (*SiteSecretService)(nil)
 // NewSiteSecretService creates a new SiteSecretService instance.
 func NewSiteSecretService(querier db.Querier, auditLogger *audit.Logger) *SiteSecretService {
 	return &SiteSecretService{
-		db:           querier,
-		auditLogger:  auditLogger,
-		vaultClients: make(map[int64]*vault.Client),
+		db:          querier,
+		auditLogger: auditLogger,
 	}
 }
 
 // GetSiteVaultClient returns or creates a Vault client for the site's organization.
 func (s *SiteSecretService) GetSiteVaultClient(ctx context.Context, organizationID int64) (*vault.Client, error) {
-	// Check cache first
-	if client, ok := s.vaultClients[organizationID]; ok {
-		return client, nil
-	}
-
 	// Get organization's libops project (where vault server runs)
 	project, err := s.db.GetOrganizationProjectByOrganizationID(ctx, organizationID)
 	if err != nil {
@@ -66,18 +59,10 @@ func (s *SiteSecretService) GetSiteVaultClient(ctx context.Context, organization
 		region = project.GcpRegion.String
 	}
 
-	vaultURL := vault.GetOrganizationVaultURL(projectNumber, region)
-
-	// Create new vault client
-	client, err := vault.NewClientFromAddr(vaultURL)
+	client, err := vault.NewCustomerVaultClient(ctx, organizationID, projectNumber, region)
 	if err != nil {
-		return nil, fmt.Errorf("failed to create vault client: %w", err)
+		return nil, fmt.Errorf("failed to create customer vault client: %w", err)
 	}
-
-	// TODO: Set service token for vault client
-
-	// Cache the client
-	s.vaultClients[organizationID] = client
 
 	return client, nil
 }

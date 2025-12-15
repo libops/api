@@ -2,6 +2,7 @@ package auth
 
 import (
 	"fmt"
+	"log/slog"
 	"net/http"
 
 	"github.com/libops/api/internal/db"
@@ -29,6 +30,11 @@ func (sm *SessionManager) SetSessionCookies(w http.ResponseWriter, accessToken, 
 	if maxAge == 0 {
 		maxAge = 3600 // Default to 1 hour
 	}
+
+	slog.Debug("Setting session cookies",
+		"domain", sm.cookieDomain,
+		"secure", sm.secureCookies,
+		"maxAge", maxAge)
 
 	http.SetCookie(w, &http.Cookie{
 		Name:     "vault_token",

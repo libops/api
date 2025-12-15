@@ -17,7 +17,7 @@ http:
       service: api
 
     vault:
-      rule: Host(`vault.libops.io`) || Host(`vault`) || (Header(`X-Forwarded-Host`, `vault.libops.io`) && (PathPrefix(`/ui/vault/identity/oidc/`) || PathPrefix(`/ui/assets/`) || PathPrefix(`/ui/sw-registration`)))
+      rule: Host(`vault.libops.io`) || Host(`vault`)
       entryPoints:
         - http
       priority: 80
@@ -33,7 +33,7 @@ http:
   middlewares:
     docs-redirect:
       redirectRegex:
-        regex: "^https?://(dash|api).libops.io/?$"
+        regex: "^https?://.*/?$"
         replacement: "https://docs.libops.io"
 
   services:

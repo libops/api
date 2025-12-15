@@ -8,10 +8,9 @@ vault {
 
 auto_auth {
   method {
-    type = "jwt"
+    type = "token_file"
     config = {
-      path = "/vault/secrets/GOOGLE_ACCESS_TOKEN"
-      role = "libops-api"
+      token_file_path = "/tmp/vault-root-token"
     }
   }
   sink "file" {

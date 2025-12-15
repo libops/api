@@ -9,9 +9,6 @@ import (
 	"net/http"
 	"net/url"
 	"strings"
-	"time"
-
-	"github.com/google/uuid"
 
 	"github.com/libops/api/internal/db"
 	"github.com/libops/api/internal/vault"
@@ -19,130 +16,28 @@ import (
 
 // Handler provides HTTP handlers for authentication.
 type Handler struct {
-	oidcClient     *OIDCClient
 	userpassClient *UserpassClient
 	validator      JWTValidator
 	sessionManager *SessionManager
 	db             db.Querier
 	vaultClient    *vault.Client
 	provider       string
+	gothManager    *GothOAuthManager
+	tokenIssuer    *LibopsTokenIssuer
 }
 
 // NewHandler creates a new auth handler.
-func NewHandler(oidcClient *OIDCClient, userpassClient *UserpassClient, validator JWTValidator, sessionManager *SessionManager, querier db.Querier, vaultClient *vault.Client, provider string) *Handler {
+func NewHandler(userpassClient *UserpassClient, validator JWTValidator, sessionManager *SessionManager, querier db.Querier, vaultClient *vault.Client, provider string, gothManager *GothOAuthManager, tokenIssuer *LibopsTokenIssuer) *Handler {
 	return &Handler{
-		oidcClient:     oidcClient,
 		userpassClient: userpassClient,
 		validator:      validator,
 		sessionManager: sessionManager,
 		db:             querier,
 		vaultClient:    vaultClient,
 		provider:       provider,
+		gothManager:    gothManager,
+		tokenIssuer:    tokenIssuer,
 	}
-}
-
-// HandleLogin initiates the OIDC login flow.
-func (h *Handler) HandleLogin(w http.ResponseWriter, r *http.Request) {
-	provider := r.URL.Query().Get("provider")
-
-	redirectPath := r.URL.Query().Get("redirect")
-	if redirectPath == "" {
-		redirectPath = "/"
-	}
-
-	authURL, err := h.oidcClient.BuildAuthorizationURL(provider, redirectPath)
-	if err != nil {
-		slog.Error("Failed to build authorization URL", "err", err)
-		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
-		return
-	}
-
-	http.Redirect(w, r, authURL, http.StatusFound)
-}
-
-// HandleCallback handles the OIDC callback from Vault.
-func (h *Handler) HandleCallback(w http.ResponseWriter, r *http.Request) {
-	code := r.URL.Query().Get("code")
-	state := r.URL.Query().Get("state")
-
-	if code == "" || state == "" {
-		http.Error(w, "Missing code or state parameter", http.StatusBadRequest)
-		return
-	}
-
-	tokenResp, err := h.oidcClient.ExchangeCode(r.Context(), code, state)
-	if err != nil {
-		slog.Error("Failed to exchange code", "err", err)
-		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
-		return
-	}
-
-	userInfo, err := h.validator.ValidateToken(r.Context(), tokenResp.IDToken)
-	if err != nil {
-		slog.Error("Failed to validate token", "err", err)
-		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
-		return
-	}
-
-	account, err := h.linkOrCreateAccount(r.Context(), userInfo)
-	if err != nil {
-		slog.Error("Failed to link account", "err", err)
-		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
-		return
-	}
-
-	h.sessionManager.SetSessionCookies(w, tokenResp.AccessToken, tokenResp.IDToken, tokenResp.ExpiresIn)
-
-	// Check if this is a CLI callback (redirect path starts with /cli-callback)
-	if strings.HasPrefix(tokenResp.StateData.RedirectPath, "/cli-callback") {
-		// Extract redirect_uri and state from the redirect path
-		redirectURL, err := url.Parse(tokenResp.StateData.RedirectPath)
-		if err != nil {
-			slog.Error("Failed to parse redirect path", "err", err)
-			http.Error(w, "Internal Server Error", http.StatusInternalServerError)
-			return
-		}
-
-		redirectURI := redirectURL.Query().Get("redirect_uri")
-		state := redirectURL.Query().Get("state")
-
-		if redirectURI != "" {
-			// For CLI: redirect and rely on cookie extraction
-			cliRedirectURL := fmt.Sprintf("%s?state=%s", redirectURI, state)
-			http.Redirect(w, r, cliRedirectURL, http.StatusFound)
-			return
-		}
-	}
-
-	// Check if this is an API request (JSON Accept header)
-	if r.Header.Get("Accept") == "application/json" {
-		w.Header().Set("Content-Type", "application/json")
-		name := ""
-		if account.Name.Valid {
-			name = account.Name.String
-		}
-		if err := json.NewEncoder(w).Encode(map[string]any{
-			"success": true,
-			"account": map[string]string{
-				"id":    account.PublicID,
-				"email": account.Email,
-				"name":  name,
-			},
-			"redirect": tokenResp.StateData.RedirectPath,
-		}); err != nil {
-			slog.Error("Failed to encode response", "err", err)
-		}
-		return
-	}
-
-	// For browser requests without redirect (normal web login), redirect to dashboard
-	if tokenResp.StateData.RedirectPath == "/" || tokenResp.StateData.RedirectPath == "" {
-		http.Redirect(w, r, "/dashboard", http.StatusSeeOther)
-		return
-	}
-
-	// For other cases, redirect to the specified path
-	http.Redirect(w, r, tokenResp.StateData.RedirectPath, http.StatusSeeOther)
 }
 
 // HandleLogout logs out the user.
@@ -194,72 +89,6 @@ func (h *Handler) HandleMe(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-// linkOrCreateAccount links a Vault entity to a local account or creates a new one.
-func (h *Handler) linkOrCreateAccount(ctx context.Context, userInfo *UserInfo) (*db.GetAccountByVaultEntityIDRow, error) {
-	account, err := h.db.GetAccountByVaultEntityID(ctx, sql.NullString{String: userInfo.EntityID, Valid: true})
-	if err == nil {
-		return &account, nil
-	}
-
-	if err != sql.ErrNoRows {
-		return nil, fmt.Errorf("failed to query account: %w", err)
-	}
-
-	existingAccount, err := h.db.GetAccountByEmail(ctx, userInfo.Email)
-	if err == nil {
-		// Account exists with this email but different entity ID
-		publicID, err := uuid.Parse(existingAccount.PublicID)
-		if err != nil {
-			return nil, fmt.Errorf("failed to parse public ID: %w", err)
-		}
-
-		err = h.db.UpdateAccount(ctx, db.UpdateAccountParams{
-			Email:          existingAccount.Email,
-			Name:           existingAccount.Name,
-			GithubUsername: existingAccount.GithubUsername,
-			VaultEntityID:  sql.NullString{String: userInfo.EntityID, Valid: true},
-			AuthMethod:     existingAccount.AuthMethod,
-			Verified:       existingAccount.Verified,
-			VerifiedAt:     existingAccount.VerifiedAt,
-			PublicID:       publicID.String(),
-		})
-		if err != nil {
-			return nil, fmt.Errorf("failed to link vault entity: %w", err)
-		}
-
-		account, err = h.db.GetAccountByVaultEntityID(ctx, sql.NullString{String: userInfo.EntityID, Valid: true})
-		if err != nil {
-			return nil, fmt.Errorf("failed to fetch linked account: %w", err)
-		}
-		return &account, nil
-	}
-
-	if err != sql.ErrNoRows {
-		return nil, fmt.Errorf("failed to query account by email: %w", err)
-	}
-
-	now := sql.NullTime{Time: time.Now(), Valid: true}
-	err = h.db.CreateAccount(ctx, db.CreateAccountParams{
-		Email:          userInfo.Email,
-		Name:           sql.NullString{String: userInfo.Name, Valid: userInfo.Name != ""},
-		GithubUsername: sql.NullString{Valid: false},
-		VaultEntityID:  sql.NullString{String: userInfo.EntityID, Valid: true},
-		AuthMethod:     db.AccountsAuthMethodGoogle,
-		Verified:       true,
-		VerifiedAt:     now,
-	})
-	if err != nil {
-		return nil, fmt.Errorf("failed to create account: %w", err)
-	}
-
-	account, err = h.db.GetAccountByVaultEntityID(ctx, sql.NullString{String: userInfo.EntityID, Valid: true})
-	if err != nil {
-		return nil, fmt.Errorf("failed to fetch created account: %w", err)
-	}
-
-	return &account, nil
-}
-
 // HandleVerifyEmail delegates to userpassClient for email verification.
 func (h *Handler) HandleVerifyEmail(w http.ResponseWriter, r *http.Request) {
 	if h.userpassClient == nil {
@@ -267,36 +96,6 @@ func (h *Handler) HandleVerifyEmail(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	h.userpassClient.HandleVerifyEmail(w, r)
-}
-
-// HandleGoogleLogin initiates the OIDC login flow specifically for Google.
-func (h *Handler) HandleGoogleLogin(w http.ResponseWriter, r *http.Request) {
-	// Check for CLI redirect parameters
-	redirectURI := r.URL.Query().Get("redirect_uri")
-	cliState := r.URL.Query().Get("state")
-
-	// If this is a CLI request, encode the redirect info in the redirect path
-	// The callback will extract this and redirect to the CLI
-	var redirectPath string
-	if redirectURI != "" {
-		// Encode CLI redirect info in the redirect path
-		redirectPath = fmt.Sprintf("/cli-callback?redirect_uri=%s&state=%s", redirectURI, cliState)
-	} else {
-		// Standard web flow
-		redirectPath = r.URL.Query().Get("redirect")
-		if redirectPath == "" {
-			redirectPath = "/"
-		}
-	}
-
-	authURL, err := h.oidcClient.BuildAuthorizationURL("google", redirectPath)
-	if err != nil {
-		slog.Error("Failed to build authorization URL", "err", err)
-		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
-		return
-	}
-
-	http.Redirect(w, r, authURL, http.StatusFound)
 }
 
 // HandleUserpassLogin delegates to userpassClient for userpass login.
@@ -308,7 +107,7 @@ func (h *Handler) HandleUserpassLogin(w http.ResponseWriter, r *http.Request) {
 
 	// Check for CLI redirect parameters
 	if err := r.ParseForm(); err != nil {
-		http.Error(w, "Error parsing form data", http.StatusBadRequest)
+		http.Redirect(w, r, "/login?error=Invalid form data", http.StatusSeeOther)
 		return
 	}
 
@@ -318,14 +117,18 @@ func (h *Handler) HandleUserpassLogin(w http.ResponseWriter, r *http.Request) {
 	state := r.FormValue("state")
 
 	if email == "" || password == "" {
-		http.Error(w, "Email and password are required", http.StatusBadRequest)
+		http.Redirect(w, r, "/login?error=Email and password are required", http.StatusSeeOther)
 		return
 	}
 
 	// Get OIDC token for userpass authentication
 	oidcToken, expiresIn, err := h.getUserpassOIDCToken(r.Context(), email, password)
 	if err != nil {
-		http.Error(w, "Login failed. Check username/password.", http.StatusUnauthorized)
+		if strings.Contains(err.Error(), "email not verified") {
+			http.Redirect(w, r, "/login?error=Please verify your email address", http.StatusSeeOther)
+			return
+		}
+		http.Redirect(w, r, "/login?error=Invalid credentials", http.StatusSeeOther)
 		return
 	}
 
@@ -358,6 +161,49 @@ func (h *Handler) getUserpassOIDCToken(ctx context.Context, email, password stri
 		return "", 0, fmt.Errorf("internal server error")
 	}
 
+	if !account.Verified {
+		return "", 0, fmt.Errorf("email not verified")
+	}
+
+	// Update account with vault entity ID if not already set
+	if vaultTokenResp.EntityID != "" && (!account.VaultEntityID.Valid || account.VaultEntityID.String == "") {
+		// Update the entity metadata to include account_uuid for ACL templating
+		accountUUID := strings.ReplaceAll(strings.ToLower(account.PublicID), "-", "")
+		entityMetadata := map[string]string{
+			"account_id":   fmt.Sprintf("%d", account.ID),
+			"email":        account.Email,
+			"account_uuid": accountUUID,
+		}
+		if updateErr := h.vaultClient.UpdateEntity(ctx, vaultTokenResp.EntityID, entityMetadata); updateErr != nil {
+			slog.Warn("Failed to update entity metadata", "err", updateErr, "entity_id", vaultTokenResp.EntityID)
+		}
+
+		err = h.db.UpdateAccount(ctx, db.UpdateAccountParams{
+			Email:          account.Email,
+			Name:           account.Name,
+			GithubUsername: account.GithubUsername,
+			VaultEntityID:  sql.NullString{String: vaultTokenResp.EntityID, Valid: true},
+			AuthMethod:     account.AuthMethod,
+			Verified:       account.Verified,
+			VerifiedAt:     account.VerifiedAt,
+			PublicID:       account.PublicID,
+		})
+		if err != nil {
+			slog.Warn("Failed to update account with vault entity ID", "err", err, "account_id", account.ID)
+			// Don't fail the login, just log the warning
+		} else {
+			slog.Info("updated userpass account with vault entity ID and metadata", "account_id", account.ID, "entity_id", vaultTokenResp.EntityID, "account_uuid", accountUUID)
+		}
+	}
+
+	// Ensure entity has a token alias for OIDC token creation
+	if vaultTokenResp.EntityID != "" {
+		if err := h.vaultClient.EnsureTokenAlias(ctx, vaultTokenResp.EntityID, email); err != nil {
+			slog.Warn("Failed to ensure token alias for userpass user", "err", err, "entity_id", vaultTokenResp.EntityID)
+			// Don't fail the login, just log warning
+		}
+	}
+
 	// Use the user's Vault token to request an OIDC token
 	// This uses the authenticated user's token, not root privileges
 	scopes := GetAccountScopesForOAuth()
@@ -369,20 +215,341 @@ func (h *Handler) getUserpassOIDCToken(ctx context.Context, email, password stri
 		return "", 0, fmt.Errorf("failed to get OIDC token")
 	}
 
-	// Validate the OIDC token to extract the entity ID
-	userInfo, err := h.validator.ValidateToken(ctx, oidcToken)
-	if err != nil {
-		slog.Error("Failed to validate OIDC token", "err", err)
-		return "", 0, fmt.Errorf("failed to validate OIDC token")
-	}
-
-	// Link or create account with the Vault entity ID
-	// This ensures the account is properly linked to the Vault entity
-	_, err = h.linkOrCreateAccount(ctx, userInfo)
-	if err != nil {
-		slog.Error("Failed to link account with entity", "err", err)
-		return "", 0, fmt.Errorf("failed to link account")
-	}
-
 	return oidcToken, ttl, nil
+}
+
+// HandleGoogleLoginV2 initiates OAuth flow via Goth for Google.
+func (h *Handler) HandleGoogleLoginV2(w http.ResponseWriter, r *http.Request) {
+	if h.gothManager == nil {
+		http.Error(w, "OAuth not configured", http.StatusInternalServerError)
+		return
+	}
+
+	// Extract redirect parameters
+	redirectURI := r.URL.Query().Get("redirect_uri")
+	cliState := r.URL.Query().Get("state")
+
+	var redirectPath string
+	if redirectURI != "" {
+		// CLI request
+		redirectPath = fmt.Sprintf("/cli-callback?redirect_uri=%s&state=%s", redirectURI, cliState)
+	} else {
+		// Web request
+		redirectPath = r.URL.Query().Get("redirect")
+		if redirectPath == "" {
+			redirectPath = "/"
+		}
+	}
+
+	authURL, err := h.gothManager.BeginAuth("google", redirectPath)
+	if err != nil {
+		slog.Error("Failed to begin Google OAuth", "err", err)
+		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+		return
+	}
+
+	http.Redirect(w, r, authURL, http.StatusFound)
+}
+
+// HandleGitHubLogin initiates OAuth flow via Goth for GitHub.
+func (h *Handler) HandleGitHubLogin(w http.ResponseWriter, r *http.Request) {
+	if h.gothManager == nil {
+		http.Error(w, "OAuth not configured", http.StatusInternalServerError)
+		return
+	}
+
+	// Extract redirect parameters
+	redirectURI := r.URL.Query().Get("redirect_uri")
+	cliState := r.URL.Query().Get("state")
+
+	var redirectPath string
+	if redirectURI != "" {
+		// CLI request
+		redirectPath = fmt.Sprintf("/cli-callback?redirect_uri=%s&state=%s", redirectURI, cliState)
+	} else {
+		// Web request
+		redirectPath = r.URL.Query().Get("redirect")
+		if redirectPath == "" {
+			redirectPath = "/"
+		}
+	}
+
+	authURL, err := h.gothManager.BeginAuth("github", redirectPath)
+	if err != nil {
+		slog.Error("Failed to begin GitHub OAuth", "err", err)
+		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+		return
+	}
+
+	http.Redirect(w, r, authURL, http.StatusFound)
+}
+
+// HandleOAuthCallback handles OAuth callback from Google/GitHub via Goth.
+func (h *Handler) HandleOAuthCallback(w http.ResponseWriter, r *http.Request) {
+	if h.gothManager == nil || h.tokenIssuer == nil {
+		http.Error(w, "OAuth not configured", http.StatusInternalServerError)
+		return
+	}
+
+	// Determine provider from URL path
+	provider := ""
+	if strings.Contains(r.URL.Path, "/google") {
+		provider = "google"
+	} else if strings.Contains(r.URL.Path, "/github") {
+		provider = "github"
+	} else {
+		http.Error(w, "Invalid OAuth provider", http.StatusBadRequest)
+		return
+	}
+
+	code := r.URL.Query().Get("code")
+	state := r.URL.Query().Get("state")
+
+	if code == "" || state == "" {
+		http.Error(w, "Missing code or state parameter", http.StatusBadRequest)
+		return
+	}
+
+	// Complete OAuth flow
+	gothUser, stateData, err := h.gothManager.CompleteAuth(r.Context(), provider, code, state)
+	if err != nil {
+		slog.Error("Failed to complete OAuth", "err", err, "provider", provider)
+		http.Error(w, "Authentication failed", http.StatusUnauthorized)
+		return
+	}
+
+	// Link or create account
+	account, err := h.gothManager.LinkOrCreateAccount(r.Context(), gothUser.Email, gothUser.Name, provider)
+	if err != nil {
+		if strings.Contains(err.Error(), "verify your email") {
+			http.Error(w, "Please verify your email address before linking OAuth account", http.StatusForbidden)
+			return
+		}
+		slog.Error("Failed to link/create account", "err", err, "provider", provider, "email", gothUser.Email)
+		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+		return
+	}
+
+	// Ensure account has Vault entity
+	entityID, err := h.ensureVaultEntity(r.Context(), account)
+	if err != nil {
+		slog.Error("Failed to ensure Vault entity", "err", err, "account_id", account.ID)
+		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+		return
+	}
+
+	slog.Debug("Vault entity ensured", "entity_id", entityID, "account_id", account.ID)
+
+	// Create entity token
+	policies := vault.DeterminePolicies(string(account.AuthMethod))
+	entityToken, actualEntityID, err := h.vaultClient.CreateEntityToken(r.Context(), entityID, policies, "1h")
+	if err != nil {
+		slog.Error("Failed to create entity token", "err", err, "entity_id", entityID)
+		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+		return
+	}
+
+	// If the token was created with a different entity (because alias points elsewhere),
+	// update that entity's metadata instead
+	if actualEntityID != entityID {
+		slog.Warn("Alias returned different entity, updating actual entity metadata",
+			"stored_entity", entityID, "actual_entity", actualEntityID, "account_id", account.ID)
+
+		accountUUID := strings.ReplaceAll(strings.ToLower(account.PublicID), "-", "")
+		metadata := map[string]string{
+			"account_id":   fmt.Sprintf("%d", account.ID),
+			"email":        account.Email,
+			"account_uuid": accountUUID,
+		}
+
+		err = h.vaultClient.UpdateEntity(r.Context(), actualEntityID, metadata)
+		if err != nil {
+			slog.Error("Failed to update actual entity metadata", "err", err, "entity_id", actualEntityID)
+			http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+			return
+		}
+		slog.Info("Updated actual entity metadata", "entity_id", actualEntityID, "account_id", account.ID)
+
+		// Update the database to store the correct entity ID
+		err = h.db.UpdateAccount(r.Context(), db.UpdateAccountParams{
+			Email:          account.Email,
+			Name:           account.Name,
+			GithubUsername: account.GithubUsername,
+			VaultEntityID:  sql.NullString{String: actualEntityID, Valid: true},
+			AuthMethod:     account.AuthMethod,
+			Verified:       account.Verified,
+			VerifiedAt:     account.VerifiedAt,
+			PublicID:       account.PublicID,
+		})
+		if err != nil {
+			slog.Warn("Failed to update account with correct entity ID", "err", err, "account_id", account.ID)
+		}
+	}
+
+	slog.Debug("Entity token created", "entity_id", actualEntityID, "account_id", account.ID)
+
+	// Issue OIDC token using the entity token
+	scopes := GetAccountScopesForOAuth()
+	scopeStrings := ScopesToStrings(scopes)
+	oidcToken, ttl, err := h.vaultClient.GetOIDCTokenWithAccountID(r.Context(), entityToken, h.provider, account.ID, scopeStrings)
+	if err != nil {
+		slog.Error("Failed to get OIDC token", "err", err, "account_id", account.ID)
+		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+		return
+	}
+
+	slog.Debug("OIDC token issued", "account_id", account.ID, "ttl", ttl)
+
+	// Validate the OIDC token to verify account_id is correct
+	if tokenInfo, err := h.validator.ValidateToken(r.Context(), oidcToken); err == nil {
+		slog.Info("OIDC token validated after issuance",
+			"account_id_in_token", tokenInfo.AccountID,
+			"expected_account_id", account.ID,
+			"entity_id", tokenInfo.EntityID,
+			"email", tokenInfo.Email)
+		if tokenInfo.AccountID != account.ID {
+			slog.Error("OIDC token has wrong account_id",
+				"token_account_id", tokenInfo.AccountID,
+				"expected_account_id", account.ID,
+				"entity_id", entityID)
+		}
+	} else {
+		slog.Warn("Failed to validate OIDC token after issuance", "err", err)
+	}
+
+	// Set session cookies
+	h.sessionManager.SetSessionCookies(w, oidcToken, oidcToken, ttl)
+
+	// Check if this is a CLI callback
+	if strings.HasPrefix(stateData.RedirectPath, "/cli-callback") {
+		redirectURL, err := url.Parse(stateData.RedirectPath)
+		if err != nil {
+			slog.Error("Failed to parse redirect path", "err", err)
+			http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+			return
+		}
+
+		redirectURI := redirectURL.Query().Get("redirect_uri")
+		cliState := redirectURL.Query().Get("state")
+
+		if redirectURI != "" {
+			cliRedirectURL := fmt.Sprintf("%s?state=%s", redirectURI, cliState)
+			http.Redirect(w, r, cliRedirectURL, http.StatusFound)
+			return
+		}
+	}
+
+	// Check if this is an API request
+	if r.Header.Get("Accept") == "application/json" {
+		w.Header().Set("Content-Type", "application/json")
+		name := ""
+		if account.Name.Valid {
+			name = account.Name.String
+		}
+		if err := json.NewEncoder(w).Encode(map[string]any{
+			"success": true,
+			"account": map[string]string{
+				"id":    account.PublicID, // Already a string in GetAccountByEmailRow
+				"email": account.Email,
+				"name":  name,
+			},
+			"redirect": stateData.RedirectPath,
+		}); err != nil {
+			slog.Error("Failed to encode response", "err", err)
+		}
+		return
+	}
+
+	// Browser request - redirect
+	if stateData.RedirectPath == "/" || stateData.RedirectPath == "" {
+		http.Redirect(w, r, "/dashboard", http.StatusSeeOther)
+		return
+	}
+
+	http.Redirect(w, r, stateData.RedirectPath, http.StatusSeeOther)
+}
+
+// ensureVaultEntity ensures an account has a Vault entity and returns the entity ID.
+func (h *Handler) ensureVaultEntity(ctx context.Context, account *db.GetAccountByEmailRow) (string, error) {
+	// Convert account.PublicID (UUID) to lowercase no-dashes format for Vault ACL templating
+	accountUUID := strings.ReplaceAll(strings.ToLower(account.PublicID), "-", "")
+
+	metadata := map[string]string{
+		"account_id":   fmt.Sprintf("%d", account.ID),
+		"email":        account.Email,
+		"account_uuid": accountUUID,
+	}
+
+	// If account already has entity ID, check if metadata needs updating
+	if account.VaultEntityID.Valid && account.VaultEntityID.String != "" {
+		// Read current entity to check if metadata needs updating
+		entityInfo, err := h.vaultClient.ValidateEntity(ctx, account.VaultEntityID.String)
+		if err != nil {
+			return "", fmt.Errorf("failed to validate entity: %w", err)
+		}
+
+		// Check if metadata needs updating
+		needsUpdate := false
+		if entityInfo.Metadata["account_id"] != fmt.Sprintf("%d", account.ID) {
+			needsUpdate = true
+		}
+		if entityInfo.Metadata["email"] != account.Email {
+			needsUpdate = true
+		}
+		if entityInfo.Metadata["account_uuid"] != accountUUID {
+			needsUpdate = true
+		}
+
+		if needsUpdate {
+			slog.Debug("Updating existing Vault entity metadata", "entity_id", account.VaultEntityID.String, "account_id", account.ID, "metadata", metadata)
+			err := h.vaultClient.UpdateEntity(ctx, account.VaultEntityID.String, metadata)
+			if err != nil {
+				return "", fmt.Errorf("failed to update Vault entity metadata: %w", err)
+			}
+			slog.Info("Updated Vault entity metadata", "entity_id", account.VaultEntityID.String, "account_id", account.ID)
+		} else {
+			slog.Debug("Entity metadata already up to date", "entity_id", account.VaultEntityID.String, "account_id", account.ID)
+		}
+
+		// Ensure entity has token alias
+		err = h.vaultClient.EnsureTokenAlias(ctx, account.VaultEntityID.String, account.Email)
+		if err != nil {
+			return "", fmt.Errorf("failed to ensure token alias: %w", err)
+		}
+
+		return account.VaultEntityID.String, nil
+	}
+
+	// Create new Vault entity
+	policies := vault.DeterminePolicies(string(account.AuthMethod))
+
+	entityID, err := h.vaultClient.CreateEntity(ctx, account.Email, metadata, policies)
+	if err != nil {
+		return "", fmt.Errorf("failed to create Vault entity: %w", err)
+	}
+
+	// Update account with entity ID
+	err = h.db.UpdateAccount(ctx, db.UpdateAccountParams{
+		Email:          account.Email,
+		Name:           account.Name,
+		GithubUsername: account.GithubUsername,
+		VaultEntityID:  sql.NullString{String: entityID, Valid: true},
+		AuthMethod:     account.AuthMethod,
+		Verified:       account.Verified,
+		VerifiedAt:     account.VerifiedAt,
+		PublicID:       account.PublicID, // Already a string in GetAccountByEmailRow
+	})
+	if err != nil {
+		return "", fmt.Errorf("failed to update account with entity ID: %w", err)
+	}
+
+	slog.Info("created Vault entity for account", "account_id", account.ID, "entity_id", entityID, "email", account.Email)
+
+	// Ensure entity has a token alias
+	err = h.vaultClient.EnsureTokenAlias(ctx, entityID, account.Email)
+	if err != nil {
+		return "", fmt.Errorf("failed to ensure token alias: %w", err)
+	}
+
+	return entityID, nil
 }

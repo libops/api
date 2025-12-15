@@ -32,6 +32,16 @@ type Config struct {
 	OIDCClientID     string
 	OIDCClientSecret string
 	OIDCRedirectURL  string
+
+	// Google OAuth Configuration
+	GoogleClientID     string
+	GoogleClientSecret string
+	GoogleCallbackURL  string
+
+	// GitHub OAuth Configuration
+	GitHubClientID     string
+	GitHubClientSecret string
+	GitHubCallbackURL  string
 }
 
 // Load loads configuration from environment variables and Vault secrets.
@@ -65,6 +75,10 @@ func Load() (*Config, error) {
 	}
 
 	baseUrl := loader.LoadEnvWithDefault("API_BASE_URL", "https://api.libops.io")
+	oidcBaseUrl := loader.LoadEnvWithDefault("API_OIDC_BASE_URL", "https://api.libops.io")
+
+	// Ensure OAuth callback URLs always use HTTPS
+	oauthCallbackBaseUrl := ensureHTTPS(oidcBaseUrl)
 
 	cfg := &Config{
 		Port:         loader.LoadEnvWithDefault("PORT", "8080"),
@@ -87,7 +101,17 @@ func Load() (*Config, error) {
 
 		OIDCClientID:     oidcClientId,
 		OIDCClientSecret: oidcClientSecret,
-		OIDCRedirectURL:  loader.LoadEnvWithDefault("OIDC_REDIRECT_URL", fmt.Sprintf("%s/auth/callback", baseUrl)),
+		OIDCRedirectURL:  loader.LoadEnvWithDefault("OIDC_REDIRECT_URL", fmt.Sprintf("%s/auth/callback", oidcBaseUrl)),
+
+		// Google OAuth
+		GoogleClientID:     loader.LoadEnvWithDefault("GOOGLE_CLIENT_ID", ""),
+		GoogleClientSecret: loader.LoadEnvWithDefault("GOOGLE_CLIENT_SECRET", ""),
+		GoogleCallbackURL:  loader.LoadEnvWithDefault("GOOGLE_CALLBACK_URL", fmt.Sprintf("%s/auth/callback/google", oauthCallbackBaseUrl)),
+
+		// GitHub OAuth
+		GitHubClientID:     loader.LoadEnvWithDefault("GITHUB_CLIENT_ID", ""),
+		GitHubClientSecret: loader.LoadEnvWithDefault("GITHUB_CLIENT_SECRET", ""),
+		GitHubCallbackURL:  loader.LoadEnvWithDefault("GITHUB_CALLBACK_URL", fmt.Sprintf("%s/auth/callback/github", oauthCallbackBaseUrl)),
 	}
 
 	if err := cfg.Validate(); err != nil {
@@ -117,6 +141,15 @@ func getEnv(key, defaultValue string) string {
 		return value
 	}
 	return defaultValue
+}
+
+// ensureHTTPS converts HTTP URLs to HTTPS for OAuth callback URLs.
+// OAuth providers require HTTPS redirect URIs for security.
+func ensureHTTPS(urlStr string) string {
+	if strings.HasPrefix(urlStr, "http://") {
+		return strings.Replace(urlStr, "http://", "https://", 1)
+	}
+	return urlStr
 }
 
 // parseAllowedOrigins parses ALLOWED_ORIGINS env var or returns secure defaults

@@ -25,9 +25,8 @@ import (
 
 // ProjectSecretService implements the ProjectSecretService API.
 type ProjectSecretService struct {
-	db           db.Querier
-	auditLogger  *audit.Logger
-	vaultClients map[int64]*vault.Client // Cached vault clients per organization (projects share organization vault)
+	db          db.Querier
+	auditLogger *audit.Logger
 }
 
 // Compile-time check to ensure ProjectSecretService implements the interface.
@@ -36,18 +35,13 @@ var _ libopsv1connect.ProjectSecretServiceHandler = (*ProjectSecretService)(nil)
 // NewProjectSecretService creates a new ProjectSecretService instance.
 func NewProjectSecretService(querier db.Querier, auditLogger *audit.Logger) *ProjectSecretService {
 	return &ProjectSecretService{
-		db:           querier,
-		auditLogger:  auditLogger,
-		vaultClients: make(map[int64]*vault.Client),
+		db:          querier,
+		auditLogger: auditLogger,
 	}
 }
 
 // GetProjectVaultClient returns or creates a Vault client for the project's organization.
 func (s *ProjectSecretService) GetProjectVaultClient(ctx context.Context, organizationID int64) (*vault.Client, error) {
-	if client, ok := s.vaultClients[organizationID]; ok {
-		return client, nil
-	}
-
 	project, err := s.db.GetOrganizationProjectByOrganizationID(ctx, organizationID)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get organization project: %w", err)
@@ -63,16 +57,10 @@ func (s *ProjectSecretService) GetProjectVaultClient(ctx context.Context, organi
 		region = project.GcpRegion.String
 	}
 
-	vaultURL := vault.GetOrganizationVaultURL(projectNumber, region)
-
-	client, err := vault.NewClientFromAddr(vaultURL)
+	client, err := vault.NewCustomerVaultClient(ctx, organizationID, projectNumber, region)
 	if err != nil {
-		return nil, fmt.Errorf("failed to create vault client: %w", err)
+		return nil, fmt.Errorf("failed to create customer vault client: %w", err)
 	}
-
-	// TODO: Set service token for vault client
-
-	s.vaultClients[organizationID] = client
 
 	return client, nil
 }

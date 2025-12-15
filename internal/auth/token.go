@@ -129,9 +129,12 @@ func (ti *LibopsTokenIssuer) handlePasswordGrant(ctx context.Context, email, pas
 
 	// Authenticate with Vault
 	vaultUsername := strings.ReplaceAll(email, "@", "_")
-	vaultClient := ti.vaultClient.GetAPIClient()
-	originalToken := vaultClient.Token()
-	defer vaultClient.SetToken(originalToken)
+
+	// Clone client to avoid race conditions with shared client token
+	clonedClient, err := ti.vaultClient.Clone()
+	if err != nil {
+		return nil, fmt.Errorf("internal error")
+	}
 
 	userpassAuth, err := userpass.NewUserpassAuth(vaultUsername, &userpass.Password{FromString: password}, userpass.WithMountPath("userpass"))
 	if err != nil {
@@ -140,7 +143,7 @@ func (ti *LibopsTokenIssuer) handlePasswordGrant(ctx context.Context, email, pas
 		return nil, fmt.Errorf("authentication failed")
 	}
 
-	secret, err := vaultClient.Auth().Login(ctx, userpassAuth)
+	secret, err := clonedClient.GetAPIClient().Auth().Login(ctx, userpassAuth)
 	if err != nil {
 		_ = ti.db.IncrementFailedLoginAttempts(ctx, account.ID)
 		ti.auditLogger.Log(ctx, account.ID, account.ID, audit.AccountEntityType, audit.UserLoginFailure, map[string]any{"error": "invalid credentials"})
@@ -152,6 +155,14 @@ func (ti *LibopsTokenIssuer) handlePasswordGrant(ctx context.Context, email, pas
 
 	// Get OIDC token from Vault
 	userToken := secret.Auth.ClientToken
+
+	// Ensure token alias exists for consistency
+	if secret.Auth.EntityID != "" {
+		if err := ti.vaultClient.EnsureTokenAlias(ctx, secret.Auth.EntityID, email); err != nil {
+			slog.Warn("Failed to ensure token alias for userpass API login", "err", err, "entity_id", secret.Auth.EntityID)
+		}
+	}
+
 	scopes := GetAccountScopesForOAuth()
 	scopeStrings := ScopesToStrings(scopes)
 
@@ -222,9 +233,60 @@ func (ti *LibopsTokenIssuer) issueVaultOIDCToken(ctx context.Context, email, ent
 	policies := vault.DeterminePolicies(authMethod)
 
 	// Create entity token
-	entityToken, err := ti.vaultClient.CreateEntityToken(ctx, entityInfo.ID, policies, "1h")
+	entityToken, actualEntityID, err := ti.vaultClient.CreateEntityToken(ctx, entityInfo.ID, policies, "1h")
 	if err != nil {
 		return nil, fmt.Errorf("failed to create entity token: %w", err)
+	}
+
+	// If the actual entity ID differs from what we requested, we need to update both Vault and the database
+	if actualEntityID != entityID {
+		slog.Warn("Entity token created with different entity than requested",
+			"requested_entity_id", entityID,
+			"actual_entity_id", actualEntityID,
+			"email", email)
+
+		// Prepare metadata for the correct entity
+		metadata := map[string]string{
+			"email":      email,
+			"account_id": fmt.Sprintf("%d", account.ID),
+		}
+
+		// Convert PublicID (UUID) to lowercase no-dashes format
+		accountUUID := strings.ReplaceAll(strings.ToLower(account.PublicID), "-", "")
+		metadata["account_uuid"] = accountUUID
+
+		// Update the correct entity's metadata
+		err = ti.vaultClient.UpdateEntity(ctx, actualEntityID, metadata)
+		if err != nil {
+			slog.Error("Failed to update entity metadata after entity ID mismatch",
+				"actual_entity_id", actualEntityID,
+				"err", err)
+			return nil, fmt.Errorf("failed to update entity metadata: %w", err)
+		}
+
+		// Update database with correct entity ID
+		err = ti.db.UpdateAccount(ctx, db.UpdateAccountParams{
+			VaultEntityID:  sql.NullString{String: actualEntityID, Valid: true},
+			Email:          email,
+			Name:           account.Name,
+			GithubUsername: account.GithubUsername,
+			AuthMethod:     account.AuthMethod,
+			Verified:       account.Verified,
+			VerifiedAt:     account.VerifiedAt,
+			PublicID:       account.PublicID,
+		})
+		if err != nil {
+			slog.Error("Failed to update account with correct entity ID",
+				"account_id", account.ID,
+				"actual_entity_id", actualEntityID,
+				"err", err)
+			return nil, fmt.Errorf("failed to update account: %w", err)
+		}
+
+		slog.Info("Updated account with correct entity ID",
+			"account_id", account.ID,
+			"old_entity_id", entityID,
+			"new_entity_id", actualEntityID)
 	}
 
 	// Get OIDC token

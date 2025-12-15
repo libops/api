@@ -1,9 +1,0 @@
-# Docker Compose override for bulk seed data testing
-# Usage: docker compose -f docker-compose.yml -f docker-compose.bulk.yml up
-# Or: make integration-test-bulk
-
-services:
-  mariadb:
-    volumes:
-      # Add bulk seed data after the core seed (03 comes after 02)
-      - ./testdata/rbac_bulk_seed.sql:/docker-entrypoint-initdb.d/03-bulk-seed.sql:ro
