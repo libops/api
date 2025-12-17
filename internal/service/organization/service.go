@@ -11,6 +11,7 @@ import (
 	"google.golang.org/protobuf/types/known/fieldmaskpb"
 
 	"github.com/libops/api/internal/auth"
+	"github.com/libops/api/internal/config"
 	"github.com/libops/api/internal/db"
 	"github.com/libops/api/internal/service"
 	"github.com/libops/api/internal/validation"
@@ -21,16 +22,18 @@ import (
 
 // OrganizationService implements the organization-facing organization API.
 type OrganizationService struct {
-	repo *Repository
+	repo   *Repository
+	config *config.Config
 }
 
 // Compile-time check.
 var _ libopsv1connect.OrganizationServiceHandler = (*OrganizationService)(nil)
 
 // NewOrganizationService creates a new organization-facing organization service.
-func NewOrganizationService(querier db.Querier) *OrganizationService {
+func NewOrganizationService(querier db.Querier, cfg *config.Config) *OrganizationService {
 	return &OrganizationService{
-		repo: NewRepository(querier),
+		repo:   NewRepository(querier),
+		config: cfg,
 	}
 }
 
@@ -88,45 +91,21 @@ func (s *OrganizationService) CreateOrganization(
 	}
 
 	accountID := userInfo.AccountID
-
-	// Generate a new UUID for the organization
 	newID := uuid.New().String()
 
-	// Organization API doesn't allow setting GCP fields - use defaults
-	params := db.CreateOrganizationParams{
-		PublicID:          newID,
-		Name:              folder.OrganizationName,
-		GcpOrgID:          "", // Will be set by admin or orchestration
-		GcpBillingAccount: "",
-		GcpParent:         "",
-		GcpFolderID:       sql.NullString{Valid: false},
-		Status:            db.NullOrganizationsStatus{OrganizationsStatus: db.OrganizationsStatusProvisioning, Valid: true},
-		CreatedBy:         sql.NullInt64{Int64: accountID, Valid: true},
-		UpdatedBy:         sql.NullInt64{Int64: accountID, Valid: true},
-	}
-
-	err := s.repo.CreateOrganization(ctx, params)
+	// Use the shared repository method that creates org, adds owner, and creates relationship
+	_, err := s.repo.CreateOrganizationWithOwner(
+		ctx,
+		newID,
+		folder.OrganizationName,
+		s.config.GcpOrgID,
+		s.config.GcpBillingAccount,
+		s.config.GcpParent,
+		accountID,
+		s.config.RootOrganizationID,
+	)
 	if err != nil {
 		return nil, err
-	}
-
-	// Retrieve the created organization to get its internal ID
-	createdOrg, err := s.repo.GetOrganizationByPublicID(ctx, uuid.MustParse(newID))
-	if err != nil {
-		return nil, fmt.Errorf("failed to retrieve created organization: %w", err)
-	}
-
-	// Add the creator as an owner
-	memberParams := db.CreateOrganizationMemberParams{
-		OrganizationID: createdOrg.ID,
-		AccountID:      accountID,
-		Role:           db.OrganizationMembersRoleOwner,
-		CreatedBy:      sql.NullInt64{Int64: accountID, Valid: true},
-		UpdatedBy:      sql.NullInt64{Int64: accountID, Valid: true},
-	}
-	err = s.repo.AddMember(ctx, memberParams)
-	if err != nil {
-		return nil, fmt.Errorf("failed to add creator as organization owner: %w", err)
 	}
 
 	return connect.NewResponse(&libopsv1.CreateOrganizationResponse{

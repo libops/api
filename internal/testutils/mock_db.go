@@ -37,6 +37,10 @@ type MockQuerier struct {
 	ListUserProjectsWithOrgFunc                       func(ctx context.Context, arg db.ListUserProjectsWithOrgParams) ([]db.ListUserProjectsWithOrgRow, error)
 	ListUserSecretsFunc                               func(ctx context.Context, arg db.ListUserSecretsParams) ([]db.ListUserSecretsRow, error)
 	ListUserSitesWithProjectFunc                      func(ctx context.Context, arg db.ListUserSitesWithProjectParams) ([]db.ListUserSitesWithProjectRow, error)
+	GetMachineTypeFunc                                func(ctx context.Context, machineType string) (db.MachineType, error)
+	GetStripeSubscriptionByOrganizationIDFunc         func(ctx context.Context, organizationID int64) (db.GetStripeSubscriptionByOrganizationIDRow, error)
+	GetStorageConfigFunc                              func(ctx context.Context) (db.StorageConfig, error)
+	CreateRelationshipFunc                            func(ctx context.Context, arg db.CreateRelationshipParams) (sql.Result, error)
 }
 
 func (m *MockQuerier) GetSite(ctx context.Context, publicID string) (db.GetSiteRow, error) {
@@ -201,6 +205,9 @@ func (m *MockQuerier) CreateProjectSecret(ctx context.Context, arg db.CreateProj
 	return nil, nil
 }
 func (m *MockQuerier) CreateRelationship(ctx context.Context, arg db.CreateRelationshipParams) (sql.Result, error) {
+	if m.CreateRelationshipFunc != nil {
+		return m.CreateRelationshipFunc(ctx, arg)
+	}
 	return nil, nil
 }
 func (m *MockQuerier) CreateSite(ctx context.Context, arg db.CreateSiteParams) error {
@@ -588,4 +595,97 @@ func (m *MockQuerier) ListUserSitesWithProject(ctx context.Context, arg db.ListU
 		return m.ListUserSitesWithProjectFunc(ctx, arg)
 	}
 	return nil, nil
+}
+
+// --- Onboarding Methods ---
+
+func (m *MockQuerier) CreateOnboardingSession(ctx context.Context, arg db.CreateOnboardingSessionParams) (sql.Result, error) {
+	return nil, nil
+}
+
+func (m *MockQuerier) GetOnboardingSession(ctx context.Context, publicID string) (db.GetOnboardingSessionRow, error) {
+	return db.GetOnboardingSessionRow{}, sql.ErrNoRows
+}
+
+func (m *MockQuerier) GetOnboardingSessionByStripeCheckoutID(ctx context.Context, stripeCheckoutSessionID sql.NullString) (db.GetOnboardingSessionByStripeCheckoutIDRow, error) {
+	return db.GetOnboardingSessionByStripeCheckoutIDRow{}, sql.ErrNoRows
+}
+
+func (m *MockQuerier) GetOnboardingSessionByAccountID(ctx context.Context, accountID int64) (db.GetOnboardingSessionByAccountIDRow, error) {
+	return db.GetOnboardingSessionByAccountIDRow{}, sql.ErrNoRows
+}
+
+func (m *MockQuerier) UpdateOnboardingSession(ctx context.Context, arg db.UpdateOnboardingSessionParams) error {
+	return nil
+}
+
+func (m *MockQuerier) DeleteExpiredOnboardingSessions(ctx context.Context) error {
+	return nil
+}
+
+func (m *MockQuerier) CreateStripeSubscription(ctx context.Context, arg db.CreateStripeSubscriptionParams) (sql.Result, error) {
+	return nil, nil
+}
+
+func (m *MockQuerier) GetStripeSubscription(ctx context.Context, stripeSubscriptionID string) (db.GetStripeSubscriptionRow, error) {
+	return db.GetStripeSubscriptionRow{}, sql.ErrNoRows
+}
+
+func (m *MockQuerier) GetStripeSubscriptionByOrganizationID(ctx context.Context, organizationID int64) (db.GetStripeSubscriptionByOrganizationIDRow, error) {
+	if m.GetStripeSubscriptionByOrganizationIDFunc != nil {
+		return m.GetStripeSubscriptionByOrganizationIDFunc(ctx, organizationID)
+	}
+	return db.GetStripeSubscriptionByOrganizationIDRow{}, sql.ErrNoRows
+}
+
+func (m *MockQuerier) GetStripeSubscriptionByStripeID(ctx context.Context, stripeSubscriptionID string) (db.GetStripeSubscriptionByStripeIDRow, error) {
+	return db.GetStripeSubscriptionByStripeIDRow{}, sql.ErrNoRows
+}
+
+func (m *MockQuerier) UpdateStripeSubscription(ctx context.Context, arg db.UpdateStripeSubscriptionParams) error {
+	return nil
+}
+
+func (m *MockQuerier) DeleteStripeSubscription(ctx context.Context, stripeSubscriptionID string) error {
+	return nil
+}
+
+func (m *MockQuerier) UpdateAccountOnboarding(ctx context.Context, arg db.UpdateAccountOnboardingParams) error {
+	return nil
+}
+
+// --- Machine Type Methods ---
+
+func (m *MockQuerier) CreateMachineType(ctx context.Context, arg db.CreateMachineTypeParams) error {
+	return nil
+}
+
+func (m *MockQuerier) GetMachineType(ctx context.Context, machineType string) (db.MachineType, error) {
+	if m.GetMachineTypeFunc != nil {
+		return m.GetMachineTypeFunc(ctx, machineType)
+	}
+	return db.MachineType{}, sql.ErrNoRows
+}
+
+func (m *MockQuerier) GetMachineTypeByStripePriceID(ctx context.Context, stripePriceID string) (db.MachineType, error) {
+	return db.MachineType{}, sql.ErrNoRows
+}
+
+func (m *MockQuerier) ListAllMachineTypes(ctx context.Context) ([]db.MachineType, error) {
+	return nil, nil
+}
+
+func (m *MockQuerier) ListMachineTypes(ctx context.Context) ([]db.MachineType, error) {
+	return nil, nil
+}
+
+func (m *MockQuerier) UpdateMachineType(ctx context.Context, arg db.UpdateMachineTypeParams) error {
+	return nil
+}
+
+func (m *MockQuerier) GetStorageConfig(ctx context.Context) (db.StorageConfig, error) {
+	if m.GetStorageConfigFunc != nil {
+		return m.GetStorageConfigFunc(ctx)
+	}
+	return db.StorageConfig{}, sql.ErrNoRows
 }

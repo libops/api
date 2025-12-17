@@ -157,36 +157,12 @@ func (r *Repository) GetOrganizationByID(ctx context.Context, id int64) (db.GetO
 
 // Helper functions
 
-// toNullString converts a string to a sql.NullString, setting Valid to false if the string is empty.
-func toNullString(s string) sql.NullString {
-	if s == "" {
-		return sql.NullString{Valid: false}
-	}
-	return sql.NullString{String: s, Valid: true}
-}
-
-// FromNullString extracts the string value from a sql.NullString, returning an empty string if not valid.
-func FromNullString(ns sql.NullString) string {
-	if ns.Valid {
-		return ns.String
-	}
-	return ""
-}
-
 // FromNullStringPtr converts a sql.NullString to an optional pointer to a string, returning nil if not valid.
 func FromNullStringPtr(ns sql.NullString) *string {
 	if ns.Valid {
 		return &ns.String
 	}
 	return nil
-}
-
-// ptrToString converts a *string to a string, returning an empty string if the pointer is nil.
-func ptrToString(s *string) string {
-	if s == nil {
-		return ""
-	}
-	return *s
 }
 
 // ShouldUpdateField checks if a field should be updated based on the field mask.

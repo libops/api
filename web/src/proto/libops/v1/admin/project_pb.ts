@@ -26,20 +26,6 @@ export class AdminProjectConfig extends Message<AdminProjectConfig> {
   billingAccount = "";
 
   /**
-   * GitHub integration
-   *
-   * @generated from field: optional string github_webhook_url = 3;
-   */
-  githubWebhookUrl?: string;
-
-  /**
-   * Sensitive
-   *
-   * @generated from field: optional string github_webhook_secret = 4;
-   */
-  githubWebhookSecret?: string;
-
-  /**
    * Sensitive
    *
    * @generated from field: optional string host_docker_config = 5;
@@ -63,13 +49,6 @@ export class AdminProjectConfig extends Message<AdminProjectConfig> {
   gcpProjectNumber?: string;
 
   /**
-   * Set after GitHub team creation
-   *
-   * @generated from field: optional string github_team_id = 8;
-   */
-  githubTeamId?: string;
-
-  /**
    * Flag to identify if this is the organization's libops project (for vault, etc.)
    *
    * @generated from field: bool organization_project = 9;
@@ -86,12 +65,9 @@ export class AdminProjectConfig extends Message<AdminProjectConfig> {
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
     { no: 1, name: "config", kind: "message", T: ProjectConfig },
     { no: 2, name: "billing_account", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-    { no: 3, name: "github_webhook_url", kind: "scalar", T: 9 /* ScalarType.STRING */, opt: true },
-    { no: 4, name: "github_webhook_secret", kind: "scalar", T: 9 /* ScalarType.STRING */, opt: true },
     { no: 5, name: "host_docker_config", kind: "scalar", T: 9 /* ScalarType.STRING */, opt: true },
     { no: 6, name: "gcp_project_id", kind: "scalar", T: 9 /* ScalarType.STRING */, opt: true },
     { no: 7, name: "gcp_project_number", kind: "scalar", T: 9 /* ScalarType.STRING */, opt: true },
-    { no: 8, name: "github_team_id", kind: "scalar", T: 9 /* ScalarType.STRING */, opt: true },
     { no: 9, name: "organization_project", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
   ]);
 

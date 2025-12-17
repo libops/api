@@ -82,6 +82,80 @@ func (r *Repository) AddMember(ctx context.Context, params db.CreateOrganization
 	return nil
 }
 
+// CreateRelationship creates a relationship between organizations.
+func (r *Repository) CreateRelationship(ctx context.Context, params db.CreateRelationshipParams) (sql.Result, error) {
+	result, err := r.db.CreateRelationship(ctx, params)
+	if err != nil {
+		return nil, connect.NewError(connect.CodeInternal, fmt.Errorf("database error: %w", err))
+	}
+	return result, nil
+}
+
+// CreateOrganizationWithOwner creates an organization, adds the creator as owner (with active status),
+// and optionally creates a relationship with a root organization.
+// Returns the created organization's internal ID.
+func (r *Repository) CreateOrganizationWithOwner(
+	ctx context.Context,
+	orgPublicID string,
+	orgName string,
+	gcpOrgID string,
+	gcpBillingAccount string,
+	gcpParent string,
+	accountID int64,
+	rootOrgID int64, // 0 means no root org relationship
+) (int64, error) {
+	// Create organization
+	orgParams := db.CreateOrganizationParams{
+		PublicID:          orgPublicID,
+		Name:              orgName,
+		GcpOrgID:          gcpOrgID,
+		GcpBillingAccount: gcpBillingAccount,
+		GcpParent:         gcpParent,
+		GcpFolderID:       sql.NullString{Valid: false},
+		Status:            db.NullOrganizationsStatus{OrganizationsStatus: db.OrganizationsStatusProvisioning, Valid: true},
+		CreatedBy:         sql.NullInt64{Int64: accountID, Valid: true},
+		UpdatedBy:         sql.NullInt64{Int64: accountID, Valid: true},
+	}
+
+	if err := r.CreateOrganization(ctx, orgParams); err != nil {
+		return 0, err
+	}
+
+	// Get the created organization to retrieve its internal ID
+	createdOrg, err := r.GetOrganizationByPublicID(ctx, uuid.MustParse(orgPublicID))
+	if err != nil {
+		return 0, fmt.Errorf("failed to retrieve created organization: %w", err)
+	}
+
+	// Add the creator as an owner with active status
+	// The owner is immediately active since they're creating the organization
+	memberParams := db.CreateOrganizationMemberParams{
+		OrganizationID: createdOrg.ID,
+		AccountID:      accountID,
+		Role:           db.OrganizationMembersRoleOwner,
+		Status:         db.NullOrganizationMembersStatus{OrganizationMembersStatus: db.OrganizationMembersStatusActive, Valid: true},
+		CreatedBy:      sql.NullInt64{Int64: accountID, Valid: true},
+		UpdatedBy:      sql.NullInt64{Int64: accountID, Valid: true},
+	}
+	if err := r.AddMember(ctx, memberParams); err != nil {
+		return 0, fmt.Errorf("failed to add creator as organization owner: %w", err)
+	}
+
+	// Create relationship with root organization if specified
+	if rootOrgID > 0 {
+		relationshipParams := db.CreateRelationshipParams{
+			SourceOrganizationID: rootOrgID,
+			TargetOrganizationID: createdOrg.ID,
+			RelationshipType:     db.RelationshipsRelationshipTypeAccess,
+		}
+		if _, err := r.CreateRelationship(ctx, relationshipParams); err != nil {
+			return 0, fmt.Errorf("failed to create relationship: %w", err)
+		}
+	}
+
+	return createdOrg.ID, nil
+}
+
 // UpdateOrganization updates a organization.
 func (r *Repository) UpdateOrganization(ctx context.Context, params db.UpdateOrganizationParams) error {
 	err := r.db.UpdateOrganization(ctx, params)

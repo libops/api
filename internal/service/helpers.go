@@ -4,6 +4,7 @@ package service
 import (
 	"context"
 	"database/sql"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"log/slog"
@@ -182,8 +183,8 @@ func IsValidMemberRole(role string) bool {
 }
 
 // SQL helpers to convert between nullable types.
-// toNullString converts a string to a sql.NullString, setting Valid to false if the string is empty.
-func toNullString(s string) sql.NullString {
+// ToNullString converts a string to a sql.NullString, setting Valid to false if the string is empty.
+func ToNullString(s string) sql.NullString {
 	if s == "" {
 		return sql.NullString{Valid: false}
 	}
@@ -198,24 +199,40 @@ func FromNullString(ns sql.NullString) string {
 	return ""
 }
 
-// toNullInt64 converts an int64 to a sql.NullInt64, setting Valid to false if the int64 is 0.
-func toNullInt64(i int64) sql.NullInt64 {
+// ToNullInt64 converts an int64 to a sql.NullInt64, setting Valid to false if the int64 is 0.
+func ToNullInt64(i int64) sql.NullInt64 {
 	if i == 0 {
 		return sql.NullInt64{Valid: false}
 	}
 	return sql.NullInt64{Int64: i, Valid: true}
 }
 
-// fromNullInt64 extracts the int64 value from a sql.NullInt64, returning 0 if not valid.
-func fromNullInt64(ni sql.NullInt64) int64 {
+// ToNullInt32 converts an int32 to a sql.NullInt32, setting Valid to false if the int32 is 0.
+func ToNullInt32(i int32) sql.NullInt32 {
+	if i == 0 {
+		return sql.NullInt32{Valid: false}
+	}
+	return sql.NullInt32{Int32: i, Valid: true}
+}
+
+// FromNullInt64 extracts the int64 value from a sql.NullInt64, returning 0 if not valid.
+func FromNullInt64(ni sql.NullInt64) int64 {
 	if ni.Valid {
 		return ni.Int64
 	}
 	return 0
 }
 
-// toNullBool converts a bool to a sql.NullBool.
-func toNullBool(b bool) sql.NullBool {
+// FromNullInt32 extracts the int32 value from a sql.NullInt32, returning 0 if not valid.
+func FromNullInt32(ni sql.NullInt32) int32 {
+	if ni.Valid {
+		return ni.Int32
+	}
+	return 0
+}
+
+// ToNullBool converts a bool to a sql.NullBool.
+func ToNullBool(b bool) sql.NullBool {
 	return sql.NullBool{Bool: b, Valid: true}
 }
 
@@ -227,12 +244,40 @@ func FromNullStringPtr(ns sql.NullString) *string {
 	return nil
 }
 
-// Convert proto optional field (*string) to string for toNullString.
-func ptrToString(ptr *string) string {
+// Convert proto optional field (*string) to string for ToNullString.
+func PtrToString(ptr *string) string {
 	if ptr != nil {
 		return *ptr
 	}
 	return ""
+}
+
+// ToJSON converts any value to json.RawMessage.
+// It returns nil if the input is nil or if marshalling fails.
+func ToJSON(v any) json.RawMessage {
+	if v == nil {
+		return nil
+	}
+	b, err := json.Marshal(v)
+	if err != nil {
+		slog.Error("failed to marshal to JSON", "error", err)
+		return nil
+	}
+	return json.RawMessage(b)
+}
+
+// FromJSONStringArray converts json.RawMessage to []string.
+// It returns an empty slice if input is nil or unmarshalling fails.
+func FromJSONStringArray(raw json.RawMessage) []string {
+	if raw == nil {
+		return []string{}
+	}
+	var res []string
+	if err := json.Unmarshal(raw, &res); err != nil {
+		slog.Error("failed to unmarshal JSON to string array", "error", err)
+		return []string{}
+	}
+	return res
 }
 
 // ==============================================================================

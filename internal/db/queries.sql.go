@@ -273,6 +273,87 @@ func (q *Queries) CreateEmailVerificationToken(ctx context.Context, arg CreateEm
 	return err
 }
 
+const createMachineType = `-- name: CreateMachineType :exec
+INSERT INTO machine_types (machine_type, display_name, vcpu, memory_gib, stripe_price_id, monthly_price_cents, active)
+VALUES (?, ?, ?, ?, ?, ?, ?)
+`
+
+type CreateMachineTypeParams struct {
+	MachineType       string       `json:"machine_type"`
+	DisplayName       string       `json:"display_name"`
+	Vcpu              int32        `json:"vcpu"`
+	MemoryGib         int32        `json:"memory_gib"`
+	StripePriceID     string       `json:"stripe_price_id"`
+	MonthlyPriceCents int32        `json:"monthly_price_cents"`
+	Active            sql.NullBool `json:"active"`
+}
+
+func (q *Queries) CreateMachineType(ctx context.Context, arg CreateMachineTypeParams) error {
+	_, err := q.db.ExecContext(ctx, createMachineType,
+		arg.MachineType,
+		arg.DisplayName,
+		arg.Vcpu,
+		arg.MemoryGib,
+		arg.StripePriceID,
+		arg.MonthlyPriceCents,
+		arg.Active,
+	)
+	return err
+}
+
+const createOnboardingSession = `-- name: CreateOnboardingSession :execresult
+INSERT INTO onboarding_sessions (
+  public_id, account_id, org_name, machine_type, machine_price_id, disk_size_gb,
+  stripe_checkout_session_id, stripe_subscription_id, organization_id,
+  project_name, gcp_country, gcp_region, site_name, github_repo_url, port, firewall_ip,
+  current_step, completed, expires_at, created_at, updated_at
+) VALUES (UUID_TO_BIN(UUID_V7()), ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW(), NOW())
+`
+
+type CreateOnboardingSessionParams struct {
+	AccountID               int64          `json:"account_id"`
+	OrgName                 sql.NullString `json:"org_name"`
+	MachineType             sql.NullString `json:"machine_type"`
+	MachinePriceID          sql.NullString `json:"machine_price_id"`
+	DiskSizeGb              sql.NullInt32  `json:"disk_size_gb"`
+	StripeCheckoutSessionID sql.NullString `json:"stripe_checkout_session_id"`
+	StripeSubscriptionID    sql.NullString `json:"stripe_subscription_id"`
+	OrganizationID          sql.NullInt64  `json:"organization_id"`
+	ProjectName             sql.NullString `json:"project_name"`
+	GcpCountry              sql.NullString `json:"gcp_country"`
+	GcpRegion               sql.NullString `json:"gcp_region"`
+	SiteName                sql.NullString `json:"site_name"`
+	GithubRepoUrl           sql.NullString `json:"github_repo_url"`
+	Port                    sql.NullInt32  `json:"port"`
+	FirewallIp              sql.NullString `json:"firewall_ip"`
+	CurrentStep             sql.NullInt32  `json:"current_step"`
+	Completed               sql.NullBool   `json:"completed"`
+	ExpiresAt               sql.NullTime   `json:"expires_at"`
+}
+
+func (q *Queries) CreateOnboardingSession(ctx context.Context, arg CreateOnboardingSessionParams) (sql.Result, error) {
+	return q.db.ExecContext(ctx, createOnboardingSession,
+		arg.AccountID,
+		arg.OrgName,
+		arg.MachineType,
+		arg.MachinePriceID,
+		arg.DiskSizeGb,
+		arg.StripeCheckoutSessionID,
+		arg.StripeSubscriptionID,
+		arg.OrganizationID,
+		arg.ProjectName,
+		arg.GcpCountry,
+		arg.GcpRegion,
+		arg.SiteName,
+		arg.GithubRepoUrl,
+		arg.Port,
+		arg.FirewallIp,
+		arg.CurrentStep,
+		arg.Completed,
+		arg.ExpiresAt,
+	)
+}
+
 const createOrganization = `-- name: CreateOrganization :exec
 INSERT INTO organizations (
   public_id, ` + "`" + `name` + "`" + `, gcp_org_id, gcp_billing_account, gcp_parent, gcp_folder_id, ` + "`" + `status` + "`" + `, created_at, updated_at, created_by, updated_by
@@ -335,16 +416,17 @@ func (q *Queries) CreateOrganizationFirewallRule(ctx context.Context, arg Create
 
 const createOrganizationMember = `-- name: CreateOrganizationMember :exec
 INSERT INTO organization_members (
-  public_id, organization_id, account_id, ` + "`" + `role` + "`" + `, created_at, updated_at, created_by, updated_by
-) VALUES (UUID_TO_BIN(UUID_V7()), ?, ?, ?, NOW(), NOW(), ?, ?)
+  public_id, organization_id, account_id, ` + "`" + `role` + "`" + `, status, created_at, updated_at, created_by, updated_by
+) VALUES (UUID_TO_BIN(UUID_V7()), ?, ?, ?, ?, NOW(), NOW(), ?, ?)
 `
 
 type CreateOrganizationMemberParams struct {
-	OrganizationID int64                   `json:"organization_id"`
-	AccountID      int64                   `json:"account_id"`
-	Role           OrganizationMembersRole `json:"role"`
-	CreatedBy      sql.NullInt64           `json:"created_by"`
-	UpdatedBy      sql.NullInt64           `json:"updated_by"`
+	OrganizationID int64                         `json:"organization_id"`
+	AccountID      int64                         `json:"account_id"`
+	Role           OrganizationMembersRole       `json:"role"`
+	Status         NullOrganizationMembersStatus `json:"status"`
+	CreatedBy      sql.NullInt64                 `json:"created_by"`
+	UpdatedBy      sql.NullInt64                 `json:"updated_by"`
 }
 
 func (q *Queries) CreateOrganizationMember(ctx context.Context, arg CreateOrganizationMemberParams) error {
@@ -352,6 +434,7 @@ func (q *Queries) CreateOrganizationMember(ctx context.Context, arg CreateOrgani
 		arg.OrganizationID,
 		arg.AccountID,
 		arg.Role,
+		arg.Status,
 		arg.CreatedBy,
 		arg.UpdatedBy,
 	)
@@ -396,33 +479,29 @@ func (q *Queries) CreateOrganizationSecret(ctx context.Context, arg CreateOrgani
 
 const createProject = `-- name: CreateProject :exec
 INSERT INTO projects (
-  public_id, organization_id, ` + "`" + `name` + "`" + `, github_repository, github_branch, compose_path,
-  gcp_region, gcp_zone, machine_type, disk_size_gb, compose_file, application_type,
+  public_id, organization_id, ` + "`" + `name` + "`" + `,
+  gcp_region, gcp_zone, machine_type, disk_size_gb, stripe_subscription_item_id,
   monitoring_enabled, monitoring_log_level, monitoring_metrics_enabled, monitoring_health_check_path,
-  gcp_project_id, gcp_project_number, github_team_id, create_branch_sites, ` + "`" + `status` + "`" + `,
+  gcp_project_id, gcp_project_number, create_branch_sites, ` + "`" + `status` + "`" + `,
   created_at, updated_at, created_by, updated_by
-) VALUES (UUID_TO_BIN(UUID_V7()), ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW(), NOW(), ?, ?)
+) VALUES (UUID_TO_BIN(?), ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW(), NOW(), ?, ?)
 `
 
 type CreateProjectParams struct {
+	PublicID                  string             `json:"public_id"`
 	OrganizationID            int64              `json:"organization_id"`
 	Name                      string             `json:"name"`
-	GithubRepository          sql.NullString     `json:"github_repository"`
-	GithubBranch              sql.NullString     `json:"github_branch"`
-	ComposePath               sql.NullString     `json:"compose_path"`
 	GcpRegion                 sql.NullString     `json:"gcp_region"`
 	GcpZone                   sql.NullString     `json:"gcp_zone"`
 	MachineType               sql.NullString     `json:"machine_type"`
 	DiskSizeGb                sql.NullInt32      `json:"disk_size_gb"`
-	ComposeFile               sql.NullString     `json:"compose_file"`
-	ApplicationType           sql.NullString     `json:"application_type"`
+	StripeSubscriptionItemID  sql.NullString     `json:"stripe_subscription_item_id"`
 	MonitoringEnabled         sql.NullBool       `json:"monitoring_enabled"`
 	MonitoringLogLevel        sql.NullString     `json:"monitoring_log_level"`
 	MonitoringMetricsEnabled  sql.NullBool       `json:"monitoring_metrics_enabled"`
 	MonitoringHealthCheckPath sql.NullString     `json:"monitoring_health_check_path"`
 	GcpProjectID              sql.NullString     `json:"gcp_project_id"`
 	GcpProjectNumber          sql.NullString     `json:"gcp_project_number"`
-	GithubTeamID              sql.NullString     `json:"github_team_id"`
 	CreateBranchSites         sql.NullBool       `json:"create_branch_sites"`
 	Status                    NullProjectsStatus `json:"status"`
 	CreatedBy                 sql.NullInt64      `json:"created_by"`
@@ -431,24 +510,20 @@ type CreateProjectParams struct {
 
 func (q *Queries) CreateProject(ctx context.Context, arg CreateProjectParams) error {
 	_, err := q.db.ExecContext(ctx, createProject,
+		arg.PublicID,
 		arg.OrganizationID,
 		arg.Name,
-		arg.GithubRepository,
-		arg.GithubBranch,
-		arg.ComposePath,
 		arg.GcpRegion,
 		arg.GcpZone,
 		arg.MachineType,
 		arg.DiskSizeGb,
-		arg.ComposeFile,
-		arg.ApplicationType,
+		arg.StripeSubscriptionItemID,
 		arg.MonitoringEnabled,
 		arg.MonitoringLogLevel,
 		arg.MonitoringMetricsEnabled,
 		arg.MonitoringHealthCheckPath,
 		arg.GcpProjectID,
 		arg.GcpProjectNumber,
-		arg.GithubTeamID,
 		arg.CreateBranchSites,
 		arg.Status,
 		arg.CreatedBy,
@@ -565,25 +640,43 @@ func (q *Queries) CreateRelationship(ctx context.Context, arg CreateRelationship
 
 const createSite = `-- name: CreateSite :exec
 INSERT INTO sites (
-  public_id, project_id, ` + "`" + `name` + "`" + `, github_ref, gcp_external_ip, ` + "`" + `status` + "`" + `, created_at, updated_at, created_by, updated_by
-) VALUES (UUID_TO_BIN(UUID_V7()), ?, ?, ?, ?, ?, NOW(), NOW(), ?, ?)
+  public_id, project_id, ` + "`" + `name` + "`" + `, github_repository, github_ref, github_team_id, compose_path, compose_file, port, application_type, up_cmd, init_cmd, rollout_cmd, gcp_external_ip, ` + "`" + `status` + "`" + `, created_at, updated_at, created_by, updated_by
+) VALUES (UUID_TO_BIN(UUID_V7()), ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW(), NOW(), ?, ?)
 `
 
 type CreateSiteParams struct {
-	ProjectID     int64           `json:"project_id"`
-	Name          string          `json:"name"`
-	GithubRef     string          `json:"github_ref"`
-	GcpExternalIp sql.NullString  `json:"gcp_external_ip"`
-	Status        NullSitesStatus `json:"status"`
-	CreatedBy     sql.NullInt64   `json:"created_by"`
-	UpdatedBy     sql.NullInt64   `json:"updated_by"`
+	ProjectID        int64           `json:"project_id"`
+	Name             string          `json:"name"`
+	GithubRepository string          `json:"github_repository"`
+	GithubRef        string          `json:"github_ref"`
+	GithubTeamID     sql.NullString  `json:"github_team_id"`
+	ComposePath      sql.NullString  `json:"compose_path"`
+	ComposeFile      sql.NullString  `json:"compose_file"`
+	Port             sql.NullInt32   `json:"port"`
+	ApplicationType  sql.NullString  `json:"application_type"`
+	UpCmd            json.RawMessage `json:"up_cmd"`
+	InitCmd          json.RawMessage `json:"init_cmd"`
+	RolloutCmd       json.RawMessage `json:"rollout_cmd"`
+	GcpExternalIp    sql.NullString  `json:"gcp_external_ip"`
+	Status           NullSitesStatus `json:"status"`
+	CreatedBy        sql.NullInt64   `json:"created_by"`
+	UpdatedBy        sql.NullInt64   `json:"updated_by"`
 }
 
 func (q *Queries) CreateSite(ctx context.Context, arg CreateSiteParams) error {
 	_, err := q.db.ExecContext(ctx, createSite,
 		arg.ProjectID,
 		arg.Name,
+		arg.GithubRepository,
 		arg.GithubRef,
+		arg.GithubTeamID,
+		arg.ComposePath,
+		arg.ComposeFile,
+		arg.Port,
+		arg.ApplicationType,
+		arg.UpCmd,
+		arg.InitCmd,
+		arg.RolloutCmd,
 		arg.GcpExternalIp,
 		arg.Status,
 		arg.CreatedBy,
@@ -732,6 +825,52 @@ func (q *Queries) CreateSshKey(ctx context.Context, arg CreateSshKeyParams) (sql
 	)
 }
 
+const createStripeSubscription = `-- name: CreateStripeSubscription :execresult
+
+INSERT INTO stripe_subscriptions (
+  public_id, organization_id, stripe_subscription_id, stripe_customer_id, stripe_checkout_session_id,
+  status, current_period_start, current_period_end, trial_start, trial_end,
+  cancel_at_period_end, canceled_at, machine_type, disk_size_gb, created_at, updated_at
+) VALUES (UUID_TO_BIN(UUID_V7()), ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW(), NOW())
+`
+
+type CreateStripeSubscriptionParams struct {
+	OrganizationID          int64                     `json:"organization_id"`
+	StripeSubscriptionID    string                    `json:"stripe_subscription_id"`
+	StripeCustomerID        string                    `json:"stripe_customer_id"`
+	StripeCheckoutSessionID sql.NullString            `json:"stripe_checkout_session_id"`
+	Status                  StripeSubscriptionsStatus `json:"status"`
+	CurrentPeriodStart      sql.NullTime              `json:"current_period_start"`
+	CurrentPeriodEnd        sql.NullTime              `json:"current_period_end"`
+	TrialStart              sql.NullTime              `json:"trial_start"`
+	TrialEnd                sql.NullTime              `json:"trial_end"`
+	CancelAtPeriodEnd       sql.NullBool              `json:"cancel_at_period_end"`
+	CanceledAt              sql.NullTime              `json:"canceled_at"`
+	MachineType             sql.NullString            `json:"machine_type"`
+	DiskSizeGb              sql.NullInt32             `json:"disk_size_gb"`
+}
+
+// =============================================================================
+// STRIPE SUBSCRIPTIONS
+// =============================================================================
+func (q *Queries) CreateStripeSubscription(ctx context.Context, arg CreateStripeSubscriptionParams) (sql.Result, error) {
+	return q.db.ExecContext(ctx, createStripeSubscription,
+		arg.OrganizationID,
+		arg.StripeSubscriptionID,
+		arg.StripeCustomerID,
+		arg.StripeCheckoutSessionID,
+		arg.Status,
+		arg.CurrentPeriodStart,
+		arg.CurrentPeriodEnd,
+		arg.TrialStart,
+		arg.TrialEnd,
+		arg.CancelAtPeriodEnd,
+		arg.CanceledAt,
+		arg.MachineType,
+		arg.DiskSizeGb,
+	)
+}
+
 const deleteAPIKey = `-- name: DeleteAPIKey :exec
 DELETE FROM api_keys WHERE public_id = UUID_TO_BIN(?)
 `
@@ -775,6 +914,15 @@ WHERE email = ?
 
 func (q *Queries) DeleteEmailVerificationToken(ctx context.Context, email string) error {
 	_, err := q.db.ExecContext(ctx, deleteEmailVerificationToken, email)
+	return err
+}
+
+const deleteExpiredOnboardingSessions = `-- name: DeleteExpiredOnboardingSessions :exec
+DELETE FROM onboarding_sessions WHERE expires_at < NOW() AND completed = FALSE
+`
+
+func (q *Queries) DeleteExpiredOnboardingSessions(ctx context.Context) error {
+	_, err := q.db.ExecContext(ctx, deleteExpiredOnboardingSessions)
 	return err
 }
 
@@ -975,6 +1123,15 @@ func (q *Queries) DeleteSshKey(ctx context.Context, publicID string) error {
 	return err
 }
 
+const deleteStripeSubscription = `-- name: DeleteStripeSubscription :exec
+DELETE FROM stripe_subscriptions WHERE stripe_subscription_id = ?
+`
+
+func (q *Queries) DeleteStripeSubscription(ctx context.Context, stripeSubscriptionID string) error {
+	_, err := q.db.ExecContext(ctx, deleteStripeSubscription, stripeSubscriptionID)
+	return err
+}
+
 const enqueueEvent = `-- name: EnqueueEvent :exec
 
 INSERT INTO event_queue (
@@ -1095,22 +1252,24 @@ func (q *Queries) GetAPIKeyByUUID(ctx context.Context, publicID string) (GetAPIK
 const getAccount = `-- name: GetAccount :one
 
 SELECT id, BIN_TO_UUID(public_id) AS public_id, email, ` + "`" + `name` + "`" + `, github_username, vault_entity_id,
-       auth_method, verified, verified_at, created_at, updated_at
+       auth_method, verified, verified_at, onboarding_completed, onboarding_session_id, created_at, updated_at
 FROM accounts WHERE public_id = UUID_TO_BIN(?)
 `
 
 type GetAccountRow struct {
-	ID             int64              `json:"id"`
-	PublicID       string             `json:"public_id"`
-	Email          string             `json:"email"`
-	Name           sql.NullString     `json:"name"`
-	GithubUsername sql.NullString     `json:"github_username"`
-	VaultEntityID  sql.NullString     `json:"vault_entity_id"`
-	AuthMethod     AccountsAuthMethod `json:"auth_method"`
-	Verified       bool               `json:"verified"`
-	VerifiedAt     sql.NullTime       `json:"verified_at"`
-	CreatedAt      sql.NullTime       `json:"created_at"`
-	UpdatedAt      sql.NullTime       `json:"updated_at"`
+	ID                  int64              `json:"id"`
+	PublicID            string             `json:"public_id"`
+	Email               string             `json:"email"`
+	Name                sql.NullString     `json:"name"`
+	GithubUsername      sql.NullString     `json:"github_username"`
+	VaultEntityID       sql.NullString     `json:"vault_entity_id"`
+	AuthMethod          AccountsAuthMethod `json:"auth_method"`
+	Verified            bool               `json:"verified"`
+	VerifiedAt          sql.NullTime       `json:"verified_at"`
+	OnboardingCompleted bool               `json:"onboarding_completed"`
+	OnboardingSessionID sql.NullString     `json:"onboarding_session_id"`
+	CreatedAt           sql.NullTime       `json:"created_at"`
+	UpdatedAt           sql.NullTime       `json:"updated_at"`
 }
 
 // =============================================================================
@@ -1129,6 +1288,8 @@ func (q *Queries) GetAccount(ctx context.Context, publicID string) (GetAccountRo
 		&i.AuthMethod,
 		&i.Verified,
 		&i.VerifiedAt,
+		&i.OnboardingCompleted,
+		&i.OnboardingSessionID,
 		&i.CreatedAt,
 		&i.UpdatedAt,
 	)
@@ -1137,7 +1298,8 @@ func (q *Queries) GetAccount(ctx context.Context, publicID string) (GetAccountRo
 
 const getAccountByEmail = `-- name: GetAccountByEmail :one
 SELECT id, BIN_TO_UUID(public_id) AS public_id, email, ` + "`" + `name` + "`" + `, github_username, vault_entity_id,
-       auth_method, verified, verified_at, failed_login_attempts, last_failed_login_at, created_at, updated_at
+       auth_method, verified, verified_at, failed_login_attempts, last_failed_login_at,
+       onboarding_completed, onboarding_session_id, created_at, updated_at
 FROM accounts WHERE email = ?
 `
 
@@ -1153,6 +1315,8 @@ type GetAccountByEmailRow struct {
 	VerifiedAt          sql.NullTime       `json:"verified_at"`
 	FailedLoginAttempts int32              `json:"failed_login_attempts"`
 	LastFailedLoginAt   sql.NullTime       `json:"last_failed_login_at"`
+	OnboardingCompleted bool               `json:"onboarding_completed"`
+	OnboardingSessionID sql.NullString     `json:"onboarding_session_id"`
 	CreatedAt           sql.NullTime       `json:"created_at"`
 	UpdatedAt           sql.NullTime       `json:"updated_at"`
 }
@@ -1172,6 +1336,8 @@ func (q *Queries) GetAccountByEmail(ctx context.Context, email string) (GetAccou
 		&i.VerifiedAt,
 		&i.FailedLoginAttempts,
 		&i.LastFailedLoginAt,
+		&i.OnboardingCompleted,
+		&i.OnboardingSessionID,
 		&i.CreatedAt,
 		&i.UpdatedAt,
 	)
@@ -1180,22 +1346,24 @@ func (q *Queries) GetAccountByEmail(ctx context.Context, email string) (GetAccou
 
 const getAccountByID = `-- name: GetAccountByID :one
 SELECT id, BIN_TO_UUID(public_id) AS public_id, email, ` + "`" + `name` + "`" + `, github_username, vault_entity_id,
-       auth_method, verified, verified_at, created_at, updated_at
+       auth_method, verified, verified_at, onboarding_completed, onboarding_session_id, created_at, updated_at
 FROM accounts WHERE id = ?
 `
 
 type GetAccountByIDRow struct {
-	ID             int64              `json:"id"`
-	PublicID       string             `json:"public_id"`
-	Email          string             `json:"email"`
-	Name           sql.NullString     `json:"name"`
-	GithubUsername sql.NullString     `json:"github_username"`
-	VaultEntityID  sql.NullString     `json:"vault_entity_id"`
-	AuthMethod     AccountsAuthMethod `json:"auth_method"`
-	Verified       bool               `json:"verified"`
-	VerifiedAt     sql.NullTime       `json:"verified_at"`
-	CreatedAt      sql.NullTime       `json:"created_at"`
-	UpdatedAt      sql.NullTime       `json:"updated_at"`
+	ID                  int64              `json:"id"`
+	PublicID            string             `json:"public_id"`
+	Email               string             `json:"email"`
+	Name                sql.NullString     `json:"name"`
+	GithubUsername      sql.NullString     `json:"github_username"`
+	VaultEntityID       sql.NullString     `json:"vault_entity_id"`
+	AuthMethod          AccountsAuthMethod `json:"auth_method"`
+	Verified            bool               `json:"verified"`
+	VerifiedAt          sql.NullTime       `json:"verified_at"`
+	OnboardingCompleted bool               `json:"onboarding_completed"`
+	OnboardingSessionID sql.NullString     `json:"onboarding_session_id"`
+	CreatedAt           sql.NullTime       `json:"created_at"`
+	UpdatedAt           sql.NullTime       `json:"updated_at"`
 }
 
 func (q *Queries) GetAccountByID(ctx context.Context, id int64) (GetAccountByIDRow, error) {
@@ -1211,6 +1379,8 @@ func (q *Queries) GetAccountByID(ctx context.Context, id int64) (GetAccountByIDR
 		&i.AuthMethod,
 		&i.Verified,
 		&i.VerifiedAt,
+		&i.OnboardingCompleted,
+		&i.OnboardingSessionID,
 		&i.CreatedAt,
 		&i.UpdatedAt,
 	)
@@ -1219,22 +1389,24 @@ func (q *Queries) GetAccountByID(ctx context.Context, id int64) (GetAccountByIDR
 
 const getAccountByVaultEntityID = `-- name: GetAccountByVaultEntityID :one
 SELECT id, BIN_TO_UUID(public_id) AS public_id, email, ` + "`" + `name` + "`" + `, github_username, vault_entity_id,
-       auth_method, verified, verified_at, created_at, updated_at
+       auth_method, verified, verified_at, onboarding_completed, onboarding_session_id, created_at, updated_at
 FROM accounts WHERE vault_entity_id = ?
 `
 
 type GetAccountByVaultEntityIDRow struct {
-	ID             int64              `json:"id"`
-	PublicID       string             `json:"public_id"`
-	Email          string             `json:"email"`
-	Name           sql.NullString     `json:"name"`
-	GithubUsername sql.NullString     `json:"github_username"`
-	VaultEntityID  sql.NullString     `json:"vault_entity_id"`
-	AuthMethod     AccountsAuthMethod `json:"auth_method"`
-	Verified       bool               `json:"verified"`
-	VerifiedAt     sql.NullTime       `json:"verified_at"`
-	CreatedAt      sql.NullTime       `json:"created_at"`
-	UpdatedAt      sql.NullTime       `json:"updated_at"`
+	ID                  int64              `json:"id"`
+	PublicID            string             `json:"public_id"`
+	Email               string             `json:"email"`
+	Name                sql.NullString     `json:"name"`
+	GithubUsername      sql.NullString     `json:"github_username"`
+	VaultEntityID       sql.NullString     `json:"vault_entity_id"`
+	AuthMethod          AccountsAuthMethod `json:"auth_method"`
+	Verified            bool               `json:"verified"`
+	VerifiedAt          sql.NullTime       `json:"verified_at"`
+	OnboardingCompleted bool               `json:"onboarding_completed"`
+	OnboardingSessionID sql.NullString     `json:"onboarding_session_id"`
+	CreatedAt           sql.NullTime       `json:"created_at"`
+	UpdatedAt           sql.NullTime       `json:"updated_at"`
 }
 
 func (q *Queries) GetAccountByVaultEntityID(ctx context.Context, vaultEntityID sql.NullString) (GetAccountByVaultEntityIDRow, error) {
@@ -1250,6 +1422,8 @@ func (q *Queries) GetAccountByVaultEntityID(ctx context.Context, vaultEntityID s
 		&i.AuthMethod,
 		&i.Verified,
 		&i.VerifiedAt,
+		&i.OnboardingCompleted,
+		&i.OnboardingSessionID,
 		&i.CreatedAt,
 		&i.UpdatedAt,
 	)
@@ -1500,6 +1674,253 @@ func (q *Queries) GetLatestSiteDeployment(ctx context.Context, siteID string) (D
 	return i, err
 }
 
+const getMachineType = `-- name: GetMachineType :one
+
+SELECT id, machine_type, display_name, vcpu, memory_gib, stripe_price_id, monthly_price_cents, active, created_at, updated_at
+FROM machine_types
+WHERE machine_type = ? AND active = TRUE
+`
+
+// =============================================================================
+// MACHINE TYPES
+// =============================================================================
+func (q *Queries) GetMachineType(ctx context.Context, machineType string) (MachineType, error) {
+	row := q.db.QueryRowContext(ctx, getMachineType, machineType)
+	var i MachineType
+	err := row.Scan(
+		&i.ID,
+		&i.MachineType,
+		&i.DisplayName,
+		&i.Vcpu,
+		&i.MemoryGib,
+		&i.StripePriceID,
+		&i.MonthlyPriceCents,
+		&i.Active,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+	)
+	return i, err
+}
+
+const getMachineTypeByStripePriceID = `-- name: GetMachineTypeByStripePriceID :one
+SELECT id, machine_type, display_name, vcpu, memory_gib, stripe_price_id, monthly_price_cents, active, created_at, updated_at
+FROM machine_types
+WHERE stripe_price_id = ? AND active = TRUE
+`
+
+func (q *Queries) GetMachineTypeByStripePriceID(ctx context.Context, stripePriceID string) (MachineType, error) {
+	row := q.db.QueryRowContext(ctx, getMachineTypeByStripePriceID, stripePriceID)
+	var i MachineType
+	err := row.Scan(
+		&i.ID,
+		&i.MachineType,
+		&i.DisplayName,
+		&i.Vcpu,
+		&i.MemoryGib,
+		&i.StripePriceID,
+		&i.MonthlyPriceCents,
+		&i.Active,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+	)
+	return i, err
+}
+
+const getOnboardingSession = `-- name: GetOnboardingSession :one
+SELECT id, BIN_TO_UUID(public_id) AS public_id, account_id, org_name, machine_type, machine_price_id, disk_size_gb,
+       stripe_checkout_session_id, stripe_checkout_url, stripe_subscription_id, organization_id,
+       project_name, gcp_country, gcp_region, site_name, github_repo_url, port, firewall_ip,
+       current_step, completed, expires_at, created_at, updated_at
+FROM onboarding_sessions WHERE public_id = UUID_TO_BIN(?)
+`
+
+type GetOnboardingSessionRow struct {
+	ID                      int64          `json:"id"`
+	PublicID                string         `json:"public_id"`
+	AccountID               int64          `json:"account_id"`
+	OrgName                 sql.NullString `json:"org_name"`
+	MachineType             sql.NullString `json:"machine_type"`
+	MachinePriceID          sql.NullString `json:"machine_price_id"`
+	DiskSizeGb              sql.NullInt32  `json:"disk_size_gb"`
+	StripeCheckoutSessionID sql.NullString `json:"stripe_checkout_session_id"`
+	StripeCheckoutUrl       sql.NullString `json:"stripe_checkout_url"`
+	StripeSubscriptionID    sql.NullString `json:"stripe_subscription_id"`
+	OrganizationID          sql.NullInt64  `json:"organization_id"`
+	ProjectName             sql.NullString `json:"project_name"`
+	GcpCountry              sql.NullString `json:"gcp_country"`
+	GcpRegion               sql.NullString `json:"gcp_region"`
+	SiteName                sql.NullString `json:"site_name"`
+	GithubRepoUrl           sql.NullString `json:"github_repo_url"`
+	Port                    sql.NullInt32  `json:"port"`
+	FirewallIp              sql.NullString `json:"firewall_ip"`
+	CurrentStep             sql.NullInt32  `json:"current_step"`
+	Completed               sql.NullBool   `json:"completed"`
+	ExpiresAt               sql.NullTime   `json:"expires_at"`
+	CreatedAt               sql.NullTime   `json:"created_at"`
+	UpdatedAt               sql.NullTime   `json:"updated_at"`
+}
+
+func (q *Queries) GetOnboardingSession(ctx context.Context, publicID string) (GetOnboardingSessionRow, error) {
+	row := q.db.QueryRowContext(ctx, getOnboardingSession, publicID)
+	var i GetOnboardingSessionRow
+	err := row.Scan(
+		&i.ID,
+		&i.PublicID,
+		&i.AccountID,
+		&i.OrgName,
+		&i.MachineType,
+		&i.MachinePriceID,
+		&i.DiskSizeGb,
+		&i.StripeCheckoutSessionID,
+		&i.StripeCheckoutUrl,
+		&i.StripeSubscriptionID,
+		&i.OrganizationID,
+		&i.ProjectName,
+		&i.GcpCountry,
+		&i.GcpRegion,
+		&i.SiteName,
+		&i.GithubRepoUrl,
+		&i.Port,
+		&i.FirewallIp,
+		&i.CurrentStep,
+		&i.Completed,
+		&i.ExpiresAt,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+	)
+	return i, err
+}
+
+const getOnboardingSessionByAccountID = `-- name: GetOnboardingSessionByAccountID :one
+SELECT id, BIN_TO_UUID(public_id) AS public_id, account_id, org_name, machine_type, machine_price_id, disk_size_gb,
+       stripe_checkout_session_id, stripe_checkout_url, stripe_subscription_id, organization_id,
+       project_name, gcp_country, gcp_region, site_name, github_repo_url, port, firewall_ip,
+       current_step, completed, expires_at, created_at, updated_at
+FROM onboarding_sessions WHERE account_id = ? AND completed = FALSE ORDER BY created_at DESC LIMIT 1
+`
+
+type GetOnboardingSessionByAccountIDRow struct {
+	ID                      int64          `json:"id"`
+	PublicID                string         `json:"public_id"`
+	AccountID               int64          `json:"account_id"`
+	OrgName                 sql.NullString `json:"org_name"`
+	MachineType             sql.NullString `json:"machine_type"`
+	MachinePriceID          sql.NullString `json:"machine_price_id"`
+	DiskSizeGb              sql.NullInt32  `json:"disk_size_gb"`
+	StripeCheckoutSessionID sql.NullString `json:"stripe_checkout_session_id"`
+	StripeCheckoutUrl       sql.NullString `json:"stripe_checkout_url"`
+	StripeSubscriptionID    sql.NullString `json:"stripe_subscription_id"`
+	OrganizationID          sql.NullInt64  `json:"organization_id"`
+	ProjectName             sql.NullString `json:"project_name"`
+	GcpCountry              sql.NullString `json:"gcp_country"`
+	GcpRegion               sql.NullString `json:"gcp_region"`
+	SiteName                sql.NullString `json:"site_name"`
+	GithubRepoUrl           sql.NullString `json:"github_repo_url"`
+	Port                    sql.NullInt32  `json:"port"`
+	FirewallIp              sql.NullString `json:"firewall_ip"`
+	CurrentStep             sql.NullInt32  `json:"current_step"`
+	Completed               sql.NullBool   `json:"completed"`
+	ExpiresAt               sql.NullTime   `json:"expires_at"`
+	CreatedAt               sql.NullTime   `json:"created_at"`
+	UpdatedAt               sql.NullTime   `json:"updated_at"`
+}
+
+func (q *Queries) GetOnboardingSessionByAccountID(ctx context.Context, accountID int64) (GetOnboardingSessionByAccountIDRow, error) {
+	row := q.db.QueryRowContext(ctx, getOnboardingSessionByAccountID, accountID)
+	var i GetOnboardingSessionByAccountIDRow
+	err := row.Scan(
+		&i.ID,
+		&i.PublicID,
+		&i.AccountID,
+		&i.OrgName,
+		&i.MachineType,
+		&i.MachinePriceID,
+		&i.DiskSizeGb,
+		&i.StripeCheckoutSessionID,
+		&i.StripeCheckoutUrl,
+		&i.StripeSubscriptionID,
+		&i.OrganizationID,
+		&i.ProjectName,
+		&i.GcpCountry,
+		&i.GcpRegion,
+		&i.SiteName,
+		&i.GithubRepoUrl,
+		&i.Port,
+		&i.FirewallIp,
+		&i.CurrentStep,
+		&i.Completed,
+		&i.ExpiresAt,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+	)
+	return i, err
+}
+
+const getOnboardingSessionByStripeCheckoutID = `-- name: GetOnboardingSessionByStripeCheckoutID :one
+SELECT id, BIN_TO_UUID(public_id) AS public_id, account_id, org_name, machine_type, machine_price_id, disk_size_gb,
+       stripe_checkout_session_id, stripe_checkout_url, stripe_subscription_id, organization_id,
+       project_name, gcp_country, gcp_region, site_name, github_repo_url, port, firewall_ip,
+       current_step, completed, expires_at, created_at, updated_at
+FROM onboarding_sessions WHERE stripe_checkout_session_id = ?
+`
+
+type GetOnboardingSessionByStripeCheckoutIDRow struct {
+	ID                      int64          `json:"id"`
+	PublicID                string         `json:"public_id"`
+	AccountID               int64          `json:"account_id"`
+	OrgName                 sql.NullString `json:"org_name"`
+	MachineType             sql.NullString `json:"machine_type"`
+	MachinePriceID          sql.NullString `json:"machine_price_id"`
+	DiskSizeGb              sql.NullInt32  `json:"disk_size_gb"`
+	StripeCheckoutSessionID sql.NullString `json:"stripe_checkout_session_id"`
+	StripeCheckoutUrl       sql.NullString `json:"stripe_checkout_url"`
+	StripeSubscriptionID    sql.NullString `json:"stripe_subscription_id"`
+	OrganizationID          sql.NullInt64  `json:"organization_id"`
+	ProjectName             sql.NullString `json:"project_name"`
+	GcpCountry              sql.NullString `json:"gcp_country"`
+	GcpRegion               sql.NullString `json:"gcp_region"`
+	SiteName                sql.NullString `json:"site_name"`
+	GithubRepoUrl           sql.NullString `json:"github_repo_url"`
+	Port                    sql.NullInt32  `json:"port"`
+	FirewallIp              sql.NullString `json:"firewall_ip"`
+	CurrentStep             sql.NullInt32  `json:"current_step"`
+	Completed               sql.NullBool   `json:"completed"`
+	ExpiresAt               sql.NullTime   `json:"expires_at"`
+	CreatedAt               sql.NullTime   `json:"created_at"`
+	UpdatedAt               sql.NullTime   `json:"updated_at"`
+}
+
+func (q *Queries) GetOnboardingSessionByStripeCheckoutID(ctx context.Context, stripeCheckoutSessionID sql.NullString) (GetOnboardingSessionByStripeCheckoutIDRow, error) {
+	row := q.db.QueryRowContext(ctx, getOnboardingSessionByStripeCheckoutID, stripeCheckoutSessionID)
+	var i GetOnboardingSessionByStripeCheckoutIDRow
+	err := row.Scan(
+		&i.ID,
+		&i.PublicID,
+		&i.AccountID,
+		&i.OrgName,
+		&i.MachineType,
+		&i.MachinePriceID,
+		&i.DiskSizeGb,
+		&i.StripeCheckoutSessionID,
+		&i.StripeCheckoutUrl,
+		&i.StripeSubscriptionID,
+		&i.OrganizationID,
+		&i.ProjectName,
+		&i.GcpCountry,
+		&i.GcpRegion,
+		&i.SiteName,
+		&i.GithubRepoUrl,
+		&i.Port,
+		&i.FirewallIp,
+		&i.CurrentStep,
+		&i.Completed,
+		&i.ExpiresAt,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+	)
+	return i, err
+}
+
 const getOrganization = `-- name: GetOrganization :one
 SELECT id, BIN_TO_UUID(public_id) AS public_id, ` + "`" + `name` + "`" + `, gcp_org_id, gcp_billing_account, gcp_parent, gcp_folder_id, ` + "`" + `status` + "`" + `, gcp_project_id, gcp_project_number, created_at, updated_at, created_by, updated_by
 FROM organizations WHERE public_id = UUID_TO_BIN(?)
@@ -1745,11 +2166,10 @@ func (q *Queries) GetOrganizationMemberByAccountAndOrganization(ctx context.Cont
 
 const getOrganizationProjectByOrganizationID = `-- name: GetOrganizationProjectByOrganizationID :one
 SELECT id, BIN_TO_UUID(public_id) AS public_id, organization_id, ` + "`" + `name` + "`" + `,
-       github_repository, github_branch, compose_path,
-       gcp_region, gcp_zone, machine_type, disk_size_gb, compose_file, application_type,
+       gcp_region, gcp_zone, machine_type, disk_size_gb, stripe_subscription_item_id,
        promote_strategy,
        monitoring_enabled, monitoring_log_level, monitoring_metrics_enabled, monitoring_health_check_path,
-       gcp_project_id, gcp_project_number, github_team_id, create_branch_sites, organization_project, ` + "`" + `status` + "`" + `,
+       gcp_project_id, gcp_project_number, create_branch_sites, organization_project, ` + "`" + `status` + "`" + `,
        created_at, updated_at, created_by, updated_by
 FROM projects
 WHERE organization_id = ? AND organization_project = TRUE
@@ -1761,15 +2181,11 @@ type GetOrganizationProjectByOrganizationIDRow struct {
 	PublicID                  string                      `json:"public_id"`
 	OrganizationID            int64                       `json:"organization_id"`
 	Name                      string                      `json:"name"`
-	GithubRepository          sql.NullString              `json:"github_repository"`
-	GithubBranch              sql.NullString              `json:"github_branch"`
-	ComposePath               sql.NullString              `json:"compose_path"`
 	GcpRegion                 sql.NullString              `json:"gcp_region"`
 	GcpZone                   sql.NullString              `json:"gcp_zone"`
 	MachineType               sql.NullString              `json:"machine_type"`
 	DiskSizeGb                sql.NullInt32               `json:"disk_size_gb"`
-	ComposeFile               sql.NullString              `json:"compose_file"`
-	ApplicationType           sql.NullString              `json:"application_type"`
+	StripeSubscriptionItemID  sql.NullString              `json:"stripe_subscription_item_id"`
 	PromoteStrategy           NullProjectsPromoteStrategy `json:"promote_strategy"`
 	MonitoringEnabled         sql.NullBool                `json:"monitoring_enabled"`
 	MonitoringLogLevel        sql.NullString              `json:"monitoring_log_level"`
@@ -1777,7 +2193,6 @@ type GetOrganizationProjectByOrganizationIDRow struct {
 	MonitoringHealthCheckPath sql.NullString              `json:"monitoring_health_check_path"`
 	GcpProjectID              sql.NullString              `json:"gcp_project_id"`
 	GcpProjectNumber          sql.NullString              `json:"gcp_project_number"`
-	GithubTeamID              sql.NullString              `json:"github_team_id"`
 	CreateBranchSites         sql.NullBool                `json:"create_branch_sites"`
 	OrganizationProject       sql.NullBool                `json:"organization_project"`
 	Status                    NullProjectsStatus          `json:"status"`
@@ -1795,15 +2210,11 @@ func (q *Queries) GetOrganizationProjectByOrganizationID(ctx context.Context, or
 		&i.PublicID,
 		&i.OrganizationID,
 		&i.Name,
-		&i.GithubRepository,
-		&i.GithubBranch,
-		&i.ComposePath,
 		&i.GcpRegion,
 		&i.GcpZone,
 		&i.MachineType,
 		&i.DiskSizeGb,
-		&i.ComposeFile,
-		&i.ApplicationType,
+		&i.StripeSubscriptionItemID,
 		&i.PromoteStrategy,
 		&i.MonitoringEnabled,
 		&i.MonitoringLogLevel,
@@ -1811,7 +2222,6 @@ func (q *Queries) GetOrganizationProjectByOrganizationID(ctx context.Context, or
 		&i.MonitoringHealthCheckPath,
 		&i.GcpProjectID,
 		&i.GcpProjectNumber,
-		&i.GithubTeamID,
 		&i.CreateBranchSites,
 		&i.OrganizationProject,
 		&i.Status,
@@ -1943,11 +2353,10 @@ func (q *Queries) GetOrganizationSecretByPublicID(ctx context.Context, publicID 
 const getProject = `-- name: GetProject :one
 
 SELECT id, BIN_TO_UUID(public_id) AS public_id, organization_id, ` + "`" + `name` + "`" + `,
-       github_repository, github_branch, compose_path,
-       gcp_region, gcp_zone, machine_type, disk_size_gb, compose_file, application_type,
+       gcp_region, gcp_zone, machine_type, disk_size_gb, stripe_subscription_item_id,
        promote_strategy,
        monitoring_enabled, monitoring_log_level, monitoring_metrics_enabled, monitoring_health_check_path,
-       gcp_project_id, gcp_project_number, github_team_id, create_branch_sites, ` + "`" + `status` + "`" + `,
+       gcp_project_id, gcp_project_number, create_branch_sites, ` + "`" + `status` + "`" + `,
        created_at, updated_at, created_by, updated_by
 FROM projects WHERE public_id = UUID_TO_BIN(?)
 `
@@ -1957,15 +2366,11 @@ type GetProjectRow struct {
 	PublicID                  string                      `json:"public_id"`
 	OrganizationID            int64                       `json:"organization_id"`
 	Name                      string                      `json:"name"`
-	GithubRepository          sql.NullString              `json:"github_repository"`
-	GithubBranch              sql.NullString              `json:"github_branch"`
-	ComposePath               sql.NullString              `json:"compose_path"`
 	GcpRegion                 sql.NullString              `json:"gcp_region"`
 	GcpZone                   sql.NullString              `json:"gcp_zone"`
 	MachineType               sql.NullString              `json:"machine_type"`
 	DiskSizeGb                sql.NullInt32               `json:"disk_size_gb"`
-	ComposeFile               sql.NullString              `json:"compose_file"`
-	ApplicationType           sql.NullString              `json:"application_type"`
+	StripeSubscriptionItemID  sql.NullString              `json:"stripe_subscription_item_id"`
 	PromoteStrategy           NullProjectsPromoteStrategy `json:"promote_strategy"`
 	MonitoringEnabled         sql.NullBool                `json:"monitoring_enabled"`
 	MonitoringLogLevel        sql.NullString              `json:"monitoring_log_level"`
@@ -1973,7 +2378,6 @@ type GetProjectRow struct {
 	MonitoringHealthCheckPath sql.NullString              `json:"monitoring_health_check_path"`
 	GcpProjectID              sql.NullString              `json:"gcp_project_id"`
 	GcpProjectNumber          sql.NullString              `json:"gcp_project_number"`
-	GithubTeamID              sql.NullString              `json:"github_team_id"`
 	CreateBranchSites         sql.NullBool                `json:"create_branch_sites"`
 	Status                    NullProjectsStatus          `json:"status"`
 	CreatedAt                 sql.NullTime                `json:"created_at"`
@@ -1993,15 +2397,11 @@ func (q *Queries) GetProject(ctx context.Context, publicID string) (GetProjectRo
 		&i.PublicID,
 		&i.OrganizationID,
 		&i.Name,
-		&i.GithubRepository,
-		&i.GithubBranch,
-		&i.ComposePath,
 		&i.GcpRegion,
 		&i.GcpZone,
 		&i.MachineType,
 		&i.DiskSizeGb,
-		&i.ComposeFile,
-		&i.ApplicationType,
+		&i.StripeSubscriptionItemID,
 		&i.PromoteStrategy,
 		&i.MonitoringEnabled,
 		&i.MonitoringLogLevel,
@@ -2009,7 +2409,6 @@ func (q *Queries) GetProject(ctx context.Context, publicID string) (GetProjectRo
 		&i.MonitoringHealthCheckPath,
 		&i.GcpProjectID,
 		&i.GcpProjectNumber,
-		&i.GithubTeamID,
 		&i.CreateBranchSites,
 		&i.Status,
 		&i.CreatedAt,
@@ -2022,11 +2421,10 @@ func (q *Queries) GetProject(ctx context.Context, publicID string) (GetProjectRo
 
 const getProjectByGCPProjectID = `-- name: GetProjectByGCPProjectID :one
 SELECT id, BIN_TO_UUID(public_id) AS public_id, organization_id, ` + "`" + `name` + "`" + `,
-       github_repository, github_branch, compose_path,
-       gcp_region, gcp_zone, machine_type, disk_size_gb, compose_file, application_type,
+       gcp_region, gcp_zone, machine_type, disk_size_gb, stripe_subscription_item_id,
        promote_strategy,
        monitoring_enabled, monitoring_log_level, monitoring_metrics_enabled, monitoring_health_check_path,
-       gcp_project_id, gcp_project_number, github_team_id, create_branch_sites, ` + "`" + `status` + "`" + `,
+       gcp_project_id, gcp_project_number, create_branch_sites, ` + "`" + `status` + "`" + `,
        created_at, updated_at, created_by, updated_by
 FROM projects WHERE gcp_project_id = ?
 `
@@ -2036,15 +2434,11 @@ type GetProjectByGCPProjectIDRow struct {
 	PublicID                  string                      `json:"public_id"`
 	OrganizationID            int64                       `json:"organization_id"`
 	Name                      string                      `json:"name"`
-	GithubRepository          sql.NullString              `json:"github_repository"`
-	GithubBranch              sql.NullString              `json:"github_branch"`
-	ComposePath               sql.NullString              `json:"compose_path"`
 	GcpRegion                 sql.NullString              `json:"gcp_region"`
 	GcpZone                   sql.NullString              `json:"gcp_zone"`
 	MachineType               sql.NullString              `json:"machine_type"`
 	DiskSizeGb                sql.NullInt32               `json:"disk_size_gb"`
-	ComposeFile               sql.NullString              `json:"compose_file"`
-	ApplicationType           sql.NullString              `json:"application_type"`
+	StripeSubscriptionItemID  sql.NullString              `json:"stripe_subscription_item_id"`
 	PromoteStrategy           NullProjectsPromoteStrategy `json:"promote_strategy"`
 	MonitoringEnabled         sql.NullBool                `json:"monitoring_enabled"`
 	MonitoringLogLevel        sql.NullString              `json:"monitoring_log_level"`
@@ -2052,7 +2446,6 @@ type GetProjectByGCPProjectIDRow struct {
 	MonitoringHealthCheckPath sql.NullString              `json:"monitoring_health_check_path"`
 	GcpProjectID              sql.NullString              `json:"gcp_project_id"`
 	GcpProjectNumber          sql.NullString              `json:"gcp_project_number"`
-	GithubTeamID              sql.NullString              `json:"github_team_id"`
 	CreateBranchSites         sql.NullBool                `json:"create_branch_sites"`
 	Status                    NullProjectsStatus          `json:"status"`
 	CreatedAt                 sql.NullTime                `json:"created_at"`
@@ -2069,15 +2462,11 @@ func (q *Queries) GetProjectByGCPProjectID(ctx context.Context, gcpProjectID sql
 		&i.PublicID,
 		&i.OrganizationID,
 		&i.Name,
-		&i.GithubRepository,
-		&i.GithubBranch,
-		&i.ComposePath,
 		&i.GcpRegion,
 		&i.GcpZone,
 		&i.MachineType,
 		&i.DiskSizeGb,
-		&i.ComposeFile,
-		&i.ApplicationType,
+		&i.StripeSubscriptionItemID,
 		&i.PromoteStrategy,
 		&i.MonitoringEnabled,
 		&i.MonitoringLogLevel,
@@ -2085,7 +2474,6 @@ func (q *Queries) GetProjectByGCPProjectID(ctx context.Context, gcpProjectID sql
 		&i.MonitoringHealthCheckPath,
 		&i.GcpProjectID,
 		&i.GcpProjectNumber,
-		&i.GithubTeamID,
 		&i.CreateBranchSites,
 		&i.Status,
 		&i.CreatedAt,
@@ -2098,11 +2486,10 @@ func (q *Queries) GetProjectByGCPProjectID(ctx context.Context, gcpProjectID sql
 
 const getProjectByID = `-- name: GetProjectByID :one
 SELECT id, BIN_TO_UUID(public_id) AS public_id, organization_id, ` + "`" + `name` + "`" + `,
-       github_repository, github_branch, compose_path,
-       gcp_region, gcp_zone, machine_type, disk_size_gb, compose_file, application_type,
+       gcp_region, gcp_zone, machine_type, disk_size_gb, stripe_subscription_item_id,
        promote_strategy,
        monitoring_enabled, monitoring_log_level, monitoring_metrics_enabled, monitoring_health_check_path,
-       gcp_project_id, gcp_project_number, github_team_id, create_branch_sites, ` + "`" + `status` + "`" + `,
+       gcp_project_id, gcp_project_number, create_branch_sites, ` + "`" + `status` + "`" + `,
        created_at, updated_at, created_by, updated_by
 FROM projects WHERE id = ?
 `
@@ -2112,15 +2499,11 @@ type GetProjectByIDRow struct {
 	PublicID                  string                      `json:"public_id"`
 	OrganizationID            int64                       `json:"organization_id"`
 	Name                      string                      `json:"name"`
-	GithubRepository          sql.NullString              `json:"github_repository"`
-	GithubBranch              sql.NullString              `json:"github_branch"`
-	ComposePath               sql.NullString              `json:"compose_path"`
 	GcpRegion                 sql.NullString              `json:"gcp_region"`
 	GcpZone                   sql.NullString              `json:"gcp_zone"`
 	MachineType               sql.NullString              `json:"machine_type"`
 	DiskSizeGb                sql.NullInt32               `json:"disk_size_gb"`
-	ComposeFile               sql.NullString              `json:"compose_file"`
-	ApplicationType           sql.NullString              `json:"application_type"`
+	StripeSubscriptionItemID  sql.NullString              `json:"stripe_subscription_item_id"`
 	PromoteStrategy           NullProjectsPromoteStrategy `json:"promote_strategy"`
 	MonitoringEnabled         sql.NullBool                `json:"monitoring_enabled"`
 	MonitoringLogLevel        sql.NullString              `json:"monitoring_log_level"`
@@ -2128,7 +2511,6 @@ type GetProjectByIDRow struct {
 	MonitoringHealthCheckPath sql.NullString              `json:"monitoring_health_check_path"`
 	GcpProjectID              sql.NullString              `json:"gcp_project_id"`
 	GcpProjectNumber          sql.NullString              `json:"gcp_project_number"`
-	GithubTeamID              sql.NullString              `json:"github_team_id"`
 	CreateBranchSites         sql.NullBool                `json:"create_branch_sites"`
 	Status                    NullProjectsStatus          `json:"status"`
 	CreatedAt                 sql.NullTime                `json:"created_at"`
@@ -2145,15 +2527,11 @@ func (q *Queries) GetProjectByID(ctx context.Context, id int64) (GetProjectByIDR
 		&i.PublicID,
 		&i.OrganizationID,
 		&i.Name,
-		&i.GithubRepository,
-		&i.GithubBranch,
-		&i.ComposePath,
 		&i.GcpRegion,
 		&i.GcpZone,
 		&i.MachineType,
 		&i.DiskSizeGb,
-		&i.ComposeFile,
-		&i.ApplicationType,
+		&i.StripeSubscriptionItemID,
 		&i.PromoteStrategy,
 		&i.MonitoringEnabled,
 		&i.MonitoringLogLevel,
@@ -2161,7 +2539,6 @@ func (q *Queries) GetProjectByID(ctx context.Context, id int64) (GetProjectByIDR
 		&i.MonitoringHealthCheckPath,
 		&i.GcpProjectID,
 		&i.GcpProjectNumber,
-		&i.GithubTeamID,
 		&i.CreateBranchSites,
 		&i.Status,
 		&i.CreatedAt,
@@ -2399,11 +2776,10 @@ func (q *Queries) GetProjectSecretByPublicID(ctx context.Context, publicID strin
 const getProjectWithOrganization = `-- name: GetProjectWithOrganization :one
 SELECT
     p.id, BIN_TO_UUID(p.public_id) AS public_id, p.organization_id, p.name,
-    p.github_repository, p.github_branch, p.compose_path,
-    p.gcp_region, p.gcp_zone, p.machine_type, p.disk_size_gb, p.compose_file, p.application_type,
+    p.gcp_region, p.gcp_zone, p.machine_type, p.disk_size_gb, p.stripe_subscription_item_id,
     p.promote_strategy,
     p.monitoring_enabled, p.monitoring_log_level, p.monitoring_metrics_enabled, p.monitoring_health_check_path,
-    p.gcp_project_id, p.gcp_project_number, p.github_team_id, p.create_branch_sites, p.status,
+    p.gcp_project_id, p.gcp_project_number, p.create_branch_sites, p.status,
     p.created_at, p.updated_at, p.created_by, p.updated_by,
     c.gcp_billing_account
 FROM projects p
@@ -2416,15 +2792,11 @@ type GetProjectWithOrganizationRow struct {
 	PublicID                  string                      `json:"public_id"`
 	OrganizationID            int64                       `json:"organization_id"`
 	Name                      string                      `json:"name"`
-	GithubRepository          sql.NullString              `json:"github_repository"`
-	GithubBranch              sql.NullString              `json:"github_branch"`
-	ComposePath               sql.NullString              `json:"compose_path"`
 	GcpRegion                 sql.NullString              `json:"gcp_region"`
 	GcpZone                   sql.NullString              `json:"gcp_zone"`
 	MachineType               sql.NullString              `json:"machine_type"`
 	DiskSizeGb                sql.NullInt32               `json:"disk_size_gb"`
-	ComposeFile               sql.NullString              `json:"compose_file"`
-	ApplicationType           sql.NullString              `json:"application_type"`
+	StripeSubscriptionItemID  sql.NullString              `json:"stripe_subscription_item_id"`
 	PromoteStrategy           NullProjectsPromoteStrategy `json:"promote_strategy"`
 	MonitoringEnabled         sql.NullBool                `json:"monitoring_enabled"`
 	MonitoringLogLevel        sql.NullString              `json:"monitoring_log_level"`
@@ -2432,7 +2804,6 @@ type GetProjectWithOrganizationRow struct {
 	MonitoringHealthCheckPath sql.NullString              `json:"monitoring_health_check_path"`
 	GcpProjectID              sql.NullString              `json:"gcp_project_id"`
 	GcpProjectNumber          sql.NullString              `json:"gcp_project_number"`
-	GithubTeamID              sql.NullString              `json:"github_team_id"`
 	CreateBranchSites         sql.NullBool                `json:"create_branch_sites"`
 	Status                    NullProjectsStatus          `json:"status"`
 	CreatedAt                 sql.NullTime                `json:"created_at"`
@@ -2450,15 +2821,11 @@ func (q *Queries) GetProjectWithOrganization(ctx context.Context, publicID strin
 		&i.PublicID,
 		&i.OrganizationID,
 		&i.Name,
-		&i.GithubRepository,
-		&i.GithubBranch,
-		&i.ComposePath,
 		&i.GcpRegion,
 		&i.GcpZone,
 		&i.MachineType,
 		&i.DiskSizeGb,
-		&i.ComposeFile,
-		&i.ApplicationType,
+		&i.StripeSubscriptionItemID,
 		&i.PromoteStrategy,
 		&i.MonitoringEnabled,
 		&i.MonitoringLogLevel,
@@ -2466,7 +2833,6 @@ func (q *Queries) GetProjectWithOrganization(ctx context.Context, publicID strin
 		&i.MonitoringHealthCheckPath,
 		&i.GcpProjectID,
 		&i.GcpProjectNumber,
-		&i.GithubTeamID,
 		&i.CreateBranchSites,
 		&i.Status,
 		&i.CreatedAt,
@@ -2547,23 +2913,32 @@ func (q *Queries) GetRelationship(ctx context.Context, publicID string) (GetRela
 
 const getSite = `-- name: GetSite :one
 
-SELECT id, BIN_TO_UUID(public_id) AS public_id, project_id, ` + "`" + `name` + "`" + `, github_ref, gcp_external_ip, ` + "`" + `status` + "`" + `,
+SELECT id, BIN_TO_UUID(public_id) AS public_id, project_id, ` + "`" + `name` + "`" + `, github_repository, github_ref, github_team_id, compose_path, compose_file, port, application_type, up_cmd, init_cmd, rollout_cmd, gcp_external_ip, ` + "`" + `status` + "`" + `,
        created_at, updated_at, created_by, updated_by
 FROM sites WHERE public_id = UUID_TO_BIN(?)
 `
 
 type GetSiteRow struct {
-	ID            int64           `json:"id"`
-	PublicID      string          `json:"public_id"`
-	ProjectID     int64           `json:"project_id"`
-	Name          string          `json:"name"`
-	GithubRef     string          `json:"github_ref"`
-	GcpExternalIp sql.NullString  `json:"gcp_external_ip"`
-	Status        NullSitesStatus `json:"status"`
-	CreatedAt     sql.NullTime    `json:"created_at"`
-	UpdatedAt     sql.NullTime    `json:"updated_at"`
-	CreatedBy     sql.NullInt64   `json:"created_by"`
-	UpdatedBy     sql.NullInt64   `json:"updated_by"`
+	ID               int64           `json:"id"`
+	PublicID         string          `json:"public_id"`
+	ProjectID        int64           `json:"project_id"`
+	Name             string          `json:"name"`
+	GithubRepository string          `json:"github_repository"`
+	GithubRef        string          `json:"github_ref"`
+	GithubTeamID     sql.NullString  `json:"github_team_id"`
+	ComposePath      sql.NullString  `json:"compose_path"`
+	ComposeFile      sql.NullString  `json:"compose_file"`
+	Port             sql.NullInt32   `json:"port"`
+	ApplicationType  sql.NullString  `json:"application_type"`
+	UpCmd            json.RawMessage `json:"up_cmd"`
+	InitCmd          json.RawMessage `json:"init_cmd"`
+	RolloutCmd       json.RawMessage `json:"rollout_cmd"`
+	GcpExternalIp    sql.NullString  `json:"gcp_external_ip"`
+	Status           NullSitesStatus `json:"status"`
+	CreatedAt        sql.NullTime    `json:"created_at"`
+	UpdatedAt        sql.NullTime    `json:"updated_at"`
+	CreatedBy        sql.NullInt64   `json:"created_by"`
+	UpdatedBy        sql.NullInt64   `json:"updated_by"`
 }
 
 // =============================================================================
@@ -2577,7 +2952,16 @@ func (q *Queries) GetSite(ctx context.Context, publicID string) (GetSiteRow, err
 		&i.PublicID,
 		&i.ProjectID,
 		&i.Name,
+		&i.GithubRepository,
 		&i.GithubRef,
+		&i.GithubTeamID,
+		&i.ComposePath,
+		&i.ComposeFile,
+		&i.Port,
+		&i.ApplicationType,
+		&i.UpCmd,
+		&i.InitCmd,
+		&i.RolloutCmd,
 		&i.GcpExternalIp,
 		&i.Status,
 		&i.CreatedAt,
@@ -2589,23 +2973,32 @@ func (q *Queries) GetSite(ctx context.Context, publicID string) (GetSiteRow, err
 }
 
 const getSiteByID = `-- name: GetSiteByID :one
-SELECT id, BIN_TO_UUID(public_id) AS public_id, project_id, ` + "`" + `name` + "`" + `, github_ref, gcp_external_ip, ` + "`" + `status` + "`" + `,
+SELECT id, BIN_TO_UUID(public_id) AS public_id, project_id, ` + "`" + `name` + "`" + `, github_repository, github_ref, github_team_id, compose_path, compose_file, port, application_type, up_cmd, init_cmd, rollout_cmd, gcp_external_ip, ` + "`" + `status` + "`" + `,
        created_at, updated_at, created_by, updated_by
 FROM sites WHERE id = ?
 `
 
 type GetSiteByIDRow struct {
-	ID            int64           `json:"id"`
-	PublicID      string          `json:"public_id"`
-	ProjectID     int64           `json:"project_id"`
-	Name          string          `json:"name"`
-	GithubRef     string          `json:"github_ref"`
-	GcpExternalIp sql.NullString  `json:"gcp_external_ip"`
-	Status        NullSitesStatus `json:"status"`
-	CreatedAt     sql.NullTime    `json:"created_at"`
-	UpdatedAt     sql.NullTime    `json:"updated_at"`
-	CreatedBy     sql.NullInt64   `json:"created_by"`
-	UpdatedBy     sql.NullInt64   `json:"updated_by"`
+	ID               int64           `json:"id"`
+	PublicID         string          `json:"public_id"`
+	ProjectID        int64           `json:"project_id"`
+	Name             string          `json:"name"`
+	GithubRepository string          `json:"github_repository"`
+	GithubRef        string          `json:"github_ref"`
+	GithubTeamID     sql.NullString  `json:"github_team_id"`
+	ComposePath      sql.NullString  `json:"compose_path"`
+	ComposeFile      sql.NullString  `json:"compose_file"`
+	Port             sql.NullInt32   `json:"port"`
+	ApplicationType  sql.NullString  `json:"application_type"`
+	UpCmd            json.RawMessage `json:"up_cmd"`
+	InitCmd          json.RawMessage `json:"init_cmd"`
+	RolloutCmd       json.RawMessage `json:"rollout_cmd"`
+	GcpExternalIp    sql.NullString  `json:"gcp_external_ip"`
+	Status           NullSitesStatus `json:"status"`
+	CreatedAt        sql.NullTime    `json:"created_at"`
+	UpdatedAt        sql.NullTime    `json:"updated_at"`
+	CreatedBy        sql.NullInt64   `json:"created_by"`
+	UpdatedBy        sql.NullInt64   `json:"updated_by"`
 }
 
 func (q *Queries) GetSiteByID(ctx context.Context, id int64) (GetSiteByIDRow, error) {
@@ -2616,7 +3009,16 @@ func (q *Queries) GetSiteByID(ctx context.Context, id int64) (GetSiteByIDRow, er
 		&i.PublicID,
 		&i.ProjectID,
 		&i.Name,
+		&i.GithubRepository,
 		&i.GithubRef,
+		&i.GithubTeamID,
+		&i.ComposePath,
+		&i.ComposeFile,
+		&i.Port,
+		&i.ApplicationType,
+		&i.UpCmd,
+		&i.InitCmd,
+		&i.RolloutCmd,
 		&i.GcpExternalIp,
 		&i.Status,
 		&i.CreatedAt,
@@ -2628,7 +3030,7 @@ func (q *Queries) GetSiteByID(ctx context.Context, id int64) (GetSiteByIDRow, er
 }
 
 const getSiteByProjectAndName = `-- name: GetSiteByProjectAndName :one
-SELECT id, BIN_TO_UUID(public_id) AS public_id, project_id, ` + "`" + `name` + "`" + `, github_ref, gcp_external_ip, ` + "`" + `status` + "`" + `,
+SELECT id, BIN_TO_UUID(public_id) AS public_id, project_id, ` + "`" + `name` + "`" + `, github_repository, github_ref, github_team_id, compose_path, compose_file, port, application_type, up_cmd, init_cmd, rollout_cmd, gcp_external_ip, ` + "`" + `status` + "`" + `,
        created_at, updated_at, created_by, updated_by
 FROM sites WHERE project_id = ? AND ` + "`" + `name` + "`" + ` = ?
 `
@@ -2639,17 +3041,26 @@ type GetSiteByProjectAndNameParams struct {
 }
 
 type GetSiteByProjectAndNameRow struct {
-	ID            int64           `json:"id"`
-	PublicID      string          `json:"public_id"`
-	ProjectID     int64           `json:"project_id"`
-	Name          string          `json:"name"`
-	GithubRef     string          `json:"github_ref"`
-	GcpExternalIp sql.NullString  `json:"gcp_external_ip"`
-	Status        NullSitesStatus `json:"status"`
-	CreatedAt     sql.NullTime    `json:"created_at"`
-	UpdatedAt     sql.NullTime    `json:"updated_at"`
-	CreatedBy     sql.NullInt64   `json:"created_by"`
-	UpdatedBy     sql.NullInt64   `json:"updated_by"`
+	ID               int64           `json:"id"`
+	PublicID         string          `json:"public_id"`
+	ProjectID        int64           `json:"project_id"`
+	Name             string          `json:"name"`
+	GithubRepository string          `json:"github_repository"`
+	GithubRef        string          `json:"github_ref"`
+	GithubTeamID     sql.NullString  `json:"github_team_id"`
+	ComposePath      sql.NullString  `json:"compose_path"`
+	ComposeFile      sql.NullString  `json:"compose_file"`
+	Port             sql.NullInt32   `json:"port"`
+	ApplicationType  sql.NullString  `json:"application_type"`
+	UpCmd            json.RawMessage `json:"up_cmd"`
+	InitCmd          json.RawMessage `json:"init_cmd"`
+	RolloutCmd       json.RawMessage `json:"rollout_cmd"`
+	GcpExternalIp    sql.NullString  `json:"gcp_external_ip"`
+	Status           NullSitesStatus `json:"status"`
+	CreatedAt        sql.NullTime    `json:"created_at"`
+	UpdatedAt        sql.NullTime    `json:"updated_at"`
+	CreatedBy        sql.NullInt64   `json:"created_by"`
+	UpdatedBy        sql.NullInt64   `json:"updated_by"`
 }
 
 func (q *Queries) GetSiteByProjectAndName(ctx context.Context, arg GetSiteByProjectAndNameParams) (GetSiteByProjectAndNameRow, error) {
@@ -2660,7 +3071,16 @@ func (q *Queries) GetSiteByProjectAndName(ctx context.Context, arg GetSiteByProj
 		&i.PublicID,
 		&i.ProjectID,
 		&i.Name,
+		&i.GithubRepository,
 		&i.GithubRef,
+		&i.GithubTeamID,
+		&i.ComposePath,
+		&i.ComposeFile,
+		&i.Port,
+		&i.ApplicationType,
+		&i.UpCmd,
+		&i.InitCmd,
+		&i.RolloutCmd,
 		&i.GcpExternalIp,
 		&i.Status,
 		&i.CreatedAt,
@@ -2959,6 +3379,185 @@ func (q *Queries) GetSshKey(ctx context.Context, publicID string) (GetSshKeyRow,
 		&i.PublicKey,
 		&i.Name,
 		&i.Fingerprint,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+	)
+	return i, err
+}
+
+const getStorageConfig = `-- name: GetStorageConfig :one
+SELECT id, config_key, stripe_price_id, price_per_gb_cents, min_size_gb, max_size_gb, active, created_at, updated_at
+FROM storage_config
+WHERE config_key = 'disk_storage' AND active = TRUE
+`
+
+func (q *Queries) GetStorageConfig(ctx context.Context) (StorageConfig, error) {
+	row := q.db.QueryRowContext(ctx, getStorageConfig)
+	var i StorageConfig
+	err := row.Scan(
+		&i.ID,
+		&i.ConfigKey,
+		&i.StripePriceID,
+		&i.PricePerGbCents,
+		&i.MinSizeGb,
+		&i.MaxSizeGb,
+		&i.Active,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+	)
+	return i, err
+}
+
+const getStripeSubscription = `-- name: GetStripeSubscription :one
+SELECT id, BIN_TO_UUID(public_id) AS public_id, organization_id, stripe_subscription_id, stripe_customer_id, stripe_checkout_session_id,
+       status, current_period_start, current_period_end, trial_start, trial_end,
+       cancel_at_period_end, canceled_at, machine_type, disk_size_gb, created_at, updated_at
+FROM stripe_subscriptions WHERE public_id = UUID_TO_BIN(?)
+`
+
+type GetStripeSubscriptionRow struct {
+	ID                      int64                     `json:"id"`
+	PublicID                string                    `json:"public_id"`
+	OrganizationID          int64                     `json:"organization_id"`
+	StripeSubscriptionID    string                    `json:"stripe_subscription_id"`
+	StripeCustomerID        string                    `json:"stripe_customer_id"`
+	StripeCheckoutSessionID sql.NullString            `json:"stripe_checkout_session_id"`
+	Status                  StripeSubscriptionsStatus `json:"status"`
+	CurrentPeriodStart      sql.NullTime              `json:"current_period_start"`
+	CurrentPeriodEnd        sql.NullTime              `json:"current_period_end"`
+	TrialStart              sql.NullTime              `json:"trial_start"`
+	TrialEnd                sql.NullTime              `json:"trial_end"`
+	CancelAtPeriodEnd       sql.NullBool              `json:"cancel_at_period_end"`
+	CanceledAt              sql.NullTime              `json:"canceled_at"`
+	MachineType             sql.NullString            `json:"machine_type"`
+	DiskSizeGb              sql.NullInt32             `json:"disk_size_gb"`
+	CreatedAt               sql.NullTime              `json:"created_at"`
+	UpdatedAt               sql.NullTime              `json:"updated_at"`
+}
+
+func (q *Queries) GetStripeSubscription(ctx context.Context, publicID string) (GetStripeSubscriptionRow, error) {
+	row := q.db.QueryRowContext(ctx, getStripeSubscription, publicID)
+	var i GetStripeSubscriptionRow
+	err := row.Scan(
+		&i.ID,
+		&i.PublicID,
+		&i.OrganizationID,
+		&i.StripeSubscriptionID,
+		&i.StripeCustomerID,
+		&i.StripeCheckoutSessionID,
+		&i.Status,
+		&i.CurrentPeriodStart,
+		&i.CurrentPeriodEnd,
+		&i.TrialStart,
+		&i.TrialEnd,
+		&i.CancelAtPeriodEnd,
+		&i.CanceledAt,
+		&i.MachineType,
+		&i.DiskSizeGb,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+	)
+	return i, err
+}
+
+const getStripeSubscriptionByOrganizationID = `-- name: GetStripeSubscriptionByOrganizationID :one
+SELECT id, BIN_TO_UUID(public_id) AS public_id, organization_id, stripe_subscription_id, stripe_customer_id, stripe_checkout_session_id,
+       status, current_period_start, current_period_end, trial_start, trial_end,
+       cancel_at_period_end, canceled_at, machine_type, disk_size_gb, created_at, updated_at
+FROM stripe_subscriptions WHERE organization_id = ?
+`
+
+type GetStripeSubscriptionByOrganizationIDRow struct {
+	ID                      int64                     `json:"id"`
+	PublicID                string                    `json:"public_id"`
+	OrganizationID          int64                     `json:"organization_id"`
+	StripeSubscriptionID    string                    `json:"stripe_subscription_id"`
+	StripeCustomerID        string                    `json:"stripe_customer_id"`
+	StripeCheckoutSessionID sql.NullString            `json:"stripe_checkout_session_id"`
+	Status                  StripeSubscriptionsStatus `json:"status"`
+	CurrentPeriodStart      sql.NullTime              `json:"current_period_start"`
+	CurrentPeriodEnd        sql.NullTime              `json:"current_period_end"`
+	TrialStart              sql.NullTime              `json:"trial_start"`
+	TrialEnd                sql.NullTime              `json:"trial_end"`
+	CancelAtPeriodEnd       sql.NullBool              `json:"cancel_at_period_end"`
+	CanceledAt              sql.NullTime              `json:"canceled_at"`
+	MachineType             sql.NullString            `json:"machine_type"`
+	DiskSizeGb              sql.NullInt32             `json:"disk_size_gb"`
+	CreatedAt               sql.NullTime              `json:"created_at"`
+	UpdatedAt               sql.NullTime              `json:"updated_at"`
+}
+
+func (q *Queries) GetStripeSubscriptionByOrganizationID(ctx context.Context, organizationID int64) (GetStripeSubscriptionByOrganizationIDRow, error) {
+	row := q.db.QueryRowContext(ctx, getStripeSubscriptionByOrganizationID, organizationID)
+	var i GetStripeSubscriptionByOrganizationIDRow
+	err := row.Scan(
+		&i.ID,
+		&i.PublicID,
+		&i.OrganizationID,
+		&i.StripeSubscriptionID,
+		&i.StripeCustomerID,
+		&i.StripeCheckoutSessionID,
+		&i.Status,
+		&i.CurrentPeriodStart,
+		&i.CurrentPeriodEnd,
+		&i.TrialStart,
+		&i.TrialEnd,
+		&i.CancelAtPeriodEnd,
+		&i.CanceledAt,
+		&i.MachineType,
+		&i.DiskSizeGb,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+	)
+	return i, err
+}
+
+const getStripeSubscriptionByStripeID = `-- name: GetStripeSubscriptionByStripeID :one
+SELECT id, BIN_TO_UUID(public_id) AS public_id, organization_id, stripe_subscription_id, stripe_customer_id, stripe_checkout_session_id,
+       status, current_period_start, current_period_end, trial_start, trial_end,
+       cancel_at_period_end, canceled_at, machine_type, disk_size_gb, created_at, updated_at
+FROM stripe_subscriptions WHERE stripe_subscription_id = ?
+`
+
+type GetStripeSubscriptionByStripeIDRow struct {
+	ID                      int64                     `json:"id"`
+	PublicID                string                    `json:"public_id"`
+	OrganizationID          int64                     `json:"organization_id"`
+	StripeSubscriptionID    string                    `json:"stripe_subscription_id"`
+	StripeCustomerID        string                    `json:"stripe_customer_id"`
+	StripeCheckoutSessionID sql.NullString            `json:"stripe_checkout_session_id"`
+	Status                  StripeSubscriptionsStatus `json:"status"`
+	CurrentPeriodStart      sql.NullTime              `json:"current_period_start"`
+	CurrentPeriodEnd        sql.NullTime              `json:"current_period_end"`
+	TrialStart              sql.NullTime              `json:"trial_start"`
+	TrialEnd                sql.NullTime              `json:"trial_end"`
+	CancelAtPeriodEnd       sql.NullBool              `json:"cancel_at_period_end"`
+	CanceledAt              sql.NullTime              `json:"canceled_at"`
+	MachineType             sql.NullString            `json:"machine_type"`
+	DiskSizeGb              sql.NullInt32             `json:"disk_size_gb"`
+	CreatedAt               sql.NullTime              `json:"created_at"`
+	UpdatedAt               sql.NullTime              `json:"updated_at"`
+}
+
+func (q *Queries) GetStripeSubscriptionByStripeID(ctx context.Context, stripeSubscriptionID string) (GetStripeSubscriptionByStripeIDRow, error) {
+	row := q.db.QueryRowContext(ctx, getStripeSubscriptionByStripeID, stripeSubscriptionID)
+	var i GetStripeSubscriptionByStripeIDRow
+	err := row.Scan(
+		&i.ID,
+		&i.PublicID,
+		&i.OrganizationID,
+		&i.StripeSubscriptionID,
+		&i.StripeCustomerID,
+		&i.StripeCheckoutSessionID,
+		&i.Status,
+		&i.CurrentPeriodStart,
+		&i.CurrentPeriodEnd,
+		&i.TrialStart,
+		&i.TrialEnd,
+		&i.CancelAtPeriodEnd,
+		&i.CanceledAt,
+		&i.MachineType,
+		&i.DiskSizeGb,
 		&i.CreatedAt,
 		&i.UpdatedAt,
 	)
@@ -3413,6 +4012,46 @@ func (q *Queries) ListAccounts(ctx context.Context, arg ListAccountsParams) ([]L
 	return items, nil
 }
 
+const listAllMachineTypes = `-- name: ListAllMachineTypes :many
+SELECT id, machine_type, display_name, vcpu, memory_gib, stripe_price_id, monthly_price_cents, active, created_at, updated_at
+FROM machine_types
+ORDER BY vcpu ASC, memory_gib ASC
+`
+
+func (q *Queries) ListAllMachineTypes(ctx context.Context) ([]MachineType, error) {
+	rows, err := q.db.QueryContext(ctx, listAllMachineTypes)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []MachineType{}
+	for rows.Next() {
+		var i MachineType
+		if err := rows.Scan(
+			&i.ID,
+			&i.MachineType,
+			&i.DisplayName,
+			&i.Vcpu,
+			&i.MemoryGib,
+			&i.StripePriceID,
+			&i.MonthlyPriceCents,
+			&i.Active,
+			&i.CreatedAt,
+			&i.UpdatedAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const listApprovedRelatedOrganizationsForAccount = `-- name: ListApprovedRelatedOrganizationsForAccount :many
 WITH user_orgs AS (
     SELECT organization_id FROM organization_members WHERE account_id = ? AND status = 'active'
@@ -3467,6 +4106,47 @@ func (q *Queries) ListApprovedRelatedOrganizationsForAccount(ctx context.Context
 			&i.ResolvedAt,
 			&i.ResolvedBy,
 			&i.TargetOrgPublicID,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const listMachineTypes = `-- name: ListMachineTypes :many
+SELECT id, machine_type, display_name, vcpu, memory_gib, stripe_price_id, monthly_price_cents, active, created_at, updated_at
+FROM machine_types
+WHERE active = TRUE
+ORDER BY vcpu ASC, memory_gib ASC
+`
+
+func (q *Queries) ListMachineTypes(ctx context.Context) ([]MachineType, error) {
+	rows, err := q.db.QueryContext(ctx, listMachineTypes)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []MachineType{}
+	for rows.Next() {
+		var i MachineType
+		if err := rows.Scan(
+			&i.ID,
+			&i.MachineType,
+			&i.DisplayName,
+			&i.Vcpu,
+			&i.MemoryGib,
+			&i.StripePriceID,
+			&i.MonthlyPriceCents,
+			&i.Active,
+			&i.CreatedAt,
+			&i.UpdatedAt,
 		); err != nil {
 			return nil, err
 		}
@@ -3609,7 +4289,7 @@ func (q *Queries) ListOrganizationMembers(ctx context.Context, arg ListOrganizat
 }
 
 const listOrganizationProjects = `-- name: ListOrganizationProjects :many
-SELECT id, BIN_TO_UUID(public_id) AS public_id, organization_id, name, github_repository, github_repository_template, github_branch, compose_path, gcp_region, gcp_zone, machine_type, disk_size_gb, compose_file, application_type, promote_strategy, monitoring_enabled, monitoring_log_level, monitoring_metrics_enabled, monitoring_health_check_path, gcp_project_id, gcp_project_number, github_team_id, organization_project, create_branch_sites, up_cmd, init_cmd, rollout_cmd, status, created_at, updated_at, created_by, updated_by
+SELECT id, BIN_TO_UUID(public_id) AS public_id, organization_id, name, gcp_region, gcp_zone, machine_type, disk_size_gb, stripe_subscription_item_id, promote_strategy, monitoring_enabled, monitoring_log_level, monitoring_metrics_enabled, monitoring_health_check_path, gcp_project_id, gcp_project_number, organization_project, create_branch_sites, status, created_at, updated_at, created_by, updated_by
 FROM projects
 WHERE organization_id = ?
 ORDER BY created_at DESC
@@ -3627,16 +4307,11 @@ type ListOrganizationProjectsRow struct {
 	PublicID                  string                      `json:"public_id"`
 	OrganizationID            int64                       `json:"organization_id"`
 	Name                      string                      `json:"name"`
-	GithubRepository          sql.NullString              `json:"github_repository"`
-	GithubRepositoryTemplate  sql.NullString              `json:"github_repository_template"`
-	GithubBranch              sql.NullString              `json:"github_branch"`
-	ComposePath               sql.NullString              `json:"compose_path"`
 	GcpRegion                 sql.NullString              `json:"gcp_region"`
 	GcpZone                   sql.NullString              `json:"gcp_zone"`
 	MachineType               sql.NullString              `json:"machine_type"`
 	DiskSizeGb                sql.NullInt32               `json:"disk_size_gb"`
-	ComposeFile               sql.NullString              `json:"compose_file"`
-	ApplicationType           sql.NullString              `json:"application_type"`
+	StripeSubscriptionItemID  sql.NullString              `json:"stripe_subscription_item_id"`
 	PromoteStrategy           NullProjectsPromoteStrategy `json:"promote_strategy"`
 	MonitoringEnabled         sql.NullBool                `json:"monitoring_enabled"`
 	MonitoringLogLevel        sql.NullString              `json:"monitoring_log_level"`
@@ -3644,12 +4319,8 @@ type ListOrganizationProjectsRow struct {
 	MonitoringHealthCheckPath sql.NullString              `json:"monitoring_health_check_path"`
 	GcpProjectID              sql.NullString              `json:"gcp_project_id"`
 	GcpProjectNumber          sql.NullString              `json:"gcp_project_number"`
-	GithubTeamID              sql.NullString              `json:"github_team_id"`
 	OrganizationProject       sql.NullBool                `json:"organization_project"`
 	CreateBranchSites         sql.NullBool                `json:"create_branch_sites"`
-	UpCmd                     sql.NullString              `json:"up_cmd"`
-	InitCmd                   sql.NullString              `json:"init_cmd"`
-	RolloutCmd                json.RawMessage             `json:"rollout_cmd"`
 	Status                    NullProjectsStatus          `json:"status"`
 	CreatedAt                 sql.NullTime                `json:"created_at"`
 	UpdatedAt                 sql.NullTime                `json:"updated_at"`
@@ -3671,16 +4342,11 @@ func (q *Queries) ListOrganizationProjects(ctx context.Context, arg ListOrganiza
 			&i.PublicID,
 			&i.OrganizationID,
 			&i.Name,
-			&i.GithubRepository,
-			&i.GithubRepositoryTemplate,
-			&i.GithubBranch,
-			&i.ComposePath,
 			&i.GcpRegion,
 			&i.GcpZone,
 			&i.MachineType,
 			&i.DiskSizeGb,
-			&i.ComposeFile,
-			&i.ApplicationType,
+			&i.StripeSubscriptionItemID,
 			&i.PromoteStrategy,
 			&i.MonitoringEnabled,
 			&i.MonitoringLogLevel,
@@ -3688,12 +4354,8 @@ func (q *Queries) ListOrganizationProjects(ctx context.Context, arg ListOrganiza
 			&i.MonitoringHealthCheckPath,
 			&i.GcpProjectID,
 			&i.GcpProjectNumber,
-			&i.GithubTeamID,
 			&i.OrganizationProject,
 			&i.CreateBranchSites,
-			&i.UpCmd,
-			&i.InitCmd,
-			&i.RolloutCmd,
 			&i.Status,
 			&i.CreatedAt,
 			&i.UpdatedAt,
@@ -4153,7 +4815,7 @@ func (q *Queries) ListProjectSecrets(ctx context.Context, arg ListProjectSecrets
 }
 
 const listProjectSites = `-- name: ListProjectSites :many
-SELECT id, BIN_TO_UUID(public_id) AS public_id, project_id, name, github_ref, gcp_external_ip, status, created_at, updated_at, created_by, updated_by
+SELECT id, BIN_TO_UUID(public_id) AS public_id, project_id, name, github_repository, github_ref, github_team_id, compose_path, compose_file, port, application_type, up_cmd, init_cmd, rollout_cmd, gcp_external_ip, status, created_at, updated_at, created_by, updated_by
 FROM sites
 WHERE project_id = ?
 ORDER BY created_at DESC
@@ -4167,17 +4829,26 @@ type ListProjectSitesParams struct {
 }
 
 type ListProjectSitesRow struct {
-	ID            int64           `json:"id"`
-	PublicID      string          `json:"public_id"`
-	ProjectID     int64           `json:"project_id"`
-	Name          string          `json:"name"`
-	GithubRef     string          `json:"github_ref"`
-	GcpExternalIp sql.NullString  `json:"gcp_external_ip"`
-	Status        NullSitesStatus `json:"status"`
-	CreatedAt     sql.NullTime    `json:"created_at"`
-	UpdatedAt     sql.NullTime    `json:"updated_at"`
-	CreatedBy     sql.NullInt64   `json:"created_by"`
-	UpdatedBy     sql.NullInt64   `json:"updated_by"`
+	ID               int64           `json:"id"`
+	PublicID         string          `json:"public_id"`
+	ProjectID        int64           `json:"project_id"`
+	Name             string          `json:"name"`
+	GithubRepository string          `json:"github_repository"`
+	GithubRef        string          `json:"github_ref"`
+	GithubTeamID     sql.NullString  `json:"github_team_id"`
+	ComposePath      sql.NullString  `json:"compose_path"`
+	ComposeFile      sql.NullString  `json:"compose_file"`
+	Port             sql.NullInt32   `json:"port"`
+	ApplicationType  sql.NullString  `json:"application_type"`
+	UpCmd            json.RawMessage `json:"up_cmd"`
+	InitCmd          json.RawMessage `json:"init_cmd"`
+	RolloutCmd       json.RawMessage `json:"rollout_cmd"`
+	GcpExternalIp    sql.NullString  `json:"gcp_external_ip"`
+	Status           NullSitesStatus `json:"status"`
+	CreatedAt        sql.NullTime    `json:"created_at"`
+	UpdatedAt        sql.NullTime    `json:"updated_at"`
+	CreatedBy        sql.NullInt64   `json:"created_by"`
+	UpdatedBy        sql.NullInt64   `json:"updated_by"`
 }
 
 func (q *Queries) ListProjectSites(ctx context.Context, arg ListProjectSitesParams) ([]ListProjectSitesRow, error) {
@@ -4194,7 +4865,16 @@ func (q *Queries) ListProjectSites(ctx context.Context, arg ListProjectSitesPara
 			&i.PublicID,
 			&i.ProjectID,
 			&i.Name,
+			&i.GithubRepository,
 			&i.GithubRef,
+			&i.GithubTeamID,
+			&i.ComposePath,
+			&i.ComposeFile,
+			&i.Port,
+			&i.ApplicationType,
+			&i.UpCmd,
+			&i.InitCmd,
+			&i.RolloutCmd,
 			&i.GcpExternalIp,
 			&i.Status,
 			&i.CreatedAt,
@@ -4216,7 +4896,7 @@ func (q *Queries) ListProjectSites(ctx context.Context, arg ListProjectSitesPara
 }
 
 const listProjects = `-- name: ListProjects :many
-SELECT id, BIN_TO_UUID(public_id) AS public_id, organization_id, name, github_repository, github_repository_template, github_branch, compose_path, gcp_region, gcp_zone, machine_type, disk_size_gb, compose_file, application_type, promote_strategy, monitoring_enabled, monitoring_log_level, monitoring_metrics_enabled, monitoring_health_check_path, gcp_project_id, gcp_project_number, github_team_id, organization_project, create_branch_sites, up_cmd, init_cmd, rollout_cmd, status, created_at, updated_at, created_by, updated_by
+SELECT id, BIN_TO_UUID(public_id) AS public_id, organization_id, name, gcp_region, gcp_zone, machine_type, disk_size_gb, stripe_subscription_item_id, promote_strategy, monitoring_enabled, monitoring_log_level, monitoring_metrics_enabled, monitoring_health_check_path, gcp_project_id, gcp_project_number, organization_project, create_branch_sites, status, created_at, updated_at, created_by, updated_by
 FROM projects
 ORDER BY created_at DESC
 LIMIT ? OFFSET ?
@@ -4232,16 +4912,11 @@ type ListProjectsRow struct {
 	PublicID                  string                      `json:"public_id"`
 	OrganizationID            int64                       `json:"organization_id"`
 	Name                      string                      `json:"name"`
-	GithubRepository          sql.NullString              `json:"github_repository"`
-	GithubRepositoryTemplate  sql.NullString              `json:"github_repository_template"`
-	GithubBranch              sql.NullString              `json:"github_branch"`
-	ComposePath               sql.NullString              `json:"compose_path"`
 	GcpRegion                 sql.NullString              `json:"gcp_region"`
 	GcpZone                   sql.NullString              `json:"gcp_zone"`
 	MachineType               sql.NullString              `json:"machine_type"`
 	DiskSizeGb                sql.NullInt32               `json:"disk_size_gb"`
-	ComposeFile               sql.NullString              `json:"compose_file"`
-	ApplicationType           sql.NullString              `json:"application_type"`
+	StripeSubscriptionItemID  sql.NullString              `json:"stripe_subscription_item_id"`
 	PromoteStrategy           NullProjectsPromoteStrategy `json:"promote_strategy"`
 	MonitoringEnabled         sql.NullBool                `json:"monitoring_enabled"`
 	MonitoringLogLevel        sql.NullString              `json:"monitoring_log_level"`
@@ -4249,12 +4924,8 @@ type ListProjectsRow struct {
 	MonitoringHealthCheckPath sql.NullString              `json:"monitoring_health_check_path"`
 	GcpProjectID              sql.NullString              `json:"gcp_project_id"`
 	GcpProjectNumber          sql.NullString              `json:"gcp_project_number"`
-	GithubTeamID              sql.NullString              `json:"github_team_id"`
 	OrganizationProject       sql.NullBool                `json:"organization_project"`
 	CreateBranchSites         sql.NullBool                `json:"create_branch_sites"`
-	UpCmd                     sql.NullString              `json:"up_cmd"`
-	InitCmd                   sql.NullString              `json:"init_cmd"`
-	RolloutCmd                json.RawMessage             `json:"rollout_cmd"`
 	Status                    NullProjectsStatus          `json:"status"`
 	CreatedAt                 sql.NullTime                `json:"created_at"`
 	UpdatedAt                 sql.NullTime                `json:"updated_at"`
@@ -4276,16 +4947,11 @@ func (q *Queries) ListProjects(ctx context.Context, arg ListProjectsParams) ([]L
 			&i.PublicID,
 			&i.OrganizationID,
 			&i.Name,
-			&i.GithubRepository,
-			&i.GithubRepositoryTemplate,
-			&i.GithubBranch,
-			&i.ComposePath,
 			&i.GcpRegion,
 			&i.GcpZone,
 			&i.MachineType,
 			&i.DiskSizeGb,
-			&i.ComposeFile,
-			&i.ApplicationType,
+			&i.StripeSubscriptionItemID,
 			&i.PromoteStrategy,
 			&i.MonitoringEnabled,
 			&i.MonitoringLogLevel,
@@ -4293,12 +4959,8 @@ func (q *Queries) ListProjects(ctx context.Context, arg ListProjectsParams) ([]L
 			&i.MonitoringHealthCheckPath,
 			&i.GcpProjectID,
 			&i.GcpProjectNumber,
-			&i.GithubTeamID,
 			&i.OrganizationProject,
 			&i.CreateBranchSites,
-			&i.UpCmd,
-			&i.InitCmd,
-			&i.RolloutCmd,
 			&i.Status,
 			&i.CreatedAt,
 			&i.UpdatedAt,
@@ -4650,7 +5312,7 @@ func (q *Queries) ListSiteSshAccess(ctx context.Context, arg ListSiteSshAccessPa
 }
 
 const listSites = `-- name: ListSites :many
-SELECT id, BIN_TO_UUID(public_id) AS public_id, project_id, name, github_ref, gcp_external_ip, status, created_at, updated_at, created_by, updated_by
+SELECT id, BIN_TO_UUID(public_id) AS public_id, project_id, name, github_repository, github_ref, github_team_id, compose_path, compose_file, port, application_type, up_cmd, init_cmd, rollout_cmd, gcp_external_ip, status, created_at, updated_at, created_by, updated_by
 FROM sites
 ORDER BY created_at DESC
 LIMIT ? OFFSET ?
@@ -4662,17 +5324,26 @@ type ListSitesParams struct {
 }
 
 type ListSitesRow struct {
-	ID            int64           `json:"id"`
-	PublicID      string          `json:"public_id"`
-	ProjectID     int64           `json:"project_id"`
-	Name          string          `json:"name"`
-	GithubRef     string          `json:"github_ref"`
-	GcpExternalIp sql.NullString  `json:"gcp_external_ip"`
-	Status        NullSitesStatus `json:"status"`
-	CreatedAt     sql.NullTime    `json:"created_at"`
-	UpdatedAt     sql.NullTime    `json:"updated_at"`
-	CreatedBy     sql.NullInt64   `json:"created_by"`
-	UpdatedBy     sql.NullInt64   `json:"updated_by"`
+	ID               int64           `json:"id"`
+	PublicID         string          `json:"public_id"`
+	ProjectID        int64           `json:"project_id"`
+	Name             string          `json:"name"`
+	GithubRepository string          `json:"github_repository"`
+	GithubRef        string          `json:"github_ref"`
+	GithubTeamID     sql.NullString  `json:"github_team_id"`
+	ComposePath      sql.NullString  `json:"compose_path"`
+	ComposeFile      sql.NullString  `json:"compose_file"`
+	Port             sql.NullInt32   `json:"port"`
+	ApplicationType  sql.NullString  `json:"application_type"`
+	UpCmd            json.RawMessage `json:"up_cmd"`
+	InitCmd          json.RawMessage `json:"init_cmd"`
+	RolloutCmd       json.RawMessage `json:"rollout_cmd"`
+	GcpExternalIp    sql.NullString  `json:"gcp_external_ip"`
+	Status           NullSitesStatus `json:"status"`
+	CreatedAt        sql.NullTime    `json:"created_at"`
+	UpdatedAt        sql.NullTime    `json:"updated_at"`
+	CreatedBy        sql.NullInt64   `json:"created_by"`
+	UpdatedBy        sql.NullInt64   `json:"updated_by"`
 }
 
 func (q *Queries) ListSites(ctx context.Context, arg ListSitesParams) ([]ListSitesRow, error) {
@@ -4689,7 +5360,16 @@ func (q *Queries) ListSites(ctx context.Context, arg ListSitesParams) ([]ListSit
 			&i.PublicID,
 			&i.ProjectID,
 			&i.Name,
+			&i.GithubRepository,
 			&i.GithubRef,
+			&i.GithubTeamID,
+			&i.ComposePath,
+			&i.ComposeFile,
+			&i.Port,
+			&i.ApplicationType,
+			&i.UpCmd,
+			&i.InitCmd,
+			&i.RolloutCmd,
 			&i.GcpExternalIp,
 			&i.Status,
 			&i.CreatedAt,
@@ -5207,7 +5887,7 @@ WITH RECURSIVE user_orgs AS (
     INNER JOIN user_orgs uo ON r.source_organization_id = uo.organization_id
     WHERE r.status = 'approved'
 )
-SELECT DISTINCT p.id, BIN_TO_UUID(p.public_id) AS public_id, p.organization_id, BIN_TO_UUID(o.public_id) AS organization_public_id, p.name, p.github_repository, p.github_repository_template, p.github_branch, p.compose_path, p.gcp_region, p.gcp_zone, p.machine_type, p.disk_size_gb, p.compose_file, p.application_type, p.promote_strategy, p.monitoring_enabled, p.monitoring_log_level, p.monitoring_metrics_enabled, p.monitoring_health_check_path, p.gcp_project_id, p.gcp_project_number, p.github_team_id, p.organization_project, p.create_branch_sites, p.up_cmd, p.init_cmd, p.rollout_cmd, p.status, p.created_at, p.updated_at, p.created_by, p.updated_by
+SELECT DISTINCT p.id, BIN_TO_UUID(p.public_id) AS public_id, p.organization_id, BIN_TO_UUID(o.public_id) AS organization_public_id, p.name, p.gcp_region, p.gcp_zone, p.machine_type, p.disk_size_gb, p.stripe_subscription_item_id, p.promote_strategy, p.monitoring_enabled, p.monitoring_log_level, p.monitoring_metrics_enabled, p.monitoring_health_check_path, p.gcp_project_id, p.gcp_project_number, p.organization_project, p.create_branch_sites, p.status, p.created_at, p.updated_at, p.created_by, p.updated_by
 FROM projects p
 JOIN organizations o ON p.organization_id = o.id
 LEFT JOIN project_members pm ON p.id = pm.project_id AND pm.account_id = ? AND pm.status = 'active'
@@ -5231,16 +5911,11 @@ type ListUserProjectsRow struct {
 	OrganizationID            int64                       `json:"organization_id"`
 	OrganizationPublicID      string                      `json:"organization_public_id"`
 	Name                      string                      `json:"name"`
-	GithubRepository          sql.NullString              `json:"github_repository"`
-	GithubRepositoryTemplate  sql.NullString              `json:"github_repository_template"`
-	GithubBranch              sql.NullString              `json:"github_branch"`
-	ComposePath               sql.NullString              `json:"compose_path"`
 	GcpRegion                 sql.NullString              `json:"gcp_region"`
 	GcpZone                   sql.NullString              `json:"gcp_zone"`
 	MachineType               sql.NullString              `json:"machine_type"`
 	DiskSizeGb                sql.NullInt32               `json:"disk_size_gb"`
-	ComposeFile               sql.NullString              `json:"compose_file"`
-	ApplicationType           sql.NullString              `json:"application_type"`
+	StripeSubscriptionItemID  sql.NullString              `json:"stripe_subscription_item_id"`
 	PromoteStrategy           NullProjectsPromoteStrategy `json:"promote_strategy"`
 	MonitoringEnabled         sql.NullBool                `json:"monitoring_enabled"`
 	MonitoringLogLevel        sql.NullString              `json:"monitoring_log_level"`
@@ -5248,12 +5923,8 @@ type ListUserProjectsRow struct {
 	MonitoringHealthCheckPath sql.NullString              `json:"monitoring_health_check_path"`
 	GcpProjectID              sql.NullString              `json:"gcp_project_id"`
 	GcpProjectNumber          sql.NullString              `json:"gcp_project_number"`
-	GithubTeamID              sql.NullString              `json:"github_team_id"`
 	OrganizationProject       sql.NullBool                `json:"organization_project"`
 	CreateBranchSites         sql.NullBool                `json:"create_branch_sites"`
-	UpCmd                     sql.NullString              `json:"up_cmd"`
-	InitCmd                   sql.NullString              `json:"init_cmd"`
-	RolloutCmd                json.RawMessage             `json:"rollout_cmd"`
 	Status                    NullProjectsStatus          `json:"status"`
 	CreatedAt                 sql.NullTime                `json:"created_at"`
 	UpdatedAt                 sql.NullTime                `json:"updated_at"`
@@ -5283,16 +5954,11 @@ func (q *Queries) ListUserProjects(ctx context.Context, arg ListUserProjectsPara
 			&i.OrganizationID,
 			&i.OrganizationPublicID,
 			&i.Name,
-			&i.GithubRepository,
-			&i.GithubRepositoryTemplate,
-			&i.GithubBranch,
-			&i.ComposePath,
 			&i.GcpRegion,
 			&i.GcpZone,
 			&i.MachineType,
 			&i.DiskSizeGb,
-			&i.ComposeFile,
-			&i.ApplicationType,
+			&i.StripeSubscriptionItemID,
 			&i.PromoteStrategy,
 			&i.MonitoringEnabled,
 			&i.MonitoringLogLevel,
@@ -5300,12 +5966,8 @@ func (q *Queries) ListUserProjects(ctx context.Context, arg ListUserProjectsPara
 			&i.MonitoringHealthCheckPath,
 			&i.GcpProjectID,
 			&i.GcpProjectNumber,
-			&i.GithubTeamID,
 			&i.OrganizationProject,
 			&i.CreateBranchSites,
-			&i.UpCmd,
-			&i.InitCmd,
-			&i.RolloutCmd,
 			&i.Status,
 			&i.CreatedAt,
 			&i.UpdatedAt,
@@ -5334,7 +5996,7 @@ WITH RECURSIVE user_orgs AS (
     INNER JOIN user_orgs uo ON r.source_organization_id = uo.organization_id
     WHERE r.status = 'approved'
 )
-SELECT DISTINCT p.id, BIN_TO_UUID(p.public_id) AS public_id, p.organization_id, BIN_TO_UUID(o.public_id) AS organization_public_id, o.name AS organization_name, p.name, p.github_repository, p.github_repository_template, p.github_branch, p.compose_path, p.gcp_region, p.gcp_zone, p.machine_type, p.disk_size_gb, p.compose_file, p.application_type, p.promote_strategy, p.monitoring_enabled, p.monitoring_log_level, p.monitoring_metrics_enabled, p.monitoring_health_check_path, p.gcp_project_id, p.gcp_project_number, p.github_team_id, p.organization_project, p.create_branch_sites, p.up_cmd, p.init_cmd, p.rollout_cmd, p.status, p.created_at, p.updated_at, p.created_by, p.updated_by
+SELECT DISTINCT p.id, BIN_TO_UUID(p.public_id) AS public_id, p.organization_id, BIN_TO_UUID(o.public_id) AS organization_public_id, o.name AS organization_name, p.name, p.gcp_region, p.gcp_zone, p.machine_type, p.disk_size_gb, p.stripe_subscription_item_id, p.promote_strategy, p.monitoring_enabled, p.monitoring_log_level, p.monitoring_metrics_enabled, p.monitoring_health_check_path, p.gcp_project_id, p.gcp_project_number, p.organization_project, p.create_branch_sites, p.status, p.created_at, p.updated_at, p.created_by, p.updated_by
 FROM projects p
 JOIN organizations o ON p.organization_id = o.id
 LEFT JOIN project_members pm ON p.id = pm.project_id AND pm.account_id = ? AND pm.status = 'active'
@@ -5359,16 +6021,11 @@ type ListUserProjectsWithOrgRow struct {
 	OrganizationPublicID      string                      `json:"organization_public_id"`
 	OrganizationName          string                      `json:"organization_name"`
 	Name                      string                      `json:"name"`
-	GithubRepository          sql.NullString              `json:"github_repository"`
-	GithubRepositoryTemplate  sql.NullString              `json:"github_repository_template"`
-	GithubBranch              sql.NullString              `json:"github_branch"`
-	ComposePath               sql.NullString              `json:"compose_path"`
 	GcpRegion                 sql.NullString              `json:"gcp_region"`
 	GcpZone                   sql.NullString              `json:"gcp_zone"`
 	MachineType               sql.NullString              `json:"machine_type"`
 	DiskSizeGb                sql.NullInt32               `json:"disk_size_gb"`
-	ComposeFile               sql.NullString              `json:"compose_file"`
-	ApplicationType           sql.NullString              `json:"application_type"`
+	StripeSubscriptionItemID  sql.NullString              `json:"stripe_subscription_item_id"`
 	PromoteStrategy           NullProjectsPromoteStrategy `json:"promote_strategy"`
 	MonitoringEnabled         sql.NullBool                `json:"monitoring_enabled"`
 	MonitoringLogLevel        sql.NullString              `json:"monitoring_log_level"`
@@ -5376,12 +6033,8 @@ type ListUserProjectsWithOrgRow struct {
 	MonitoringHealthCheckPath sql.NullString              `json:"monitoring_health_check_path"`
 	GcpProjectID              sql.NullString              `json:"gcp_project_id"`
 	GcpProjectNumber          sql.NullString              `json:"gcp_project_number"`
-	GithubTeamID              sql.NullString              `json:"github_team_id"`
 	OrganizationProject       sql.NullBool                `json:"organization_project"`
 	CreateBranchSites         sql.NullBool                `json:"create_branch_sites"`
-	UpCmd                     sql.NullString              `json:"up_cmd"`
-	InitCmd                   sql.NullString              `json:"init_cmd"`
-	RolloutCmd                json.RawMessage             `json:"rollout_cmd"`
 	Status                    NullProjectsStatus          `json:"status"`
 	CreatedAt                 sql.NullTime                `json:"created_at"`
 	UpdatedAt                 sql.NullTime                `json:"updated_at"`
@@ -5412,16 +6065,11 @@ func (q *Queries) ListUserProjectsWithOrg(ctx context.Context, arg ListUserProje
 			&i.OrganizationPublicID,
 			&i.OrganizationName,
 			&i.Name,
-			&i.GithubRepository,
-			&i.GithubRepositoryTemplate,
-			&i.GithubBranch,
-			&i.ComposePath,
 			&i.GcpRegion,
 			&i.GcpZone,
 			&i.MachineType,
 			&i.DiskSizeGb,
-			&i.ComposeFile,
-			&i.ApplicationType,
+			&i.StripeSubscriptionItemID,
 			&i.PromoteStrategy,
 			&i.MonitoringEnabled,
 			&i.MonitoringLogLevel,
@@ -5429,12 +6077,8 @@ func (q *Queries) ListUserProjectsWithOrg(ctx context.Context, arg ListUserProje
 			&i.MonitoringHealthCheckPath,
 			&i.GcpProjectID,
 			&i.GcpProjectNumber,
-			&i.GithubTeamID,
 			&i.OrganizationProject,
 			&i.CreateBranchSites,
-			&i.UpCmd,
-			&i.InitCmd,
-			&i.RolloutCmd,
 			&i.Status,
 			&i.CreatedAt,
 			&i.UpdatedAt,
@@ -5575,7 +6219,7 @@ WITH RECURSIVE user_orgs AS (
     INNER JOIN user_orgs uo ON r.source_organization_id = uo.organization_id
     WHERE r.status = 'approved'
 )
-SELECT DISTINCT s.id, BIN_TO_UUID(s.public_id) AS public_id, s.project_id, BIN_TO_UUID(p.public_id) AS project_public_id, BIN_TO_UUID(o.public_id) AS organization_public_id, s.name, s.github_ref, s.gcp_external_ip, s.status, s.created_at, s.updated_at, s.created_by, s.updated_by
+SELECT DISTINCT s.id, BIN_TO_UUID(s.public_id) AS public_id, s.project_id, BIN_TO_UUID(p.public_id) AS project_public_id, BIN_TO_UUID(o.public_id) AS organization_public_id, s.name, s.github_repository, s.github_ref, s.github_team_id, s.compose_path, s.compose_file, s.port, s.application_type, s.up_cmd, s.init_cmd, s.rollout_cmd, s.gcp_external_ip, s.status, s.created_at, s.updated_at, s.created_by, s.updated_by
 FROM sites s
 JOIN projects p ON s.project_id = p.id
 JOIN organizations o ON p.organization_id = o.id
@@ -5604,7 +6248,16 @@ type ListUserSitesRow struct {
 	ProjectPublicID      string          `json:"project_public_id"`
 	OrganizationPublicID string          `json:"organization_public_id"`
 	Name                 string          `json:"name"`
+	GithubRepository     string          `json:"github_repository"`
 	GithubRef            string          `json:"github_ref"`
+	GithubTeamID         sql.NullString  `json:"github_team_id"`
+	ComposePath          sql.NullString  `json:"compose_path"`
+	ComposeFile          sql.NullString  `json:"compose_file"`
+	Port                 sql.NullInt32   `json:"port"`
+	ApplicationType      sql.NullString  `json:"application_type"`
+	UpCmd                json.RawMessage `json:"up_cmd"`
+	InitCmd              json.RawMessage `json:"init_cmd"`
+	RolloutCmd           json.RawMessage `json:"rollout_cmd"`
 	GcpExternalIp        sql.NullString  `json:"gcp_external_ip"`
 	Status               NullSitesStatus `json:"status"`
 	CreatedAt            sql.NullTime    `json:"created_at"`
@@ -5639,7 +6292,16 @@ func (q *Queries) ListUserSites(ctx context.Context, arg ListUserSitesParams) ([
 			&i.ProjectPublicID,
 			&i.OrganizationPublicID,
 			&i.Name,
+			&i.GithubRepository,
 			&i.GithubRef,
+			&i.GithubTeamID,
+			&i.ComposePath,
+			&i.ComposeFile,
+			&i.Port,
+			&i.ApplicationType,
+			&i.UpCmd,
+			&i.InitCmd,
+			&i.RolloutCmd,
 			&i.GcpExternalIp,
 			&i.Status,
 			&i.CreatedAt,
@@ -5669,7 +6331,7 @@ WITH RECURSIVE user_orgs AS (
     INNER JOIN user_orgs uo ON r.source_organization_id = uo.organization_id
     WHERE r.status = 'approved'
 )
-SELECT DISTINCT s.id, BIN_TO_UUID(s.public_id) AS public_id, s.project_id, BIN_TO_UUID(p.public_id) AS project_public_id, p.name AS project_name, BIN_TO_UUID(o.public_id) AS organization_public_id, s.name, s.github_ref, s.gcp_external_ip, s.status, s.created_at, s.updated_at, s.created_by, s.updated_by
+SELECT DISTINCT s.id, BIN_TO_UUID(s.public_id) AS public_id, s.project_id, BIN_TO_UUID(p.public_id) AS project_public_id, p.name AS project_name, BIN_TO_UUID(o.public_id) AS organization_public_id, s.name, s.github_repository, s.github_ref, s.github_team_id, s.compose_path, s.compose_file, s.port, s.application_type, s.up_cmd, s.init_cmd, s.rollout_cmd, s.gcp_external_ip, s.status, s.created_at, s.updated_at, s.created_by, s.updated_by
 FROM sites s
 JOIN projects p ON s.project_id = p.id
 JOIN organizations o ON p.organization_id = o.id
@@ -5699,7 +6361,16 @@ type ListUserSitesWithProjectRow struct {
 	ProjectName          string          `json:"project_name"`
 	OrganizationPublicID string          `json:"organization_public_id"`
 	Name                 string          `json:"name"`
+	GithubRepository     string          `json:"github_repository"`
 	GithubRef            string          `json:"github_ref"`
+	GithubTeamID         sql.NullString  `json:"github_team_id"`
+	ComposePath          sql.NullString  `json:"compose_path"`
+	ComposeFile          sql.NullString  `json:"compose_file"`
+	Port                 sql.NullInt32   `json:"port"`
+	ApplicationType      sql.NullString  `json:"application_type"`
+	UpCmd                json.RawMessage `json:"up_cmd"`
+	InitCmd              json.RawMessage `json:"init_cmd"`
+	RolloutCmd           json.RawMessage `json:"rollout_cmd"`
 	GcpExternalIp        sql.NullString  `json:"gcp_external_ip"`
 	Status               NullSitesStatus `json:"status"`
 	CreatedAt            sql.NullTime    `json:"created_at"`
@@ -5735,7 +6406,16 @@ func (q *Queries) ListUserSitesWithProject(ctx context.Context, arg ListUserSite
 			&i.ProjectName,
 			&i.OrganizationPublicID,
 			&i.Name,
+			&i.GithubRepository,
 			&i.GithubRef,
+			&i.GithubTeamID,
+			&i.ComposePath,
+			&i.ComposeFile,
+			&i.Port,
+			&i.ApplicationType,
+			&i.UpCmd,
+			&i.InitCmd,
+			&i.RolloutCmd,
 			&i.GcpExternalIp,
 			&i.Status,
 			&i.CreatedAt,
@@ -5913,6 +6593,29 @@ func (q *Queries) UpdateAccount(ctx context.Context, arg UpdateAccountParams) er
 	return err
 }
 
+const updateAccountOnboarding = `-- name: UpdateAccountOnboarding :exec
+
+UPDATE accounts SET
+  onboarding_completed = ?,
+  onboarding_session_id = ?,
+  updated_at = NOW()
+WHERE id = ?
+`
+
+type UpdateAccountOnboardingParams struct {
+	OnboardingCompleted bool           `json:"onboarding_completed"`
+	OnboardingSessionID sql.NullString `json:"onboarding_session_id"`
+	ID                  int64          `json:"id"`
+}
+
+// =============================================================================
+// ONBOARDING
+// =============================================================================
+func (q *Queries) UpdateAccountOnboarding(ctx context.Context, arg UpdateAccountOnboardingParams) error {
+	_, err := q.db.ExecContext(ctx, updateAccountOnboarding, arg.OnboardingCompleted, arg.OnboardingSessionID, arg.ID)
+	return err
+}
+
 const updateDeployment = `-- name: UpdateDeployment :exec
 UPDATE deployments SET
   ` + "`" + `status` + "`" + ` = ?,
@@ -5940,6 +6643,103 @@ func (q *Queries) UpdateDeployment(ctx context.Context, arg UpdateDeploymentPara
 		arg.CompletedAt,
 		arg.ErrorMessage,
 		arg.DeploymentID,
+	)
+	return err
+}
+
+const updateMachineType = `-- name: UpdateMachineType :exec
+UPDATE machine_types
+SET display_name = ?, vcpu = ?, memory_gib = ?, stripe_price_id = ?, monthly_price_cents = ?, active = ?, updated_at = NOW()
+WHERE machine_type = ?
+`
+
+type UpdateMachineTypeParams struct {
+	DisplayName       string       `json:"display_name"`
+	Vcpu              int32        `json:"vcpu"`
+	MemoryGib         int32        `json:"memory_gib"`
+	StripePriceID     string       `json:"stripe_price_id"`
+	MonthlyPriceCents int32        `json:"monthly_price_cents"`
+	Active            sql.NullBool `json:"active"`
+	MachineType       string       `json:"machine_type"`
+}
+
+func (q *Queries) UpdateMachineType(ctx context.Context, arg UpdateMachineTypeParams) error {
+	_, err := q.db.ExecContext(ctx, updateMachineType,
+		arg.DisplayName,
+		arg.Vcpu,
+		arg.MemoryGib,
+		arg.StripePriceID,
+		arg.MonthlyPriceCents,
+		arg.Active,
+		arg.MachineType,
+	)
+	return err
+}
+
+const updateOnboardingSession = `-- name: UpdateOnboardingSession :exec
+UPDATE onboarding_sessions SET
+  org_name = ?,
+  machine_type = ?,
+  machine_price_id = ?,
+  disk_size_gb = ?,
+  stripe_checkout_session_id = ?,
+  stripe_checkout_url = ?,
+  stripe_subscription_id = ?,
+  organization_id = ?,
+  project_name = ?,
+  gcp_country = ?,
+  gcp_region = ?,
+  site_name = ?,
+  github_repo_url = ?,
+  port = ?,
+  firewall_ip = ?,
+  current_step = ?,
+  completed = ?,
+  updated_at = NOW()
+WHERE id = ?
+`
+
+type UpdateOnboardingSessionParams struct {
+	OrgName                 sql.NullString `json:"org_name"`
+	MachineType             sql.NullString `json:"machine_type"`
+	MachinePriceID          sql.NullString `json:"machine_price_id"`
+	DiskSizeGb              sql.NullInt32  `json:"disk_size_gb"`
+	StripeCheckoutSessionID sql.NullString `json:"stripe_checkout_session_id"`
+	StripeCheckoutUrl       sql.NullString `json:"stripe_checkout_url"`
+	StripeSubscriptionID    sql.NullString `json:"stripe_subscription_id"`
+	OrganizationID          sql.NullInt64  `json:"organization_id"`
+	ProjectName             sql.NullString `json:"project_name"`
+	GcpCountry              sql.NullString `json:"gcp_country"`
+	GcpRegion               sql.NullString `json:"gcp_region"`
+	SiteName                sql.NullString `json:"site_name"`
+	GithubRepoUrl           sql.NullString `json:"github_repo_url"`
+	Port                    sql.NullInt32  `json:"port"`
+	FirewallIp              sql.NullString `json:"firewall_ip"`
+	CurrentStep             sql.NullInt32  `json:"current_step"`
+	Completed               sql.NullBool   `json:"completed"`
+	ID                      int64          `json:"id"`
+}
+
+func (q *Queries) UpdateOnboardingSession(ctx context.Context, arg UpdateOnboardingSessionParams) error {
+	_, err := q.db.ExecContext(ctx, updateOnboardingSession,
+		arg.OrgName,
+		arg.MachineType,
+		arg.MachinePriceID,
+		arg.DiskSizeGb,
+		arg.StripeCheckoutSessionID,
+		arg.StripeCheckoutUrl,
+		arg.StripeSubscriptionID,
+		arg.OrganizationID,
+		arg.ProjectName,
+		arg.GcpCountry,
+		arg.GcpRegion,
+		arg.SiteName,
+		arg.GithubRepoUrl,
+		arg.Port,
+		arg.FirewallIp,
+		arg.CurrentStep,
+		arg.Completed,
+		arg.ID,
 	)
 	return err
 }
@@ -6033,22 +6833,17 @@ func (q *Queries) UpdateOrganizationSecret(ctx context.Context, arg UpdateOrgani
 const updateProject = `-- name: UpdateProject :exec
 UPDATE projects SET
   ` + "`" + `name` + "`" + ` = ?,
-  github_repository = ?,
-  github_branch = ?,
-  compose_path = ?,
   gcp_region = ?,
   gcp_zone = ?,
   machine_type = ?,
   disk_size_gb = ?,
-  compose_file = ?,
-  application_type = ?,
+  stripe_subscription_item_id = ?,
   monitoring_enabled = ?,
   monitoring_log_level = ?,
   monitoring_metrics_enabled = ?,
   monitoring_health_check_path = ?,
   gcp_project_id = ?,
   gcp_project_number = ?,
-  github_team_id = ?,
   create_branch_sites = ?,
   ` + "`" + `status` + "`" + ` = ?,
   updated_at = NOW(),
@@ -6058,22 +6853,17 @@ WHERE public_id = UUID_TO_BIN(?)
 
 type UpdateProjectParams struct {
 	Name                      string             `json:"name"`
-	GithubRepository          sql.NullString     `json:"github_repository"`
-	GithubBranch              sql.NullString     `json:"github_branch"`
-	ComposePath               sql.NullString     `json:"compose_path"`
 	GcpRegion                 sql.NullString     `json:"gcp_region"`
 	GcpZone                   sql.NullString     `json:"gcp_zone"`
 	MachineType               sql.NullString     `json:"machine_type"`
 	DiskSizeGb                sql.NullInt32      `json:"disk_size_gb"`
-	ComposeFile               sql.NullString     `json:"compose_file"`
-	ApplicationType           sql.NullString     `json:"application_type"`
+	StripeSubscriptionItemID  sql.NullString     `json:"stripe_subscription_item_id"`
 	MonitoringEnabled         sql.NullBool       `json:"monitoring_enabled"`
 	MonitoringLogLevel        sql.NullString     `json:"monitoring_log_level"`
 	MonitoringMetricsEnabled  sql.NullBool       `json:"monitoring_metrics_enabled"`
 	MonitoringHealthCheckPath sql.NullString     `json:"monitoring_health_check_path"`
 	GcpProjectID              sql.NullString     `json:"gcp_project_id"`
 	GcpProjectNumber          sql.NullString     `json:"gcp_project_number"`
-	GithubTeamID              sql.NullString     `json:"github_team_id"`
 	CreateBranchSites         sql.NullBool       `json:"create_branch_sites"`
 	Status                    NullProjectsStatus `json:"status"`
 	UpdatedBy                 sql.NullInt64      `json:"updated_by"`
@@ -6083,22 +6873,17 @@ type UpdateProjectParams struct {
 func (q *Queries) UpdateProject(ctx context.Context, arg UpdateProjectParams) error {
 	_, err := q.db.ExecContext(ctx, updateProject,
 		arg.Name,
-		arg.GithubRepository,
-		arg.GithubBranch,
-		arg.ComposePath,
 		arg.GcpRegion,
 		arg.GcpZone,
 		arg.MachineType,
 		arg.DiskSizeGb,
-		arg.ComposeFile,
-		arg.ApplicationType,
+		arg.StripeSubscriptionItemID,
 		arg.MonitoringEnabled,
 		arg.MonitoringLogLevel,
 		arg.MonitoringMetricsEnabled,
 		arg.MonitoringHealthCheckPath,
 		arg.GcpProjectID,
 		arg.GcpProjectNumber,
-		arg.GithubTeamID,
 		arg.CreateBranchSites,
 		arg.Status,
 		arg.UpdatedBy,
@@ -6158,7 +6943,16 @@ func (q *Queries) UpdateProjectSecret(ctx context.Context, arg UpdateProjectSecr
 const updateSite = `-- name: UpdateSite :exec
 UPDATE sites SET
   ` + "`" + `name` + "`" + ` = ?,
+  github_repository = ?,
   github_ref = ?,
+  github_team_id = ?,
+  compose_path = ?,
+  compose_file = ?,
+  port = ?,
+  application_type = ?,
+  up_cmd = ?,
+  init_cmd = ?,
+  rollout_cmd = ?,
   gcp_external_ip = ?,
   ` + "`" + `status` + "`" + ` = ?,
   updated_at = NOW(),
@@ -6167,18 +6961,36 @@ WHERE public_id = UUID_TO_BIN(?)
 `
 
 type UpdateSiteParams struct {
-	Name          string          `json:"name"`
-	GithubRef     string          `json:"github_ref"`
-	GcpExternalIp sql.NullString  `json:"gcp_external_ip"`
-	Status        NullSitesStatus `json:"status"`
-	UpdatedBy     sql.NullInt64   `json:"updated_by"`
-	PublicID      string          `json:"public_id"`
+	Name             string          `json:"name"`
+	GithubRepository string          `json:"github_repository"`
+	GithubRef        string          `json:"github_ref"`
+	GithubTeamID     sql.NullString  `json:"github_team_id"`
+	ComposePath      sql.NullString  `json:"compose_path"`
+	ComposeFile      sql.NullString  `json:"compose_file"`
+	Port             sql.NullInt32   `json:"port"`
+	ApplicationType  sql.NullString  `json:"application_type"`
+	UpCmd            json.RawMessage `json:"up_cmd"`
+	InitCmd          json.RawMessage `json:"init_cmd"`
+	RolloutCmd       json.RawMessage `json:"rollout_cmd"`
+	GcpExternalIp    sql.NullString  `json:"gcp_external_ip"`
+	Status           NullSitesStatus `json:"status"`
+	UpdatedBy        sql.NullInt64   `json:"updated_by"`
+	PublicID         string          `json:"public_id"`
 }
 
 func (q *Queries) UpdateSite(ctx context.Context, arg UpdateSiteParams) error {
 	_, err := q.db.ExecContext(ctx, updateSite,
 		arg.Name,
+		arg.GithubRepository,
 		arg.GithubRef,
+		arg.GithubTeamID,
+		arg.ComposePath,
+		arg.ComposeFile,
+		arg.Port,
+		arg.ApplicationType,
+		arg.UpCmd,
+		arg.InitCmd,
+		arg.RolloutCmd,
 		arg.GcpExternalIp,
 		arg.Status,
 		arg.UpdatedBy,
@@ -6249,4 +7061,48 @@ type UpdateSshKeyParams struct {
 
 func (q *Queries) UpdateSshKey(ctx context.Context, arg UpdateSshKeyParams) (sql.Result, error) {
 	return q.db.ExecContext(ctx, updateSshKey, arg.Name, arg.PublicID)
+}
+
+const updateStripeSubscription = `-- name: UpdateStripeSubscription :exec
+UPDATE stripe_subscriptions SET
+  status = ?,
+  current_period_start = ?,
+  current_period_end = ?,
+  trial_start = ?,
+  trial_end = ?,
+  cancel_at_period_end = ?,
+  canceled_at = ?,
+  machine_type = ?,
+  disk_size_gb = ?,
+  updated_at = NOW()
+WHERE stripe_subscription_id = ?
+`
+
+type UpdateStripeSubscriptionParams struct {
+	Status               StripeSubscriptionsStatus `json:"status"`
+	CurrentPeriodStart   sql.NullTime              `json:"current_period_start"`
+	CurrentPeriodEnd     sql.NullTime              `json:"current_period_end"`
+	TrialStart           sql.NullTime              `json:"trial_start"`
+	TrialEnd             sql.NullTime              `json:"trial_end"`
+	CancelAtPeriodEnd    sql.NullBool              `json:"cancel_at_period_end"`
+	CanceledAt           sql.NullTime              `json:"canceled_at"`
+	MachineType          sql.NullString            `json:"machine_type"`
+	DiskSizeGb           sql.NullInt32             `json:"disk_size_gb"`
+	StripeSubscriptionID string                    `json:"stripe_subscription_id"`
+}
+
+func (q *Queries) UpdateStripeSubscription(ctx context.Context, arg UpdateStripeSubscriptionParams) error {
+	_, err := q.db.ExecContext(ctx, updateStripeSubscription,
+		arg.Status,
+		arg.CurrentPeriodStart,
+		arg.CurrentPeriodEnd,
+		arg.TrialStart,
+		arg.TrialEnd,
+		arg.CancelAtPeriodEnd,
+		arg.CanceledAt,
+		arg.MachineType,
+		arg.DiskSizeGb,
+		arg.StripeSubscriptionID,
+	)
+	return err
 }

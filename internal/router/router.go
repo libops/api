@@ -17,10 +17,13 @@ import (
 
 	"github.com/libops/api/internal/audit"
 	"github.com/libops/api/internal/auth"
+	"github.com/libops/api/internal/billing"
+	"github.com/libops/api/internal/config"
 	"github.com/libops/api/internal/dash"
 	"github.com/libops/api/internal/db"
 	"github.com/libops/api/internal/events"
 	"github.com/libops/api/internal/middleware"
+	"github.com/libops/api/internal/onboard"
 	"github.com/libops/api/internal/service/account"
 	"github.com/libops/api/internal/service/organization"
 	"github.com/libops/api/internal/service/project"
@@ -30,6 +33,7 @@ import (
 
 // Dependencies holds all the dependencies needed to create routes.
 type Dependencies struct {
+	Config            *config.Config
 	Queries           db.Querier
 	Emitter           *events.Emitter
 	Authorizer        *auth.Authorizer
@@ -54,14 +58,14 @@ func New(deps *Dependencies) http.Handler {
 	accountService := account.NewAccountService(deps.Queries, deps.APIKeyManager)
 	adminAccountService := account.NewAdminAccountService(deps.Queries, deps.Emitter)
 
-	organizationService := organization.NewOrganizationService(deps.Queries)
+	organizationService := organization.NewOrganizationService(deps.Queries, deps.Config)
 	adminOrganizationService := organization.NewAdminOrganizationService(deps.Queries)
 	memberService := organization.NewMemberService(deps.Queries)
 	firewallService := organization.NewFirewallService(deps.Queries)
 	sshKeyService := organization.NewSshKeyService(deps.Queries)
 
-	projectService := project.NewProjectService(deps.Queries)
-	adminProjectService := project.NewAdminProjectService(deps.Queries)
+	projectService := project.NewProjectServiceWithConfig(deps.Queries, deps.Config.DisableBilling)
+	adminProjectService := project.NewAdminProjectServiceWithConfig(deps.Queries, deps.Config.DisableBilling)
 	projectMemberService := project.NewProjectMemberService(deps.Queries)
 	projectFirewallService := project.NewProjectFirewallService(deps.Queries)
 
@@ -132,9 +136,18 @@ func New(deps *Dependencies) http.Handler {
 	// Register controller routes for SSH keys endpoints (GSA-authenticated)
 	registerControllerRoutes(mux, deps.Queries, adminSiteService, adminProjectService)
 
+	// Register onboarding routes and middleware
+	onboardHandler := onboard.NewHandlerWithConfig(deps.Queries, deps.Config, deps.Config.StripeSecretKey, deps.Config.StripeWebhookSecret, deps.Config.DashBaseUrl, deps.Config.DisableBilling)
+	onboardMiddleware := onboard.NewMiddleware(deps.Queries)
+
+	// Create billing manager for webhook handling
+	stripeMgr := billing.NewStripeManagerWithWebhook(deps.Queries, deps.Config.StripeWebhookSecret, deps.Config.StripeSecretKey)
+
+	registerOnboardingRoutes(mux, onboardHandler, stripeMgr)
+
 	// Register dashboard routes
 	dashHandler := dash.NewHandler(deps.Queries, deps.SessionManager)
-	registerDashboardRoutes(mux, dashHandler)
+	registerDashboardRoutes(mux, dashHandler, onboardMiddleware)
 
 	if deps.AuthHandler != nil {
 		registerAuthRoutes(mux, deps.AuthHandler)
@@ -287,23 +300,49 @@ func registerUtilityRoutes(mux *http.ServeMux) {
 }
 
 // registerDashboardRoutes adds dashboard and UI endpoints.
-func registerDashboardRoutes(mux *http.ServeMux, dashHandler *dash.Handler) {
-	// Dashboard pages
+func registerDashboardRoutes(mux *http.ServeMux, dashHandler *dash.Handler, onboardMW *onboard.Middleware) {
+	// Public route (no onboarding required)
 	mux.HandleFunc("/login", dashHandler.HandleLoginPage)
-	mux.HandleFunc("/dashboard", dashHandler.HandleDashboard)
-	mux.HandleFunc("/api-keys", dashHandler.HandleAPIKeys)
-	mux.HandleFunc("/ssh-keys", dashHandler.HandleSSHKeys)
-	mux.HandleFunc("/organizations", dashHandler.HandleOrganizations)
-	mux.HandleFunc("/projects", dashHandler.HandleProjects)
-	mux.HandleFunc("/sites", dashHandler.HandleSites)
-	mux.HandleFunc("/secrets", dashHandler.HandleSecrets)
-	mux.HandleFunc("/firewall", dashHandler.HandleFirewall)
-	mux.HandleFunc("/members", dashHandler.HandleMembers)
 
-	// Detail pages for individual resources
-	mux.HandleFunc("GET /organizations/{id}", dashHandler.HandleOrganizationDetail)
-	mux.HandleFunc("GET /projects/{id}", dashHandler.HandleProjectDetail)
-	mux.HandleFunc("GET /sites/{id}", dashHandler.HandleSiteDetail)
+	// Protected routes (require onboarding completion)
+	mux.Handle("/dashboard", onboardMW.RequireOnboardingComplete(http.HandlerFunc(dashHandler.HandleDashboard)))
+	mux.Handle("/api-keys", onboardMW.RequireOnboardingComplete(http.HandlerFunc(dashHandler.HandleAPIKeys)))
+	mux.Handle("/ssh-keys", onboardMW.RequireOnboardingComplete(http.HandlerFunc(dashHandler.HandleSSHKeys)))
+	mux.Handle("/organizations", onboardMW.RequireOnboardingComplete(http.HandlerFunc(dashHandler.HandleOrganizations)))
+	mux.Handle("/projects", onboardMW.RequireOnboardingComplete(http.HandlerFunc(dashHandler.HandleProjects)))
+	mux.Handle("/sites", onboardMW.RequireOnboardingComplete(http.HandlerFunc(dashHandler.HandleSites)))
+	mux.Handle("/secrets", onboardMW.RequireOnboardingComplete(http.HandlerFunc(dashHandler.HandleSecrets)))
+	mux.Handle("/firewall", onboardMW.RequireOnboardingComplete(http.HandlerFunc(dashHandler.HandleFirewall)))
+	mux.Handle("/members", onboardMW.RequireOnboardingComplete(http.HandlerFunc(dashHandler.HandleMembers)))
+
+	// Detail pages for individual resources (require onboarding completion)
+	mux.Handle("GET /organizations/{id}", onboardMW.RequireOnboardingComplete(http.HandlerFunc(dashHandler.HandleOrganizationDetail)))
+	mux.Handle("GET /projects/{id}", onboardMW.RequireOnboardingComplete(http.HandlerFunc(dashHandler.HandleProjectDetail)))
+	mux.Handle("GET /sites/{id}", onboardMW.RequireOnboardingComplete(http.HandlerFunc(dashHandler.HandleSiteDetail)))
+}
+
+// registerOnboardingRoutes adds onboarding endpoints.
+func registerOnboardingRoutes(mux *http.ServeMux, handler *onboard.Handler, stripeMgr *billing.StripeManager) {
+	// Onboarding page (requires authentication but not onboarding completion)
+	mux.HandleFunc("GET /onboarding", handler.RenderOnboarding)
+
+	// Onboarding API endpoints
+	mux.HandleFunc("GET /api/onboarding/session", handler.HandleGetSession)
+	mux.HandleFunc("POST /api/onboarding/step1", handler.HandleStep1)
+	mux.HandleFunc("POST /api/onboarding/step2", handler.HandleStep2)
+	mux.HandleFunc("GET /onboarding/stripe/success", handler.HandleStripeSuccess)
+	mux.HandleFunc("GET /onboarding/stripe/cancel", handler.HandleStripeCancel)
+	mux.HandleFunc("POST /api/onboarding/step4", handler.HandleStep4)
+	mux.HandleFunc("POST /api/onboarding/step5", handler.HandleStep5)
+	mux.HandleFunc("POST /api/onboarding/step6", handler.HandleStep6)
+	mux.HandleFunc("POST /api/onboarding/step7", handler.HandleStep7)
+
+	// Utility endpoints
+	mux.HandleFunc("GET /api/onboarding/client-ip", handler.HandleGetClientIP)
+	mux.HandleFunc("GET /api/onboarding/regions", handler.HandleGetRegions)
+
+	// Stripe webhook (no authentication required, verified by signature)
+	mux.HandleFunc("POST /webhooks/stripe", stripeMgr.HandleStripeWebhook)
 }
 
 // registerAuthRoutes adds authentication endpoints.

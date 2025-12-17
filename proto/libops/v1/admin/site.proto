@@ -13,8 +13,13 @@ message AdminSiteConfig {
 
   // --- Admin-Only Fields ---
 
+  // GitHub integration
+  optional string github_webhook_url = 2;
+  optional string github_webhook_secret = 3;  // Sensitive
+  optional string github_team_id = 7;         // GitHub team ID for access control
+
   // Computed/managed fields (output from orchestration)
-  optional string gcp_instance_name = 2;   // GCE instance name
-  optional string gcp_external_ip = 3;     // External IP address
-  optional string gcp_internal_ip = 4;     // Internal IP address
+  optional string gcp_instance_name = 4;   // GCE instance name
+  optional string gcp_external_ip = 5;     // External IP address
+  optional string gcp_internal_ip = 6;     // Internal IP address
 }

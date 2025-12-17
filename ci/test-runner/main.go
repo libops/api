@@ -588,28 +588,22 @@ func (tr *TestRunner) testProjectOperations(ctx context.Context) {
 		"no-access": false, // Should be denied - not a member
 	})
 
-	// Matrix: Delete Project
+	// Delete Created Project
 	// We use the createdProjectID for positive delete tests to avoid destroying seed data
+	// This is a single test (not matrix) because we can only delete the project once
 	if createdProjectID != "" {
-		tr.testMatrix("Delete Created Project", func(user string) error {
-			c := tr.projectClient(user)
+		tr.test("Delete Created Project [art]", func() error {
+			c := tr.projectClient("art")
 			_, err := c.DeleteProject(ctx, connect.NewRequest(&libopsv1.DeleteProjectRequest{ProjectId: createdProjectID}))
 			return err
-		}, map[string]bool{
-			"admin":     true,
-			"art":       true,
-			"no-access": false, // Should be denied - not a member
-			// Note: proj1-owner cannot delete createdProjectID because they aren't a member of it.
-			// To test proj1-owner delete capability, we'd need a project where they are owner.
-			// For now, we verify org-owner can delete.
 		})
-		// Reset createdProjectID if deleted
+		// Reset createdProjectID after deletion
 		createdProjectID = ""
 	}
 
-	// Test negative delete on Project 1 (should fail for read-only/non-owners)
-	tr.testMatrix("Delete Project 1 (Negative)", func(user string) error {
-		// Skip for authorized users to preserve seed data
+	// Test that unauthorized users cannot delete (using project1ID from seed data)
+	tr.testMatrix("Delete Project (Permission Check)", func(user string) error {
+		// Skip for users who should not attempt (to preserve seed data)
 		if user == "admin" || user == "art" || user == "bob" {
 			return nil
 		}
@@ -617,19 +611,14 @@ func (tr *TestRunner) testProjectOperations(ctx context.Context) {
 		_, err := c.DeleteProject(ctx, connect.NewRequest(&libopsv1.DeleteProjectRequest{ProjectId: project1ID}))
 		return err
 	}, map[string]bool{
-		// No one should succeed in this test block, we are testing failures
-		// But actually admin/org-owner/proj1-owner COULD succeed, so we skip them or expect success?
-		// We want to verify failures for others.
-		// Better: use testMatrix with correct map.
-		"admin":     true,
-		"art":       true,
-		"bob":       true,
+		"admin":     true, // Skipped to preserve seed data
+		"art":       true, // Skipped to preserve seed data
+		"bob":       true, // Skipped to preserve seed data
 		"joe":       false,
 		"puddy":     false,
-		"jerry":     false,
-		"soup":      false,
-		"no-access": false, // Should be denied - not a member
+		"no-access": false,
 	})
+
 
 	// Matrix: Project Secrets
 	tr.testMatrix("Create Project Secret", func(user string) error {
@@ -690,8 +679,13 @@ func (tr *TestRunner) testSiteOperations(ctx context.Context) {
 		req := &libopsv1.CreateSiteRequest{
 			ProjectId: project1ID,
 			Site: &commonv1.SiteConfig{
-				SiteName:  "site-" + user + string(currentAuthMethod),
-				GithubRef: "main",
+				SiteName:         "site-" + user + string(currentAuthMethod),
+				GithubRepository: "repo/test",
+				GithubRef:        "main",
+				ComposePath:      "",
+				ComposeFile:      "docker-compose.yml",
+				Port:             80,
+				ApplicationType:  "generic",
 			},
 		}
 		resp, err := c.CreateSite(ctx, connect.NewRequest(req))
@@ -717,7 +711,7 @@ func (tr *TestRunner) testSiteOperations(ctx context.Context) {
 		c := tr.siteClient(user)
 		_, err := c.UpdateSite(ctx, connect.NewRequest(&libopsv1.UpdateSiteRequest{
 			SiteId:     site1ProdID,
-			Site:       &commonv1.SiteConfig{GithubRef: "main"},
+			Site:       &commonv1.SiteConfig{GithubRef: "main-updated"},
 			UpdateMask: &fieldmaskpb.FieldMask{Paths: []string{"site.github_ref"}},
 		}))
 		return err

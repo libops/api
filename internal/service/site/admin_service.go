@@ -93,16 +93,25 @@ func (s *AdminSiteService) ListSites(
 	for _, site := range sites {
 		protoSites = append(protoSites, &adminv1.AdminSiteConfig{
 			Config: &commonv1.SiteConfig{
-				SiteId:         site.PublicID,
-				OrganizationId: organizationID,
-				ProjectId:      projectID,
-				SiteName:       site.Name,
-				GithubRef:      site.GithubRef,
-				Status:         DbSiteStatusToProto(site.Status),
+				SiteId:           site.PublicID,
+				OrganizationId:   organizationID,
+				ProjectId:        projectID,
+				SiteName:         site.Name,
+				GithubRepository: site.GithubRepository,
+				GithubRef:        site.GithubRef,
+				ComposePath:      site.ComposePath.String,
+				ComposeFile:      site.ComposeFile.String,
+				Port:             site.Port.Int32,
+				ApplicationType:  site.ApplicationType.String,
+				UpCmd:            service.FromJSONStringArray(site.UpCmd),
+				InitCmd:          service.FromJSONStringArray(site.InitCmd),
+				RolloutCmd:       service.FromJSONStringArray(site.RolloutCmd),
+				Status:           service.DbSiteStatusToProto(site.Status),
 			},
 			GcpInstanceName: nil,
 			GcpExternalIp:   service.FromNullStringPtr(site.GcpExternalIp),
 			GcpInternalIp:   nil,
+			GithubTeamId:    service.FromNullStringPtr(site.GithubTeamID),
 		})
 	}
 
@@ -146,16 +155,25 @@ func (s *AdminSiteService) GetSite(
 
 	protoSite := &adminv1.AdminSiteConfig{
 		Config: &commonv1.SiteConfig{
-			SiteId:         site.PublicID,
-			OrganizationId: req.Msg.OrganizationId,
-			ProjectId:      projectID,
-			SiteName:       site.Name,
-			GithubRef:      site.GithubRef,
-			Status:         DbSiteStatusToProto(site.Status),
+			SiteId:           site.PublicID,
+			OrganizationId:   req.Msg.OrganizationId,
+			ProjectId:        projectID,
+			SiteName:         site.Name,
+			GithubRepository: site.GithubRepository,
+			GithubRef:        site.GithubRef,
+			ComposePath:      site.ComposePath.String,
+			ComposeFile:      site.ComposeFile.String,
+			Port:             site.Port.Int32,
+			ApplicationType:  site.ApplicationType.String,
+			UpCmd:            service.FromJSONStringArray(site.UpCmd),
+			InitCmd:          service.FromJSONStringArray(site.InitCmd),
+			RolloutCmd:       service.FromJSONStringArray(site.RolloutCmd),
+			Status:           service.DbSiteStatusToProto(site.Status),
 		},
 		GcpInstanceName: nil,
 		GcpExternalIp:   service.FromNullStringPtr(site.GcpExternalIp),
 		GcpInternalIp:   nil,
+		GithubTeamId:    service.FromNullStringPtr(site.GithubTeamID),
 	}
 
 	return connect.NewResponse(&libopsv1.AdminGetSiteResponse{
@@ -197,13 +215,22 @@ func (s *AdminSiteService) CreateSite(
 	}
 
 	params := db.CreateSiteParams{
-		ProjectID:     project.ID,
-		Name:          site.Config.SiteName,
-		GithubRef:     site.Config.GithubRef,
-		GcpExternalIp: toNullString(ptrToString(site.GcpExternalIp)),
-		Status:        db.NullSitesStatus{SitesStatus: db.SitesStatusProvisioning, Valid: true},
-		CreatedBy:     sql.NullInt64{Int64: accountID, Valid: true},
-		UpdatedBy:     sql.NullInt64{Int64: accountID, Valid: true},
+		ProjectID:        project.ID,
+		Name:             site.Config.SiteName,
+		GithubRepository: site.Config.GithubRepository,
+		GithubRef:        site.Config.GithubRef,
+		ComposePath:      service.ToNullString(site.Config.ComposePath),
+		ComposeFile:      service.ToNullString(site.Config.ComposeFile),
+		Port:             service.ToNullInt32(site.Config.Port),
+		ApplicationType:  service.ToNullString(site.Config.ApplicationType),
+		UpCmd:            service.ToJSON(site.Config.UpCmd),
+		InitCmd:          service.ToJSON(site.Config.InitCmd),
+		RolloutCmd:       service.ToJSON(site.Config.RolloutCmd),
+		GcpExternalIp:    service.ToNullString(service.PtrToString(site.GcpExternalIp)),
+		GithubTeamID:     service.ToNullString(service.PtrToString(site.GithubTeamId)),
+		Status:           db.NullSitesStatus{SitesStatus: db.SitesStatusProvisioning, Valid: true},
+		CreatedBy:        sql.NullInt64{Int64: accountID, Valid: true},
+		UpdatedBy:        sql.NullInt64{Int64: accountID, Valid: true},
 	}
 
 	err = s.repo.CreateSite(ctx, params)
@@ -256,17 +283,53 @@ func (s *AdminSiteService) UpdateSite(
 	}
 
 	name := existing.Name
+	githubRepository := existing.GithubRepository
 	githubRef := existing.GithubRef
+	composePath := existing.ComposePath
+	composeFile := existing.ComposeFile
+	port := existing.Port
+	applicationType := existing.ApplicationType
+	upCmd := existing.UpCmd
+	initCmd := existing.InitCmd
+	rolloutCmd := existing.RolloutCmd
 	gcpExternalIp := existing.GcpExternalIp
+	githubTeamID := existing.GithubTeamID
 
 	if service.ShouldUpdateField(req.Msg.UpdateMask, "site.config.site_name") {
 		name = site.Config.SiteName
 	}
+	if service.ShouldUpdateField(req.Msg.UpdateMask, "site.config.github_repository") {
+		githubRepository = site.Config.GithubRepository
+	}
 	if service.ShouldUpdateField(req.Msg.UpdateMask, "site.config.github_ref") {
 		githubRef = site.Config.GithubRef
 	}
+	if service.ShouldUpdateField(req.Msg.UpdateMask, "site.config.compose_path") {
+		composePath = service.ToNullString(site.Config.ComposePath)
+	}
+	if service.ShouldUpdateField(req.Msg.UpdateMask, "site.config.compose_file") {
+		composeFile = service.ToNullString(site.Config.ComposeFile)
+	}
+	if service.ShouldUpdateField(req.Msg.UpdateMask, "site.config.port") {
+		port = service.ToNullInt32(site.Config.Port)
+	}
+	if service.ShouldUpdateField(req.Msg.UpdateMask, "site.config.application_type") {
+		applicationType = service.ToNullString(site.Config.ApplicationType)
+	}
+	if service.ShouldUpdateField(req.Msg.UpdateMask, "site.config.up_cmd") {
+		upCmd = service.ToJSON(site.Config.UpCmd)
+	}
+	if service.ShouldUpdateField(req.Msg.UpdateMask, "site.config.init_cmd") {
+		initCmd = service.ToJSON(site.Config.InitCmd)
+	}
+	if service.ShouldUpdateField(req.Msg.UpdateMask, "site.config.rollout_cmd") {
+		rolloutCmd = service.ToJSON(site.Config.RolloutCmd)
+	}
 	if service.ShouldUpdateField(req.Msg.UpdateMask, "site.gcp_external_ip") {
-		gcpExternalIp = toNullString(ptrToString(site.GcpExternalIp))
+		gcpExternalIp = service.ToNullString(service.PtrToString(site.GcpExternalIp))
+	}
+	if service.ShouldUpdateField(req.Msg.UpdateMask, "site.github_team_id") {
+		githubTeamID = service.ToNullString(service.PtrToString(site.GithubTeamId))
 	}
 
 	siteUUID, err := uuid.Parse(existing.PublicID)
@@ -275,12 +338,21 @@ func (s *AdminSiteService) UpdateSite(
 	}
 
 	params := db.UpdateSiteParams{
-		Name:          name,
-		GithubRef:     githubRef,
-		GcpExternalIp: gcpExternalIp,
-		Status:        db.NullSitesStatus{SitesStatus: db.SitesStatusActive, Valid: true},
-		UpdatedBy:     sql.NullInt64{Int64: accountID, Valid: true},
-		PublicID:      siteUUID.String(),
+		Name:             name,
+		GithubRepository: githubRepository,
+		GithubRef:        githubRef,
+		GithubTeamID:     githubTeamID,
+		ComposePath:      composePath,
+		ComposeFile:      composeFile,
+		Port:             port,
+		ApplicationType:  applicationType,
+		UpCmd:            upCmd,
+		InitCmd:          initCmd,
+		RolloutCmd:       rolloutCmd,
+		GcpExternalIp:    gcpExternalIp,
+		Status:           db.NullSitesStatus{SitesStatus: db.SitesStatusActive, Valid: true},
+		UpdatedBy:        sql.NullInt64{Int64: accountID, Valid: true},
+		PublicID:         siteUUID.String(),
 	}
 
 	err = s.repo.UpdateSite(ctx, params)

@@ -14,7 +14,8 @@ type Config struct {
 	WriteTimeout time.Duration
 	IdleTimeout  time.Duration
 
-	APIBaseURL string // Base URL for the API (e.g., https://api.libops.io)
+	APIBaseURL  string
+	DashBaseUrl string
 
 	DatabaseURL string
 
@@ -42,6 +43,17 @@ type Config struct {
 	GitHubClientID     string
 	GitHubClientSecret string
 	GitHubCallbackURL  string
+
+	// Stripe Configuration
+	StripeSecretKey     string
+	StripeWebhookSecret string
+	DisableBilling      bool // When true, uses NoOp billing manager instead of Stripe
+
+	// Organization defaults
+	GcpOrgID           string
+	GcpBillingAccount  string
+	GcpParent          string
+	RootOrganizationID int64
 }
 
 // Load loads configuration from environment variables and Vault secrets.
@@ -75,10 +87,10 @@ func Load() (*Config, error) {
 	}
 
 	baseUrl := loader.LoadEnvWithDefault("API_BASE_URL", "https://api.libops.io")
-	oidcBaseUrl := loader.LoadEnvWithDefault("API_OIDC_BASE_URL", "https://api.libops.io")
+	dashBaseUrl := loader.LoadEnvWithDefault("DASH_BASE_URL", "https://dash.libops.io")
 
 	// Ensure OAuth callback URLs always use HTTPS
-	oauthCallbackBaseUrl := ensureHTTPS(oidcBaseUrl)
+	oauthCallbackBaseUrl := ensureHTTPS(dashBaseUrl)
 
 	cfg := &Config{
 		Port:         loader.LoadEnvWithDefault("PORT", "8080"),
@@ -86,7 +98,8 @@ func Load() (*Config, error) {
 		WriteTimeout: 30 * time.Second,
 		IdleTimeout:  120 * time.Second,
 
-		APIBaseURL: baseUrl,
+		APIBaseURL:  baseUrl,
+		DashBaseUrl: dashBaseUrl,
 
 		DatabaseURL: fmt.Sprintf("libops:%s@tcp(mariadb:3306)/libops?parseTime=true", strings.TrimSpace(string(databasePassword))),
 
@@ -101,7 +114,7 @@ func Load() (*Config, error) {
 
 		OIDCClientID:     oidcClientId,
 		OIDCClientSecret: oidcClientSecret,
-		OIDCRedirectURL:  loader.LoadEnvWithDefault("OIDC_REDIRECT_URL", fmt.Sprintf("%s/auth/callback", oidcBaseUrl)),
+		OIDCRedirectURL:  loader.LoadEnvWithDefault("OIDC_REDIRECT_URL", fmt.Sprintf("%s/auth/callback", dashBaseUrl)),
 
 		// Google OAuth
 		GoogleClientID:     loader.LoadEnvWithDefault("GOOGLE_CLIENT_ID", ""),
@@ -112,6 +125,17 @@ func Load() (*Config, error) {
 		GitHubClientID:     loader.LoadEnvWithDefault("GITHUB_CLIENT_ID", ""),
 		GitHubClientSecret: loader.LoadEnvWithDefault("GITHUB_CLIENT_SECRET", ""),
 		GitHubCallbackURL:  loader.LoadEnvWithDefault("GITHUB_CALLBACK_URL", fmt.Sprintf("%s/auth/callback/github", oauthCallbackBaseUrl)),
+
+		// Stripe
+		StripeSecretKey:     loader.LoadEnvWithDefault("STRIPE_SECRET_KEY", ""),
+		StripeWebhookSecret: loader.LoadEnvWithDefault("STRIPE_WEBHOOK_SECRET", ""),
+		DisableBilling:      loader.LoadEnvWithDefault("DISABLE_BILLING", "false") == "true",
+
+		// Organization defaults
+		GcpOrgID:           loader.LoadEnvWithDefault("LIBOPS_GCP_ORG_ID", ""),
+		GcpBillingAccount:  loader.LoadEnvWithDefault("LIBOPS_GCP_BILLING_ACCOUNT", ""),
+		GcpParent:          loader.LoadEnvWithDefault("LIBOPS_GCP_PARENT", ""),
+		RootOrganizationID: parseIntWithDefault(loader.LoadEnvWithDefault("LIBOPS_ROOT_ORG", "1"), 1),
 	}
 
 	if err := cfg.Validate(); err != nil {
@@ -169,4 +193,14 @@ func parseAllowedOrigins(originsEnv string) []string {
 		"https://dash.libops.io",
 		"http://localhost:8080",
 	}
+}
+
+// parseIntWithDefault parses a string to int64, returning defaultValue on error.
+func parseIntWithDefault(s string, defaultValue int64) int64 {
+	var result int64
+	_, err := fmt.Sscanf(s, "%d", &result)
+	if err != nil {
+		return defaultValue
+	}
+	return result
 }

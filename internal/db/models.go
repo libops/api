@@ -1179,6 +1179,53 @@ func (ns NullSitesStatus) Value() (driver.Value, error) {
 	return string(ns.SitesStatus), nil
 }
 
+type StripeSubscriptionsStatus string
+
+const (
+	StripeSubscriptionsStatusIncomplete        StripeSubscriptionsStatus = "incomplete"
+	StripeSubscriptionsStatusIncompleteExpired StripeSubscriptionsStatus = "incomplete_expired"
+	StripeSubscriptionsStatusTrialing          StripeSubscriptionsStatus = "trialing"
+	StripeSubscriptionsStatusActive            StripeSubscriptionsStatus = "active"
+	StripeSubscriptionsStatusPastDue           StripeSubscriptionsStatus = "past_due"
+	StripeSubscriptionsStatusCanceled          StripeSubscriptionsStatus = "canceled"
+	StripeSubscriptionsStatusUnpaid            StripeSubscriptionsStatus = "unpaid"
+)
+
+func (e *StripeSubscriptionsStatus) Scan(src interface{}) error {
+	switch s := src.(type) {
+	case []byte:
+		*e = StripeSubscriptionsStatus(s)
+	case string:
+		*e = StripeSubscriptionsStatus(s)
+	default:
+		return fmt.Errorf("unsupported scan type for StripeSubscriptionsStatus: %T", src)
+	}
+	return nil
+}
+
+type NullStripeSubscriptionsStatus struct {
+	StripeSubscriptionsStatus StripeSubscriptionsStatus `json:"stripe_subscriptions_status"`
+	Valid                     bool                      `json:"valid"` // Valid is true if StripeSubscriptionsStatus is not NULL
+}
+
+// Scan implements the Scanner interface.
+func (ns *NullStripeSubscriptionsStatus) Scan(value interface{}) error {
+	if value == nil {
+		ns.StripeSubscriptionsStatus, ns.Valid = "", false
+		return nil
+	}
+	ns.Valid = true
+	return ns.StripeSubscriptionsStatus.Scan(value)
+}
+
+// Value implements the driver Valuer interface.
+func (ns NullStripeSubscriptionsStatus) Value() (driver.Value, error) {
+	if !ns.Valid {
+		return nil, nil
+	}
+	return string(ns.StripeSubscriptionsStatus), nil
+}
+
 type Account struct {
 	ID                  int64              `json:"id"`
 	PublicID            []byte             `json:"public_id"`
@@ -1191,6 +1238,8 @@ type Account struct {
 	VerifiedAt          sql.NullTime       `json:"verified_at"`
 	FailedLoginAttempts int32              `json:"failed_login_attempts"`
 	LastFailedLoginAt   sql.NullTime       `json:"last_failed_login_at"`
+	OnboardingCompleted bool               `json:"onboarding_completed"`
+	OnboardingSessionID sql.NullString     `json:"onboarding_session_id"`
 	CreatedAt           sql.NullTime       `json:"created_at"`
 	UpdatedAt           sql.NullTime       `json:"updated_at"`
 }
@@ -1265,6 +1314,52 @@ type EventQueue struct {
 	SentAt       sql.NullTime     `json:"sent_at"`
 }
 
+type MachineType struct {
+	ID int64 `json:"id"`
+	// Machine type identifier (e.g., e2-medium, n4-standard-2)
+	MachineType string `json:"machine_type"`
+	// Human-readable display name
+	DisplayName string `json:"display_name"`
+	// Number of vCPUs
+	Vcpu int32 `json:"vcpu"`
+	// Memory in GiB
+	MemoryGib int32 `json:"memory_gib"`
+	// Stripe price ID for this machine type
+	StripePriceID string `json:"stripe_price_id"`
+	// Monthly price in cents
+	MonthlyPriceCents int32 `json:"monthly_price_cents"`
+	// Whether this machine type is available for new projects
+	Active    sql.NullBool `json:"active"`
+	CreatedAt sql.NullTime `json:"created_at"`
+	UpdatedAt sql.NullTime `json:"updated_at"`
+}
+
+type OnboardingSession struct {
+	ID                      int64          `json:"id"`
+	PublicID                []byte         `json:"public_id"`
+	AccountID               int64          `json:"account_id"`
+	OrgName                 sql.NullString `json:"org_name"`
+	MachineType             sql.NullString `json:"machine_type"`
+	MachinePriceID          sql.NullString `json:"machine_price_id"`
+	DiskSizeGb              sql.NullInt32  `json:"disk_size_gb"`
+	StripeCheckoutSessionID sql.NullString `json:"stripe_checkout_session_id"`
+	StripeCheckoutUrl       sql.NullString `json:"stripe_checkout_url"`
+	StripeSubscriptionID    sql.NullString `json:"stripe_subscription_id"`
+	OrganizationID          sql.NullInt64  `json:"organization_id"`
+	ProjectName             sql.NullString `json:"project_name"`
+	GcpCountry              sql.NullString `json:"gcp_country"`
+	GcpRegion               sql.NullString `json:"gcp_region"`
+	SiteName                sql.NullString `json:"site_name"`
+	GithubRepoUrl           sql.NullString `json:"github_repo_url"`
+	Port                    sql.NullInt32  `json:"port"`
+	FirewallIp              sql.NullString `json:"firewall_ip"`
+	CurrentStep             sql.NullInt32  `json:"current_step"`
+	Completed               sql.NullBool   `json:"completed"`
+	CreatedAt               sql.NullTime   `json:"created_at"`
+	UpdatedAt               sql.NullTime   `json:"updated_at"`
+	ExpiresAt               sql.NullTime   `json:"expires_at"`
+}
+
 type Organization struct {
 	ID                int64                     `json:"id"`
 	PublicID          []byte                    `json:"public_id"`
@@ -1329,16 +1424,11 @@ type Project struct {
 	PublicID                  []byte                      `json:"public_id"`
 	OrganizationID            int64                       `json:"organization_id"`
 	Name                      string                      `json:"name"`
-	GithubRepository          sql.NullString              `json:"github_repository"`
-	GithubRepositoryTemplate  sql.NullString              `json:"github_repository_template"`
-	GithubBranch              sql.NullString              `json:"github_branch"`
-	ComposePath               sql.NullString              `json:"compose_path"`
 	GcpRegion                 sql.NullString              `json:"gcp_region"`
 	GcpZone                   sql.NullString              `json:"gcp_zone"`
 	MachineType               sql.NullString              `json:"machine_type"`
 	DiskSizeGb                sql.NullInt32               `json:"disk_size_gb"`
-	ComposeFile               sql.NullString              `json:"compose_file"`
-	ApplicationType           sql.NullString              `json:"application_type"`
+	StripeSubscriptionItemID  sql.NullString              `json:"stripe_subscription_item_id"`
 	PromoteStrategy           NullProjectsPromoteStrategy `json:"promote_strategy"`
 	MonitoringEnabled         sql.NullBool                `json:"monitoring_enabled"`
 	MonitoringLogLevel        sql.NullString              `json:"monitoring_log_level"`
@@ -1346,12 +1436,8 @@ type Project struct {
 	MonitoringHealthCheckPath sql.NullString              `json:"monitoring_health_check_path"`
 	GcpProjectID              sql.NullString              `json:"gcp_project_id"`
 	GcpProjectNumber          sql.NullString              `json:"gcp_project_number"`
-	GithubTeamID              sql.NullString              `json:"github_team_id"`
 	OrganizationProject       sql.NullBool                `json:"organization_project"`
 	CreateBranchSites         sql.NullBool                `json:"create_branch_sites"`
-	UpCmd                     sql.NullString              `json:"up_cmd"`
-	InitCmd                   sql.NullString              `json:"init_cmd"`
-	RolloutCmd                json.RawMessage             `json:"rollout_cmd"`
 	Status                    NullProjectsStatus          `json:"status"`
 	CreatedAt                 sql.NullTime                `json:"created_at"`
 	UpdatedAt                 sql.NullTime                `json:"updated_at"`
@@ -1412,17 +1498,26 @@ type Relationship struct {
 }
 
 type Site struct {
-	ID            int64           `json:"id"`
-	PublicID      []byte          `json:"public_id"`
-	ProjectID     int64           `json:"project_id"`
-	Name          string          `json:"name"`
-	GithubRef     string          `json:"github_ref"`
-	GcpExternalIp sql.NullString  `json:"gcp_external_ip"`
-	Status        NullSitesStatus `json:"status"`
-	CreatedAt     sql.NullTime    `json:"created_at"`
-	UpdatedAt     sql.NullTime    `json:"updated_at"`
-	CreatedBy     sql.NullInt64   `json:"created_by"`
-	UpdatedBy     sql.NullInt64   `json:"updated_by"`
+	ID               int64           `json:"id"`
+	PublicID         []byte          `json:"public_id"`
+	ProjectID        int64           `json:"project_id"`
+	Name             string          `json:"name"`
+	GithubRepository string          `json:"github_repository"`
+	GithubRef        string          `json:"github_ref"`
+	GithubTeamID     sql.NullString  `json:"github_team_id"`
+	ComposePath      sql.NullString  `json:"compose_path"`
+	ComposeFile      sql.NullString  `json:"compose_file"`
+	Port             sql.NullInt32   `json:"port"`
+	ApplicationType  sql.NullString  `json:"application_type"`
+	UpCmd            json.RawMessage `json:"up_cmd"`
+	InitCmd          json.RawMessage `json:"init_cmd"`
+	RolloutCmd       json.RawMessage `json:"rollout_cmd"`
+	GcpExternalIp    sql.NullString  `json:"gcp_external_ip"`
+	Status           NullSitesStatus `json:"status"`
+	CreatedAt        sql.NullTime    `json:"created_at"`
+	UpdatedAt        sql.NullTime    `json:"updated_at"`
+	CreatedBy        sql.NullInt64   `json:"created_by"`
+	UpdatedBy        sql.NullInt64   `json:"updated_by"`
 }
 
 type SiteFirewallRule struct {
@@ -1484,4 +1579,40 @@ type SshKey struct {
 	Fingerprint sql.NullString `json:"fingerprint"`
 	CreatedAt   sql.NullTime   `json:"created_at"`
 	UpdatedAt   sql.NullTime   `json:"updated_at"`
+}
+
+type StorageConfig struct {
+	ID        int64  `json:"id"`
+	ConfigKey string `json:"config_key"`
+	// Stripe price ID for disk storage per GB
+	StripePriceID string `json:"stripe_price_id"`
+	// Price per GB per month in cents
+	PricePerGbCents int32 `json:"price_per_gb_cents"`
+	// Minimum disk size in GB
+	MinSizeGb int32 `json:"min_size_gb"`
+	// Maximum disk size in GB
+	MaxSizeGb int32        `json:"max_size_gb"`
+	Active    sql.NullBool `json:"active"`
+	CreatedAt sql.NullTime `json:"created_at"`
+	UpdatedAt sql.NullTime `json:"updated_at"`
+}
+
+type StripeSubscription struct {
+	ID                      int64                     `json:"id"`
+	PublicID                []byte                    `json:"public_id"`
+	OrganizationID          int64                     `json:"organization_id"`
+	StripeSubscriptionID    string                    `json:"stripe_subscription_id"`
+	StripeCustomerID        string                    `json:"stripe_customer_id"`
+	StripeCheckoutSessionID sql.NullString            `json:"stripe_checkout_session_id"`
+	Status                  StripeSubscriptionsStatus `json:"status"`
+	CurrentPeriodStart      sql.NullTime              `json:"current_period_start"`
+	CurrentPeriodEnd        sql.NullTime              `json:"current_period_end"`
+	TrialStart              sql.NullTime              `json:"trial_start"`
+	TrialEnd                sql.NullTime              `json:"trial_end"`
+	CancelAtPeriodEnd       sql.NullBool              `json:"cancel_at_period_end"`
+	CanceledAt              sql.NullTime              `json:"canceled_at"`
+	MachineType             sql.NullString            `json:"machine_type"`
+	DiskSizeGb              sql.NullInt32             `json:"disk_size_gb"`
+	CreatedAt               sql.NullTime              `json:"created_at"`
+	UpdatedAt               sql.NullTime              `json:"updated_at"`
 }

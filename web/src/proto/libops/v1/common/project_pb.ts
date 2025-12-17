@@ -97,23 +97,6 @@ export class ProjectConfig extends Message<ProjectConfig> {
   diskSizeGb = 0;
 
   /**
-   * GitHub repository configuration
-   * Either github_repo (existing) or github_repo_template (new from template)
-   *
-   * Existing GitHub repository URL
-   *
-   * @generated from field: optional string github_repo = 9;
-   */
-  githubRepo?: string;
-
-  /**
-   * GitHub template repository URL
-   *
-   * @generated from field: optional string github_repo_template = 10;
-   */
-  githubRepoTemplate?: string;
-
-  /**
    * Promotion strategy
    *
    * How to promote code to production
@@ -121,29 +104,6 @@ export class ProjectConfig extends Message<ProjectConfig> {
    * @generated from field: libops.v1.common.PromoteStrategy promote = 11;
    */
   promote = PromoteStrategy.UNSPECIFIED;
-
-  /**
-   * Docker compose commands
-   *
-   * Command to start containers (default: "docker compose up --remove-orphans -d")
-   *
-   * @generated from field: string up_cmd = 13;
-   */
-  upCmd = "";
-
-  /**
-   * Command to run on initial setup (default: "")
-   *
-   * @generated from field: string init_cmd = 14;
-   */
-  initCmd = "";
-
-  /**
-   * Commands to run during rollout (default: ["docker compose pull", "docker compose up --remove-orphans -d"])
-   *
-   * @generated from field: repeated string rollout_cmd = 15;
-   */
-  rolloutCmd: string[] = [];
 
   /**
    * Status
@@ -168,12 +128,7 @@ export class ProjectConfig extends Message<ProjectConfig> {
     { no: 6, name: "zone", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 7, name: "machine_type", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 8, name: "disk_size_gb", kind: "scalar", T: 5 /* ScalarType.INT32 */ },
-    { no: 9, name: "github_repo", kind: "scalar", T: 9 /* ScalarType.STRING */, opt: true },
-    { no: 10, name: "github_repo_template", kind: "scalar", T: 9 /* ScalarType.STRING */, opt: true },
     { no: 11, name: "promote", kind: "enum", T: proto3.getEnumType(PromoteStrategy) },
-    { no: 13, name: "up_cmd", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-    { no: 14, name: "init_cmd", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-    { no: 15, name: "rollout_cmd", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },
     { no: 16, name: "status", kind: "enum", T: proto3.getEnumType(Status) },
   ]);
 

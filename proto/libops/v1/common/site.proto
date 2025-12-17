@@ -15,9 +15,21 @@ message SiteConfig {
   string project_id = 3 [(gnostic.openapi.v3.property) = {format: "uuid"}];
   string site_name = 4;  // "production", "staging", "development"
 
-  // GitHub reference: heads/{branch_name}, tags/{tag_name}, or "release"
-  string github_ref = 5;
+  // GitHub repository configuration
+  string github_repository = 5;  // GitHub repository URL
+  string github_ref = 6;          // GitHub reference: heads/{branch_name}, tags/{tag_name}, or "release"
+  string compose_path = 7;        // Path to docker-compose directory (default: "")
+  string compose_file = 8;        // Docker compose file name (default: "docker-compose.yml")
+
+  // Application configuration
+  int32 port = 9;                 // Port the application listens on (default: 80)
+  string application_type = 10;   // Type of application (default: "generic")
+
+  // Docker compose commands
+  repeated string up_cmd = 12;      // Commands to start containers
+  repeated string init_cmd = 13;    // Commands to run on initial setup
+  repeated string rollout_cmd = 14; // Commands to run during rollout
 
   // Status (organization-visible)
-  Status status = 6;
+  Status status = 11;
 }

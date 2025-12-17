@@ -30,10 +30,20 @@ type SiteConfig struct {
 	OrganizationId string                 `protobuf:"bytes,2,opt,name=organization_id,json=organizationId,proto3" json:"organization_id,omitempty"`
 	ProjectId      string                 `protobuf:"bytes,3,opt,name=project_id,json=projectId,proto3" json:"project_id,omitempty"`
 	SiteName       string                 `protobuf:"bytes,4,opt,name=site_name,json=siteName,proto3" json:"site_name,omitempty"` // "production", "staging", "development"
-	// GitHub reference: heads/{branch_name}, tags/{tag_name}, or "release"
-	GithubRef string `protobuf:"bytes,5,opt,name=github_ref,json=githubRef,proto3" json:"github_ref,omitempty"`
+	// GitHub repository configuration
+	GithubRepository string `protobuf:"bytes,5,opt,name=github_repository,json=githubRepository,proto3" json:"github_repository,omitempty"` // GitHub repository URL
+	GithubRef        string `protobuf:"bytes,6,opt,name=github_ref,json=githubRef,proto3" json:"github_ref,omitempty"`                      // GitHub reference: heads/{branch_name}, tags/{tag_name}, or "release"
+	ComposePath      string `protobuf:"bytes,7,opt,name=compose_path,json=composePath,proto3" json:"compose_path,omitempty"`                // Path to docker-compose directory (default: "")
+	ComposeFile      string `protobuf:"bytes,8,opt,name=compose_file,json=composeFile,proto3" json:"compose_file,omitempty"`                // Docker compose file name (default: "docker-compose.yml")
+	// Application configuration
+	Port            int32  `protobuf:"varint,9,opt,name=port,proto3" json:"port,omitempty"`                                              // Port the application listens on (default: 80)
+	ApplicationType string `protobuf:"bytes,10,opt,name=application_type,json=applicationType,proto3" json:"application_type,omitempty"` // Type of application (default: "generic")
+	// Docker compose commands
+	UpCmd      []string `protobuf:"bytes,12,rep,name=up_cmd,json=upCmd,proto3" json:"up_cmd,omitempty"`                // Commands to start containers
+	InitCmd    []string `protobuf:"bytes,13,rep,name=init_cmd,json=initCmd,proto3" json:"init_cmd,omitempty"`          // Commands to run on initial setup
+	RolloutCmd []string `protobuf:"bytes,14,rep,name=rollout_cmd,json=rolloutCmd,proto3" json:"rollout_cmd,omitempty"` // Commands to run during rollout
 	// Status (organization-visible)
-	Status        Status `protobuf:"varint,6,opt,name=status,proto3,enum=libops.v1.common.Status" json:"status,omitempty"`
+	Status        Status `protobuf:"varint,11,opt,name=status,proto3,enum=libops.v1.common.Status" json:"status,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -96,11 +106,67 @@ func (x *SiteConfig) GetSiteName() string {
 	return ""
 }
 
+func (x *SiteConfig) GetGithubRepository() string {
+	if x != nil {
+		return x.GithubRepository
+	}
+	return ""
+}
+
 func (x *SiteConfig) GetGithubRef() string {
 	if x != nil {
 		return x.GithubRef
 	}
 	return ""
+}
+
+func (x *SiteConfig) GetComposePath() string {
+	if x != nil {
+		return x.ComposePath
+	}
+	return ""
+}
+
+func (x *SiteConfig) GetComposeFile() string {
+	if x != nil {
+		return x.ComposeFile
+	}
+	return ""
+}
+
+func (x *SiteConfig) GetPort() int32 {
+	if x != nil {
+		return x.Port
+	}
+	return 0
+}
+
+func (x *SiteConfig) GetApplicationType() string {
+	if x != nil {
+		return x.ApplicationType
+	}
+	return ""
+}
+
+func (x *SiteConfig) GetUpCmd() []string {
+	if x != nil {
+		return x.UpCmd
+	}
+	return nil
+}
+
+func (x *SiteConfig) GetInitCmd() []string {
+	if x != nil {
+		return x.InitCmd
+	}
+	return nil
+}
+
+func (x *SiteConfig) GetRolloutCmd() []string {
+	if x != nil {
+		return x.RolloutCmd
+	}
+	return nil
 }
 
 func (x *SiteConfig) GetStatus() Status {
@@ -114,7 +180,7 @@ var File_libops_v1_common_site_proto protoreflect.FileDescriptor
 
 const file_libops_v1_common_site_proto_rawDesc = "" +
 	"\n" +
-	"\x1blibops/v1/common/site.proto\x12\x10libops.v1.common\x1a$gnostic/openapi/v3/annotations.proto\x1a\x1clibops/v1/common/types.proto\"\xff\x01\n" +
+	"\x1blibops/v1/common/site.proto\x12\x10libops.v1.common\x1a$gnostic/openapi/v3/annotations.proto\x1a\x1clibops/v1/common/types.proto\"\x84\x04\n" +
 	"\n" +
 	"SiteConfig\x12#\n" +
 	"\asite_id\x18\x01 \x01(\tB\n" +
@@ -124,10 +190,20 @@ const file_libops_v1_common_site_proto_rawDesc = "" +
 	"\n" +
 	"project_id\x18\x03 \x01(\tB\n" +
 	"\xbaG\a\x9a\x02\x04uuidR\tprojectId\x12\x1b\n" +
-	"\tsite_name\x18\x04 \x01(\tR\bsiteName\x12\x1d\n" +
+	"\tsite_name\x18\x04 \x01(\tR\bsiteName\x12+\n" +
+	"\x11github_repository\x18\x05 \x01(\tR\x10githubRepository\x12\x1d\n" +
 	"\n" +
-	"github_ref\x18\x05 \x01(\tR\tgithubRef\x120\n" +
-	"\x06status\x18\x06 \x01(\x0e2\x18.libops.v1.common.StatusR\x06statusB\xb1\x01\n" +
+	"github_ref\x18\x06 \x01(\tR\tgithubRef\x12!\n" +
+	"\fcompose_path\x18\a \x01(\tR\vcomposePath\x12!\n" +
+	"\fcompose_file\x18\b \x01(\tR\vcomposeFile\x12\x12\n" +
+	"\x04port\x18\t \x01(\x05R\x04port\x12)\n" +
+	"\x10application_type\x18\n" +
+	" \x01(\tR\x0fapplicationType\x12\x15\n" +
+	"\x06up_cmd\x18\f \x03(\tR\x05upCmd\x12\x19\n" +
+	"\binit_cmd\x18\r \x03(\tR\ainitCmd\x12\x1f\n" +
+	"\vrollout_cmd\x18\x0e \x03(\tR\n" +
+	"rolloutCmd\x120\n" +
+	"\x06status\x18\v \x01(\x0e2\x18.libops.v1.common.StatusR\x06statusB\xb1\x01\n" +
 	"\x14com.libops.v1.commonB\tSiteProtoP\x01Z,github.com/libops/api/proto/libops/v1/common\xa2\x02\x03LVC\xaa\x02\x10Libops.V1.Common\xca\x02\x10Libops\\V1\\Common\xe2\x02\x1cLibops\\V1\\Common\\GPBMetadata\xea\x02\x12Libops::V1::Commonb\x06proto3"
 
 var (

@@ -85,16 +85,8 @@ type ProjectConfig struct {
 	Zone        string `protobuf:"bytes,6,opt,name=zone,proto3" json:"zone,omitempty"`                                  // GCP zone (e.g., "us-central1-f")
 	MachineType string `protobuf:"bytes,7,opt,name=machine_type,json=machineType,proto3" json:"machine_type,omitempty"` // GCP machine type (e.g., "e2-standard-2")
 	DiskSizeGb  int32  `protobuf:"varint,8,opt,name=disk_size_gb,json=diskSizeGb,proto3" json:"disk_size_gb,omitempty"` // Disk size in GB
-	// GitHub repository configuration
-	// Either github_repo (existing) or github_repo_template (new from template)
-	GithubRepo         *string `protobuf:"bytes,9,opt,name=github_repo,json=githubRepo,proto3,oneof" json:"github_repo,omitempty"`                            // Existing GitHub repository URL
-	GithubRepoTemplate *string `protobuf:"bytes,10,opt,name=github_repo_template,json=githubRepoTemplate,proto3,oneof" json:"github_repo_template,omitempty"` // GitHub template repository URL
 	// Promotion strategy
 	Promote PromoteStrategy `protobuf:"varint,11,opt,name=promote,proto3,enum=libops.v1.common.PromoteStrategy" json:"promote,omitempty"` // How to promote code to production
-	// Docker compose commands
-	UpCmd      string   `protobuf:"bytes,13,opt,name=up_cmd,json=upCmd,proto3" json:"up_cmd,omitempty"`                // Command to start containers (default: "docker compose up --remove-orphans -d")
-	InitCmd    string   `protobuf:"bytes,14,opt,name=init_cmd,json=initCmd,proto3" json:"init_cmd,omitempty"`          // Command to run on initial setup (default: "")
-	RolloutCmd []string `protobuf:"bytes,15,rep,name=rollout_cmd,json=rolloutCmd,proto3" json:"rollout_cmd,omitempty"` // Commands to run during rollout (default: ["docker compose pull", "docker compose up --remove-orphans -d"])
 	// Status
 	Status        Status `protobuf:"varint,16,opt,name=status,proto3,enum=libops.v1.common.Status" json:"status,omitempty"`
 	unknownFields protoimpl.UnknownFields
@@ -187,46 +179,11 @@ func (x *ProjectConfig) GetDiskSizeGb() int32 {
 	return 0
 }
 
-func (x *ProjectConfig) GetGithubRepo() string {
-	if x != nil && x.GithubRepo != nil {
-		return *x.GithubRepo
-	}
-	return ""
-}
-
-func (x *ProjectConfig) GetGithubRepoTemplate() string {
-	if x != nil && x.GithubRepoTemplate != nil {
-		return *x.GithubRepoTemplate
-	}
-	return ""
-}
-
 func (x *ProjectConfig) GetPromote() PromoteStrategy {
 	if x != nil {
 		return x.Promote
 	}
 	return PromoteStrategy_PROMOTE_STRATEGY_UNSPECIFIED
-}
-
-func (x *ProjectConfig) GetUpCmd() string {
-	if x != nil {
-		return x.UpCmd
-	}
-	return ""
-}
-
-func (x *ProjectConfig) GetInitCmd() string {
-	if x != nil {
-		return x.InitCmd
-	}
-	return ""
-}
-
-func (x *ProjectConfig) GetRolloutCmd() []string {
-	if x != nil {
-		return x.RolloutCmd
-	}
-	return nil
 }
 
 func (x *ProjectConfig) GetStatus() Status {
@@ -240,7 +197,7 @@ var File_libops_v1_common_project_proto protoreflect.FileDescriptor
 
 const file_libops_v1_common_project_proto_rawDesc = "" +
 	"\n" +
-	"\x1elibops/v1/common/project.proto\x12\x10libops.v1.common\x1a$gnostic/openapi/v3/annotations.proto\x1a\x1clibops/v1/common/types.proto\"\xfb\x04\n" +
+	"\x1elibops/v1/common/project.proto\x12\x10libops.v1.common\x1a$gnostic/openapi/v3/annotations.proto\x1a\x1clibops/v1/common/types.proto\"\xa2\x03\n" +
 	"\rProjectConfig\x123\n" +
 	"\x0forganization_id\x18\x01 \x01(\tB\n" +
 	"\xbaG\a\x9a\x02\x04uuidR\x0eorganizationId\x12)\n" +
@@ -253,19 +210,9 @@ const file_libops_v1_common_project_proto_rawDesc = "" +
 	"\x04zone\x18\x06 \x01(\tR\x04zone\x12!\n" +
 	"\fmachine_type\x18\a \x01(\tR\vmachineType\x12 \n" +
 	"\fdisk_size_gb\x18\b \x01(\x05R\n" +
-	"diskSizeGb\x12$\n" +
-	"\vgithub_repo\x18\t \x01(\tH\x00R\n" +
-	"githubRepo\x88\x01\x01\x125\n" +
-	"\x14github_repo_template\x18\n" +
-	" \x01(\tH\x01R\x12githubRepoTemplate\x88\x01\x01\x12;\n" +
-	"\apromote\x18\v \x01(\x0e2!.libops.v1.common.PromoteStrategyR\apromote\x12\x15\n" +
-	"\x06up_cmd\x18\r \x01(\tR\x05upCmd\x12\x19\n" +
-	"\binit_cmd\x18\x0e \x01(\tR\ainitCmd\x12\x1f\n" +
-	"\vrollout_cmd\x18\x0f \x03(\tR\n" +
-	"rolloutCmd\x120\n" +
-	"\x06status\x18\x10 \x01(\x0e2\x18.libops.v1.common.StatusR\x06statusB\x0e\n" +
-	"\f_github_repoB\x17\n" +
-	"\x15_github_repo_template*y\n" +
+	"diskSizeGb\x12;\n" +
+	"\apromote\x18\v \x01(\x0e2!.libops.v1.common.PromoteStrategyR\apromote\x120\n" +
+	"\x06status\x18\x10 \x01(\x0e2\x18.libops.v1.common.StatusR\x06status*y\n" +
 	"\x0fPromoteStrategy\x12 \n" +
 	"\x1cPROMOTE_STRATEGY_UNSPECIFIED\x10\x00\x12\x1f\n" +
 	"\x1bPROMOTE_STRATEGY_GITHUB_TAG\x10\x01\x12#\n" +
@@ -307,7 +254,6 @@ func file_libops_v1_common_project_proto_init() {
 		return
 	}
 	file_libops_v1_common_types_proto_init()
-	file_libops_v1_common_project_proto_msgTypes[0].OneofWrappers = []any{}
 	type x struct{}
 	out := protoimpl.TypeBuilder{
 		File: protoimpl.DescBuilder{

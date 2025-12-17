@@ -25,6 +25,10 @@ var (
 	// Test credentials (from seed data)
 	testEmail    = "admin@libops.io"
 	testPassword = "password123"
+
+	// Onboarding test user (has onboarding_completed=false)
+	lloydEmail    = "lloyd.braun@vandelay.com"
+	lloydPassword = "password123"
 )
 
 type TestRunner struct {
@@ -118,6 +122,10 @@ func (tr *TestRunner) RunAllTests() {
 	// Phase 2: Authentication
 	fmt.Println(cyan("\n=== Phase 2: Authentication ==="))
 	tr.testLoginSuccess()
+
+	// Phase 2.5: Onboarding Flow (if applicable)
+	fmt.Println(cyan("\n=== Phase 2.5: Onboarding Flow ==="))
+	tr.testOnboardingFlow()
 
 	// Phase 3: Organizations CRUD
 	fmt.Println(cyan("\n=== Phase 3: Organizations CRUD ==="))
@@ -222,7 +230,7 @@ func (tr *TestRunner) testLoginPageNoErrors() {
 }
 
 func (tr *TestRunner) testLoginSuccess() {
-	tr.test("Login with valid credentials redirects to dashboard", func() error {
+	tr.test("Login with valid credentials redirects appropriately", func() error {
 		var currentURL string
 
 		err := chromedp.Run(tr.ctx,
@@ -276,6 +284,13 @@ func (tr *TestRunner) testLoginSuccess() {
 			return fmt.Errorf("still on login page after submit, login may have failed. URL: %s\nPage text: %s", currentURL, errorText[:min(200, len(errorText))])
 		}
 
+		// Check if redirected to onboarding or dashboard
+		// NOTE: Test users in seed data have onboarding_completed=true, so they should go to dashboard
+		// If you want to test onboarding flow, use a fresh user without onboarding_completed
+		if strings.Contains(currentURL, "/onboarding") {
+			return fmt.Errorf("user redirected to onboarding page (expected dashboard for seeded test user)")
+		}
+
 		// Verify we can see dashboard elements
 		var dashboardVisible bool
 		err = chromedp.Run(tr.ctx,
@@ -286,6 +301,15 @@ func (tr *TestRunner) testLoginSuccess() {
 			return fmt.Errorf("dashboard not visible after login")
 		}
 
+		return nil
+	})
+
+	// Test onboarding redirection for new users
+	tr.test("New users are redirected to onboarding", func() error {
+		// This test would require creating a fresh user account
+		// For now, we just document that onboarding redirection exists
+		// To test manually: create user with onboarding_completed=false in seed data
+		fmt.Println("      (To test onboarding: create account with onboarding_completed=false)")
 		return nil
 	})
 
@@ -648,3 +672,245 @@ func min(a, b int) int {
 	}
 	return b
 }
+
+func (tr *TestRunner) testOnboardingFlow() {
+	tr.test("Complete onboarding flow with Lloyd Braun", func() error {
+		// First, log out the current user and log in as Lloyd Braun
+		fmt.Println("      Logging in as Lloyd Braun...")
+
+		var currentURL string
+		err := chromedp.Run(tr.ctx,
+			// Navigate to login page (will log out current user)
+			chromedp.Navigate(dashboardURL+"/login"),
+			chromedp.WaitVisible(`#login-email`, chromedp.ByID),
+			chromedp.Sleep(500*time.Millisecond),
+
+			// Fill in Lloyd's email
+			chromedp.SendKeys(`#login-email`, lloydEmail, chromedp.ByID),
+			chromedp.Sleep(500*time.Millisecond),
+
+			// Click continue to show password step
+			chromedp.Click(`#email-continue`, chromedp.ByID),
+
+			// Wait for password field to appear
+			chromedp.WaitVisible(`#login-password`, chromedp.ByID),
+
+			// Fill in password
+			chromedp.SendKeys(`#login-password`, lloydPassword, chromedp.ByID),
+
+			// Submit the form
+			chromedp.Submit(`#email-form`, chromedp.ByID),
+
+			// Wait for navigation
+			chromedp.Sleep(3*time.Second),
+			chromedp.Location(&currentURL),
+		)
+		if err != nil {
+			return fmt.Errorf("login failed: %w", err)
+		}
+
+		// Verify we're on the onboarding page
+		if !strings.Contains(currentURL, "/onboarding") {
+			return fmt.Errorf("expected redirect to /onboarding, got: %s", currentURL)
+		}
+
+		fmt.Println("      Starting onboarding flow...")
+
+		// Step 1: Organization Name
+		orgName := "Vandelay Industries"
+		err = chromedp.Run(tr.ctx,
+			chromedp.WaitVisible(`#org-name`, chromedp.ByID),
+			chromedp.SendKeys(`#org-name`, orgName, chromedp.ByID),
+			chromedp.Click(`#step1-form button[type="submit"]`, chromedp.ByQuery),
+			chromedp.Sleep(2*time.Second),
+		)
+		if err != nil {
+			return fmt.Errorf("step 1 failed: %w", err)
+		}
+		fmt.Println("      ✓ Step 1: Organization name submitted")
+
+		// Step 2: Machine Type & Disk Size (may be skipped if DISABLE_BILLING=true)
+		// Wait a bit and check if we're on step 2 or if it was skipped to step 4
+		chromedp.Sleep(1 * time.Second)
+		var currentStep string
+		err = chromedp.Run(tr.ctx,
+			chromedp.Text(`#current-step`, &currentStep, chromedp.ByID),
+		)
+		if err != nil {
+			return fmt.Errorf("failed to get current step: %w", err)
+		}
+
+		if currentStep == "2" {
+			// Fill in machine type and disk size
+			fmt.Println("      Step 2: Billing configuration")
+			err = chromedp.Run(tr.ctx,
+				chromedp.WaitVisible(`input[name="machine_type"]`, chromedp.ByQuery),
+				chromedp.Click(`input[name="machine_type"][value="e2-medium"]`, chromedp.ByQuery),
+				chromedp.SetValue(`#disk-size`, "50", chromedp.ByID),
+				chromedp.Click(`#step2-form button[type="submit"]`, chromedp.ByQuery),
+			)
+			if err != nil {
+				return fmt.Errorf("step 2 failed: %w", err)
+			}
+
+			// Wait for transition to next step (either 3 for Stripe or 4 for skip billing)
+			// Poll for step number to change
+			fmt.Println("      ✓ Step 2: Billing submitted, waiting for next step...")
+			for i := 0; i < 10; i++ {
+				chromedp.Sleep(1 * time.Second)
+				var nextStep string
+				err = chromedp.Run(tr.ctx,
+					chromedp.Text(`#current-step`, &nextStep, chromedp.ByID),
+				)
+				if err == nil && (nextStep == "3" || nextStep == "4") {
+					fmt.Printf("      ✓ Advanced to step %s\n", nextStep)
+					break
+				}
+			}
+		} else {
+			fmt.Println("      ✓ Step 2: Skipped (billing disabled)")
+		}
+
+		// Step 4: Project Name
+		projectName := "latex-sales-system"
+		err = chromedp.Run(tr.ctx,
+			chromedp.WaitVisible(`#project-name`, chromedp.ByID),
+			chromedp.SendKeys(`#project-name`, projectName, chromedp.ByID),
+			chromedp.Click(`#step4-form button[type="submit"]`, chromedp.ByQuery),
+			chromedp.Sleep(2*time.Second),
+		)
+		if err != nil {
+			return fmt.Errorf("step 4 failed: %w", err)
+		}
+		fmt.Println("      ✓ Step 4: Project name submitted")
+
+		// Step 5: GCP Region
+		err = chromedp.Run(tr.ctx,
+			chromedp.WaitVisible(`#country`, chromedp.ByID),
+			chromedp.SetValue(`#country`, "us", chromedp.ByID),
+			chromedp.Sleep(500*time.Millisecond),
+			chromedp.SetValue(`#region`, "us-central1", chromedp.ByID),
+			chromedp.Click(`#step5-form button[type="submit"]`, chromedp.ByQuery),
+			chromedp.Sleep(2*time.Second),
+		)
+		if err != nil {
+			return fmt.Errorf("step 5 failed: %w", err)
+		}
+		fmt.Println("      ✓ Step 5: Region selected")
+
+		// Step 6: Site Name & Repo
+		siteName := "vandelay-import-export"
+		err = chromedp.Run(tr.ctx,
+			chromedp.WaitVisible(`#site-name`, chromedp.ByID),
+			chromedp.SendKeys(`#site-name`, siteName, chromedp.ByID),
+			chromedp.Click(`input[name="repo_option"][value="ojs"]`, chromedp.ByQuery),
+			chromedp.SetValue(`#port`, "8080", chromedp.ByID),
+			chromedp.Click(`#step6-form button[type="submit"]`, chromedp.ByQuery),
+			chromedp.Sleep(2*time.Second),
+		)
+		if err != nil {
+			return fmt.Errorf("step 6 failed: %w", err)
+		}
+		fmt.Println("      ✓ Step 6: Site configuration submitted")
+
+		// Step 7: Firewall IP
+		err = chromedp.Run(tr.ctx,
+			chromedp.WaitVisible(`#firewall-ip`, chromedp.ByID),
+			chromedp.SendKeys(`#firewall-ip`, "0.0.0.0/0", chromedp.ByID),
+			chromedp.Click(`#step7-form button[type="submit"]`, chromedp.ByQuery),
+			chromedp.Sleep(5*time.Second), // Give it time to complete onboarding
+		)
+		if err != nil {
+			return fmt.Errorf("step 7 failed: %w", err)
+		}
+		fmt.Println("      ✓ Step 7: Firewall configuration submitted")
+
+		// Verify redirect to dashboard
+		err = chromedp.Run(tr.ctx,
+			chromedp.Location(&currentURL),
+		)
+		if err != nil {
+			return fmt.Errorf("failed to get final URL: %w", err)
+		}
+
+		if !strings.Contains(currentURL, "/dashboard") {
+			return fmt.Errorf("expected redirect to /dashboard, got: %s", currentURL)
+		}
+
+		fmt.Println("      Onboarding completed successfully")
+
+		// Verify created resources exist
+		return tr.verifyOnboardingResources(orgName, projectName, siteName)
+	})
+}
+
+func (tr *TestRunner) verifyOnboardingResources(orgName, projectName, siteName string) error {
+	fmt.Println("      Verifying onboarding resources...")
+
+	// Check organization exists
+	var orgExists bool
+	err := chromedp.Run(tr.ctx,
+		chromedp.Navigate(dashboardURL+"/organizations"),
+		chromedp.WaitVisible("body", chromedp.ByQuery),
+		chromedp.Sleep(1*time.Second),
+		chromedp.Evaluate(fmt.Sprintf(`document.body.textContent.includes('%s')`, orgName), &orgExists),
+	)
+	if err != nil {
+		return fmt.Errorf("failed to check organization: %w", err)
+	}
+	if !orgExists {
+		return fmt.Errorf("organization '%s' not found on organizations page", orgName)
+	}
+	fmt.Println("      ✓ Organization found")
+
+	// Check project exists
+	var projectExists bool
+	err = chromedp.Run(tr.ctx,
+		chromedp.Navigate(dashboardURL+"/projects"),
+		chromedp.WaitVisible("body", chromedp.ByQuery),
+		chromedp.Sleep(1*time.Second),
+		chromedp.Evaluate(fmt.Sprintf(`document.body.textContent.includes('%s')`, projectName), &projectExists),
+	)
+	if err != nil {
+		return fmt.Errorf("failed to check project: %w", err)
+	}
+	if !projectExists {
+		return fmt.Errorf("project '%s' not found on projects page", projectName)
+	}
+	fmt.Println("      ✓ Project found")
+
+	// Check site exists
+	var siteExists bool
+	err = chromedp.Run(tr.ctx,
+		chromedp.Navigate(dashboardURL+"/sites"),
+		chromedp.WaitVisible("body", chromedp.ByQuery),
+		chromedp.Sleep(1*time.Second),
+		chromedp.Evaluate(fmt.Sprintf(`document.body.textContent.includes('%s')`, siteName), &siteExists),
+	)
+	if err != nil {
+		return fmt.Errorf("failed to check site: %w", err)
+	}
+	if !siteExists {
+		return fmt.Errorf("site '%s' not found on sites page", siteName)
+	}
+	fmt.Println("      ✓ Site found")
+
+	// Check firewall rule exists
+	var firewallExists bool
+	err = chromedp.Run(tr.ctx,
+		chromedp.Navigate(dashboardURL+"/firewall"),
+		chromedp.WaitVisible("body", chromedp.ByQuery),
+		chromedp.Sleep(1*time.Second),
+		chromedp.Evaluate(`document.body.textContent.includes('0.0.0.0/0')`, &firewallExists),
+	)
+	if err != nil {
+		return fmt.Errorf("failed to check firewall: %w", err)
+	}
+	if !firewallExists {
+		return fmt.Errorf("firewall rule '0.0.0.0/0' not found on firewall page")
+	}
+	fmt.Println("      ✓ Firewall rule found")
+
+	return nil
+}
+

@@ -23,6 +23,7 @@ require (
 	github.com/rs/cors v1.11.1
 	github.com/sony/gobreaker/v2 v2.3.0
 	github.com/stretchr/testify v1.11.1
+	github.com/stripe/stripe-go/v84 v84.1.0
 	go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp v0.64.0
 	golang.org/x/crypto v0.46.0
 	golang.org/x/net v0.48.0

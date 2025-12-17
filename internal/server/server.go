@@ -8,6 +8,7 @@ import (
 	"log/slog"
 	"net/http"
 	"os"
+	"path/filepath"
 	"time"
 
 	cloudevents "github.com/cloudevents/sdk-go/v2"
@@ -35,17 +36,57 @@ type Server struct {
 	cleanupDone    chan bool
 }
 
+// findTemplatesDir searches for the templates directory starting from the current directory
+// and walking up to find the project root
+func findTemplatesDir(startPath string) (string, error) {
+	// First check if TEMPLATES_DIR environment variable is set
+	if envDir := os.Getenv("TEMPLATES_DIR"); envDir != "" {
+		if _, err := os.Stat(filepath.Join(envDir, "base.html")); err == nil {
+			return envDir, nil
+		}
+	}
+
+	// Try the provided path as-is
+	if _, err := os.Stat(filepath.Join(startPath, "base.html")); err == nil {
+		return startPath, nil
+	}
+
+	// Walk up the directory tree to find web/templates
+	dir, err := os.Getwd()
+	if err != nil {
+		return "", err
+	}
+
+	for {
+		templatesPath := filepath.Join(dir, "web", "templates")
+		if _, err := os.Stat(filepath.Join(templatesPath, "base.html")); err == nil {
+			return templatesPath, nil
+		}
+
+		// Move up one directory
+		parent := filepath.Dir(dir)
+		if parent == dir {
+			// Reached root without finding templates
+			break
+		}
+		dir = parent
+	}
+
+	return "", fmt.Errorf("templates directory not found")
+}
+
 // New creates a new Server instance with all dependencies initialized.
 func New(reloader *config.Reloader) (*Server, error) {
 	cfg := reloader.GetConfig()
 
 	// Initialize templates from web/templates
-	templatesDir := os.Getenv("TEMPLATES_DIR")
-	if templatesDir == "" {
-		templatesDir = "web/templates"
+	templatesDir, err := findTemplatesDir("web/templates")
+	if err != nil {
+		slog.Error("Failed to find templates directory", "err", err)
+		return nil, fmt.Errorf("failed to find templates: %w", err)
 	}
 	if err := dash.InitTemplates(templatesDir); err != nil {
-		slog.Error("Failed to load templates from web/templates", "err", err, "dir", templatesDir)
+		slog.Error("Failed to load templates", "err", err, "dir", templatesDir)
 		return nil, fmt.Errorf("failed to load templates: %w", err)
 	}
 
@@ -65,6 +106,7 @@ func New(reloader *config.Reloader) (*Server, error) {
 	ceClient, emitter, queueProcessor := setupEvents(cfg, queries)
 
 	routerDeps := &router.Dependencies{
+		Config:            cfg,
 		Queries:           queries,
 		Emitter:           emitter,
 		Authorizer:        authorizer,

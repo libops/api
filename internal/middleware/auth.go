@@ -259,6 +259,7 @@ func isPublicEndpoint(path string) bool {
 		"/auth/callback/github",
 		"/auth/callback/google",
 		"/auth/logout",
+		"/webhooks",
 	}
 
 	for _, p := range publicPrefixes {

@@ -152,6 +152,10 @@ func (s *MemberService) CreateOrganizationMember(
 		return nil, connect.NewError(connect.CodeInternal, fmt.Errorf("database error: %w", err))
 	}
 
+	// Note: Status is intentionally not set here (defaults to 'unspecified')
+	// The member should only be set to 'active' after SSH keys and resources
+	// are properly configured. This is different from onboarding where the owner
+	// is immediately set to 'active'.
 	params := db.CreateOrganizationMemberParams{
 		OrganizationID: organization.ID,
 		AccountID:      account.ID,

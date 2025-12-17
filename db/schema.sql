@@ -52,13 +52,18 @@ CREATE TABLE IF NOT EXISTS accounts (
     failed_login_attempts INT NOT NULL DEFAULT 0,
     last_failed_login_at TIMESTAMP NULL,
 
+    -- Onboarding tracking
+    onboarding_completed BOOLEAN NOT NULL DEFAULT FALSE,
+    onboarding_session_id VARCHAR(255) NULL,
+
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
 
     INDEX idx_github (github_username),
     INDEX idx_vault_entity (vault_entity_id),
     INDEX idx_verified (verified),
-    INDEX idx_auth_method (auth_method)
+    INDEX idx_auth_method (auth_method),
+    INDEX idx_onboarding_completed (onboarding_completed)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 CREATE TABLE IF NOT EXISTS organization_members (
@@ -146,20 +151,14 @@ CREATE TABLE IF NOT EXISTS projects (
     organization_id BIGINT NOT NULL,
     name VARCHAR(255) NOT NULL,
 
-    -- GitHub configuration (provided at creation)
-    -- Either github_repository (existing repo) or github_repository_template (new from template)
-    github_repository VARCHAR(255),
-    github_repository_template VARCHAR(255),
-    github_branch VARCHAR(255) DEFAULT 'main',
-    compose_path VARCHAR(255) DEFAULT '',
-
     -- Cloud configuration (provided at creation)
     gcp_region VARCHAR(255) DEFAULT 'us-central1',
     gcp_zone VARCHAR(255) DEFAULT 'us-central1-c',
     machine_type VARCHAR(255) DEFAULT 'e2-medium',
     disk_size_gb INT DEFAULT 20,
-    compose_file VARCHAR(255) DEFAULT 'docker-compose.yml',
-    application_type VARCHAR(255) DEFAULT 'generic',
+
+    -- Stripe subscription item ID for per-project billing (machine subscription item)
+    stripe_subscription_item_id VARCHAR(255) NULL,
 
     -- Promotion strategy
     promote_strategy ENUM('unspecified', 'github_tag', 'github_release') DEFAULT 'unspecified',
@@ -174,19 +173,11 @@ CREATE TABLE IF NOT EXISTS projects (
     gcp_project_id VARCHAR(63) UNIQUE,
     gcp_project_number VARCHAR(255),
 
-    -- GitHub resources (populated after terraform creates them)
-    github_team_id VARCHAR(255),
-
     -- Flag to identify if this is the organization's libops project (for vault, etc.)
     organization_project BOOLEAN DEFAULT FALSE,
 
     -- Auto-create sites for new branches
     create_branch_sites BOOLEAN DEFAULT FALSE,
-
-    -- Docker compose commands
-    up_cmd VARCHAR(1024) DEFAULT 'docker compose up --remove-orphans -d',
-    init_cmd VARCHAR(1024) DEFAULT '',
-    rollout_cmd JSON DEFAULT ('["docker compose pull", "docker compose up --remove-orphans -d"]'),
 
     -- Provisioning status
     status ENUM('unspecified', 'active', 'provisioning', 'failed', 'suspended', 'deleted') DEFAULT 'unspecified',
@@ -199,9 +190,9 @@ CREATE TABLE IF NOT EXISTS projects (
 
     INDEX idx_project (gcp_project_id),
     INDEX idx_organization (organization_id),
-    INDEX idx_repository (github_repository),
     INDEX idx_status (status),
-    INDEX idx_organization_project (organization_project)
+    INDEX idx_organization_project (organization_project),
+    INDEX idx_stripe_subscription_item (stripe_subscription_item_id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 
@@ -234,8 +225,22 @@ CREATE TABLE IF NOT EXISTS sites (
     project_id BIGINT NOT NULL,
     name VARCHAR(255) NOT NULL,
 
+    -- GitHub configuration
+    github_repository VARCHAR(255) NOT NULL,
     -- GitHub reference: heads/{branch_name}, tags/{tag_name}, or "release"
     github_ref VARCHAR(255) NOT NULL DEFAULT 'heads/main',
+    github_team_id VARCHAR(255),
+    compose_path VARCHAR(255) DEFAULT '/mnt/disks/data/compose',
+    compose_file VARCHAR(255) DEFAULT 'docker-compose.yml',
+
+    -- Application configuration
+    port INT DEFAULT 80,
+    application_type VARCHAR(255) DEFAULT 'generic',
+
+    -- Docker compose commands
+    up_cmd JSON DEFAULT ('["docker compose up --remove-orphans -d"]'),
+    init_cmd JSON DEFAULT ('[]'),
+    rollout_cmd JSON DEFAULT ('["docker compose pull", "docker compose up --remove-orphans -d"]'),
 
     -- GCP resources (populated after terraform creates them)
     gcp_external_ip VARCHAR(255),
@@ -251,7 +256,9 @@ CREATE TABLE IF NOT EXISTS sites (
 
     UNIQUE KEY unique_site_env (project_id, name),
     INDEX idx_site (project_id),
-    INDEX idx_status (status)
+    INDEX idx_repository (github_repository),
+    INDEX idx_status (status),
+    INDEX idx_port (port)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 CREATE TABLE IF NOT EXISTS site_members (
@@ -533,4 +540,127 @@ CREATE TABLE IF NOT EXISTS site_secrets (
     INDEX idx_status (status),
     INDEX idx_created_by (created_by),
     INDEX idx_updated_by (updated_by)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS stripe_subscriptions (
+    id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    public_id BINARY(16) NOT NULL UNIQUE,
+    organization_id BIGINT NOT NULL,
+    stripe_subscription_id VARCHAR(255) NOT NULL UNIQUE,
+    stripe_customer_id VARCHAR(255) NOT NULL,
+    stripe_checkout_session_id VARCHAR(255),
+
+    -- Subscription details
+    status ENUM('incomplete', 'incomplete_expired', 'trialing', 'active', 'past_due', 'canceled', 'unpaid') NOT NULL DEFAULT 'incomplete',
+    current_period_start TIMESTAMP NULL,
+    current_period_end TIMESTAMP NULL,
+    trial_start TIMESTAMP NULL,
+    trial_end TIMESTAMP NULL,
+    cancel_at_period_end BOOLEAN DEFAULT FALSE,
+    canceled_at TIMESTAMP NULL,
+
+    -- Machine and disk configuration
+    machine_type VARCHAR(50),
+    disk_size_gb INT,
+
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+
+    INDEX idx_organization_id (organization_id),
+    INDEX idx_stripe_subscription_id (stripe_subscription_id),
+    INDEX idx_stripe_customer_id (stripe_customer_id),
+    INDEX idx_status (status)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS onboarding_sessions (
+    id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    public_id BINARY(16) NOT NULL UNIQUE,
+    account_id BIGINT NOT NULL,
+
+    -- Step 1: Organization
+    org_name VARCHAR(255),
+
+    -- Step 2: Machine & Disk
+    machine_type VARCHAR(50),
+    machine_price_id VARCHAR(255),
+    disk_size_gb INT,
+
+    -- Step 3: Stripe
+    stripe_checkout_session_id VARCHAR(255),
+    stripe_checkout_url VARCHAR(500),
+    stripe_subscription_id VARCHAR(255) NULL,
+    organization_id BIGINT NULL,
+
+    -- Step 4-7: Project and Site details
+    project_name VARCHAR(255),
+    gcp_country VARCHAR(50),
+    gcp_region VARCHAR(50),
+    site_name VARCHAR(255),
+    github_repo_url VARCHAR(500),
+    port INT DEFAULT 80,
+    firewall_ip VARCHAR(50),
+
+    -- Progress tracking
+    current_step INT DEFAULT 1,
+    completed BOOLEAN DEFAULT FALSE,
+
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    expires_at TIMESTAMP NULL,
+
+    INDEX idx_account_id (account_id),
+    INDEX idx_stripe_checkout_session_id (stripe_checkout_session_id),
+    INDEX idx_completed (completed),
+    INDEX idx_expires_at (expires_at)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- Create machine types table for managing machine configurations and Stripe pricing
+CREATE TABLE IF NOT EXISTS machine_types (
+    id BIGINT AUTO_INCREMENT PRIMARY KEY,
+
+    -- Machine configuration
+    machine_type VARCHAR(255) NOT NULL UNIQUE COMMENT 'Machine type identifier (e.g., e2-medium, n4-standard-2)',
+    display_name VARCHAR(255) NOT NULL COMMENT 'Human-readable display name',
+
+    -- Resources
+    vcpu INT NOT NULL COMMENT 'Number of vCPUs',
+    memory_gib INT NOT NULL COMMENT 'Memory in GiB',
+
+    -- Stripe pricing
+    stripe_price_id VARCHAR(255) NOT NULL UNIQUE COMMENT 'Stripe price ID for this machine type',
+    monthly_price_cents INT NOT NULL COMMENT 'Monthly price in cents',
+
+    -- Status
+    active BOOLEAN DEFAULT TRUE COMMENT 'Whether this machine type is available for new projects',
+
+    -- Timestamps
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+
+    INDEX idx_machine_type (machine_type),
+    INDEX idx_active (active),
+    INDEX idx_stripe_price_id (stripe_price_id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- Create disk storage configuration table
+CREATE TABLE IF NOT EXISTS storage_config (
+    id BIGINT AUTO_INCREMENT PRIMARY KEY,
+
+    -- Configuration key (should always be 'disk_storage')
+    config_key VARCHAR(50) NOT NULL UNIQUE,
+
+    -- Stripe pricing
+    stripe_price_id VARCHAR(255) NOT NULL COMMENT 'Stripe price ID for disk storage per GB',
+    price_per_gb_cents INT NOT NULL COMMENT 'Price per GB per month in cents',
+
+    -- Constraints
+    min_size_gb INT NOT NULL DEFAULT 10 COMMENT 'Minimum disk size in GB',
+    max_size_gb INT NOT NULL DEFAULT 2000 COMMENT 'Maximum disk size in GB',
+
+    -- Status
+    active BOOLEAN DEFAULT TRUE,
+
+    -- Timestamps
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;

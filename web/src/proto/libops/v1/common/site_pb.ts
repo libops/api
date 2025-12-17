@@ -39,16 +39,78 @@ export class SiteConfig extends Message<SiteConfig> {
   siteName = "";
 
   /**
+   * GitHub repository configuration
+   *
+   * GitHub repository URL
+   *
+   * @generated from field: string github_repository = 5;
+   */
+  githubRepository = "";
+
+  /**
    * GitHub reference: heads/{branch_name}, tags/{tag_name}, or "release"
    *
-   * @generated from field: string github_ref = 5;
+   * @generated from field: string github_ref = 6;
    */
   githubRef = "";
 
   /**
+   * Path to docker-compose directory (default: "")
+   *
+   * @generated from field: string compose_path = 7;
+   */
+  composePath = "";
+
+  /**
+   * Docker compose file name (default: "docker-compose.yml")
+   *
+   * @generated from field: string compose_file = 8;
+   */
+  composeFile = "";
+
+  /**
+   * Application configuration
+   *
+   * Port the application listens on (default: 80)
+   *
+   * @generated from field: int32 port = 9;
+   */
+  port = 0;
+
+  /**
+   * Type of application (default: "generic")
+   *
+   * @generated from field: string application_type = 10;
+   */
+  applicationType = "";
+
+  /**
+   * Docker compose commands
+   *
+   * Commands to start containers
+   *
+   * @generated from field: repeated string up_cmd = 12;
+   */
+  upCmd: string[] = [];
+
+  /**
+   * Commands to run on initial setup
+   *
+   * @generated from field: repeated string init_cmd = 13;
+   */
+  initCmd: string[] = [];
+
+  /**
+   * Commands to run during rollout
+   *
+   * @generated from field: repeated string rollout_cmd = 14;
+   */
+  rolloutCmd: string[] = [];
+
+  /**
    * Status (organization-visible)
    *
-   * @generated from field: libops.v1.common.Status status = 6;
+   * @generated from field: libops.v1.common.Status status = 11;
    */
   status = Status.UNSPECIFIED;
 
@@ -64,8 +126,16 @@ export class SiteConfig extends Message<SiteConfig> {
     { no: 2, name: "organization_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 3, name: "project_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 4, name: "site_name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-    { no: 5, name: "github_ref", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-    { no: 6, name: "status", kind: "enum", T: proto3.getEnumType(Status) },
+    { no: 5, name: "github_repository", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 6, name: "github_ref", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 7, name: "compose_path", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 8, name: "compose_file", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 9, name: "port", kind: "scalar", T: 5 /* ScalarType.INT32 */ },
+    { no: 10, name: "application_type", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 12, name: "up_cmd", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },
+    { no: 13, name: "init_cmd", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },
+    { no: 14, name: "rollout_cmd", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },
+    { no: 11, name: "status", kind: "enum", T: proto3.getEnumType(Status) },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): SiteConfig {

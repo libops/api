@@ -11,11 +11,21 @@ import (
 	"github.com/stretchr/testify/assert"
 
 	"github.com/libops/api/internal/auth"
+	"github.com/libops/api/internal/config"
 	"github.com/libops/api/internal/db"
 	"github.com/libops/api/internal/testutils"
 	libopsv1 "github.com/libops/api/proto/libops/v1"
 	commonv1 "github.com/libops/api/proto/libops/v1/common"
 )
+
+func testConfig() *config.Config {
+	return &config.Config{
+		GcpOrgID:           "test-org-id",
+		GcpBillingAccount:  "test-billing",
+		GcpParent:          "test-parent",
+		RootOrganizationID: 1,
+	}
+}
 
 // TestGetOrganization tests the GetOrganization method of the OrganizationService.
 func TestGetOrganization(t *testing.T) {
@@ -64,7 +74,7 @@ func TestGetOrganization(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			svc := NewOrganizationService(tt.setupMock())
+			svc := NewOrganizationService(tt.setupMock(), testConfig())
 			req := connect.NewRequest(&libopsv1.GetOrganizationRequest{OrganizationId: tt.organizationID})
 
 			resp, err := svc.GetOrganization(context.Background(), req)
@@ -120,7 +130,22 @@ func TestCreateOrganization(t *testing.T) {
 						if params.Role != db.OrganizationMembersRoleOwner {
 							return fmt.Errorf("unexpected role: %s", params.Role)
 						}
+						if !params.Status.Valid || params.Status.OrganizationMembersStatus != db.OrganizationMembersStatusActive {
+							return fmt.Errorf("expected status to be 'active', got: %v", params.Status)
+						}
 						return nil
+					},
+					CreateRelationshipFunc: func(ctx context.Context, params db.CreateRelationshipParams) (sql.Result, error) {
+						if params.SourceOrganizationID != 1 {
+							return nil, fmt.Errorf("unexpected source organization ID: %d", params.SourceOrganizationID)
+						}
+						if params.TargetOrganizationID != 100 {
+							return nil, fmt.Errorf("unexpected target organization ID: %d", params.TargetOrganizationID)
+						}
+						if params.RelationshipType != db.RelationshipsRelationshipTypeAccess {
+							return nil, fmt.Errorf("unexpected relationship type: %s", params.RelationshipType)
+						}
+						return nil, nil
 					},
 				}
 			},
@@ -128,9 +153,9 @@ func TestCreateOrganization(t *testing.T) {
 			validateParams: func(t *testing.T, params db.CreateOrganizationParams) {
 				t.Helper()
 				assert.Equal(t, "test-org", params.Name)
-				assert.Equal(t, "", params.GcpOrgID)
-				assert.Equal(t, "", params.GcpBillingAccount)
-				assert.Equal(t, "", params.GcpParent)
+				assert.Equal(t, "test-org-id", params.GcpOrgID)
+				assert.Equal(t, "test-billing", params.GcpBillingAccount)
+				assert.Equal(t, "test-parent", params.GcpParent)
 				assert.False(t, params.GcpFolderID.Valid)
 				assert.Equal(t, db.OrganizationsStatusProvisioning, params.Status.OrganizationsStatus)
 				assert.True(t, params.Status.Valid)
@@ -188,7 +213,7 @@ func TestCreateOrganization(t *testing.T) {
 				}
 			}
 
-			svc := NewOrganizationService(mockDB)
+			svc := NewOrganizationService(mockDB, testConfig())
 
 			authorizer := auth.NewAuthorizer(mockDB)
 			ctx := auth.WithAuthorizer(context.Background(), authorizer)

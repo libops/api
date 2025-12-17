@@ -1,0 +1,670 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Welcome to LibOps</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+
+<body class="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 px-4 py-12">
+    <div class="max-w-3xl mx-auto">
+        <!-- Logo -->
+        <div class="flex justify-center mb-8">
+            <img src="/static/img/logo.png" alt="LibOps" class="h-12 w-auto">
+        </div>
+
+        <!-- Progress Bar -->
+        <div class="mb-8">
+            <div class="relative">
+                <div class="overflow-hidden h-2 text-xs flex rounded-full bg-white shadow-sm">
+                    <div id="progress-bar"
+                        class="transition-all duration-500 flex flex-col text-center whitespace-nowrap text-white justify-center bg-gradient-to-r from-blue-500 to-indigo-600"
+                        style="width: 14%"></div>
+                </div>
+            </div>
+            <div class="mt-3 text-sm text-gray-700 text-center font-medium">
+                Step <span id="current-step">1</span> of 7
+            </div>
+        </div>
+
+        <!-- Onboarding Card -->
+        <div class="bg-white shadow-xl rounded-2xl overflow-hidden">
+            <div id="onboarding-content" class="p-8 md:p-12">
+                <!-- Steps will be injected here by JavaScript -->
+            </div>
+        </div>
+
+        <!-- Footer -->
+        <div class="mt-8 text-center text-sm text-gray-600">
+            Need help? <a href="mailto:support@libops.io" class="text-blue-600 hover:text-blue-700">Contact Support</a>
+        </div>
+    </div>
+
+    <script type="module">
+        class OnboardingFlow {
+            constructor() {
+                this.currentStep = 1;
+                this.sessionData = {};
+                this.apiBase = '/api/onboarding';
+                this.pollInterval = null;
+            }
+
+            async init() {
+                await this.loadSession();
+                this.renderStep(this.currentStep);
+            }
+
+            async loadSession() {
+                try {
+                    const response = await fetch(`${this.apiBase}/session`);
+                    if (response.ok) {
+                        const data = await response.json();
+                        this.sessionData = data;
+                        this.currentStep = data.current_step || 1;
+                    }
+                } catch (error) {
+                    console.error('Failed to load session:', error);
+                }
+            }
+
+            startPolling() {
+                // Poll every 2 seconds to check if payment completed
+                this.pollInterval = setInterval(async () => {
+                    await this.loadSession();
+                    // If we've advanced past step 3, stop polling and re-render
+                    if (this.currentStep > 3) {
+                        this.stopPolling();
+                        this.renderStep(this.currentStep);
+                    }
+                }, 2000);
+            }
+
+            stopPolling() {
+                if (this.pollInterval) {
+                    clearInterval(this.pollInterval);
+                    this.pollInterval = null;
+                }
+            }
+
+            async renderStep(step) {
+                // Stop any existing polling when changing steps
+                this.stopPolling();
+
+                this.currentStep = step;
+                this.updateProgress();
+
+                const content = document.getElementById('onboarding-content');
+
+                switch (step) {
+                    case 1:
+                        content.innerHTML = this.renderStep1();
+                        this.attachStep1Handlers();
+                        break;
+                    case 2:
+                        content.innerHTML = this.renderStep2();
+                        this.attachStep2Handlers();
+                        break;
+                    case 3:
+                        content.innerHTML = this.renderStep3();
+                        // Start polling to detect when payment completes
+                        this.startPolling();
+                        break;
+                    case 4:
+                        content.innerHTML = this.renderStep4();
+                        this.attachStep4Handlers();
+                        break;
+                    case 5:
+                        content.innerHTML = this.renderStep5();
+                        this.attachStep5Handlers();
+                        break;
+                    case 6:
+                        content.innerHTML = this.renderStep6();
+                        this.attachStep6Handlers();
+                        break;
+                    case 7:
+                        content.innerHTML = this.renderStep7();
+                        this.attachStep7Handlers();
+                        break;
+                }
+            }
+
+            renderStep1() {
+                return `
+                    <div class="max-w-md mx-auto">
+                        <h2 class="text-3xl font-bold text-gray-900 mb-3">Welcome to LibOps! 🎉</h2>
+                        <p class="text-gray-600 mb-8">
+                            Let's get your organization set up. You'll be able to create projects and invite teammates to collaborate.
+                        </p>
+                        <form id="step1-form" class="space-y-6">
+                            <div>
+                                <label for="org-name" class="block text-sm font-medium text-gray-700 mb-2">Organization Name</label>
+                                <input
+                                    type="text"
+                                    id="org-name"
+                                    name="organization_name"
+                                    placeholder="Acme Inc."
+                                    value="${this.sessionData.org_name || ''}"
+                                    class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                    required
+                                />
+                                <p class="mt-2 text-xs text-gray-500">This is typically your company or team name</p>
+                            </div>
+                            <button type="submit" class="w-full bg-gradient-to-r from-blue-600 to-indigo-600 text-white py-3 px-6 rounded-lg hover:from-blue-700 hover:to-indigo-700 font-medium transition-all shadow-md hover:shadow-lg">
+                                Continue
+                            </button>
+                        </form>
+                    </div>
+                `;
+            }
+
+            renderStep2() {
+                const diskSize = this.sessionData.disk_size_gb || 20;
+                const diskPrice = (diskSize * 0.10).toFixed(2);
+
+                return `
+                    <div class="max-w-2xl mx-auto">
+                        <h2 class="text-3xl font-bold text-gray-900 mb-3">Choose Your Plan</h2>
+                        <p class="text-gray-600 mb-8">
+                            Select compute power and storage for your projects. <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">7-day free trial</span>
+                        </p>
+                        <form id="step2-form" class="space-y-6">
+                            <!-- Machine Type Selection -->
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-3">Machine Size</label>
+                                <div class="space-y-3">
+                                    <label class="flex items-center p-4 border-2 border-gray-200 rounded-lg hover:border-blue-500 cursor-pointer transition-colors">
+                                        <input type="radio" name="machine_type" value="e2-medium" class="mr-4 text-blue-600 focus:ring-blue-500" required />
+                                        <div class="flex-1">
+                                            <div class="font-semibold text-gray-900">Small</div>
+                                            <div class="text-sm text-gray-600">1 vCPU, 4 GiB RAM</div>
+                                        </div>
+                                        <div class="text-right">
+                                            <div class="font-bold text-gray-900">$125</div>
+                                            <div class="text-sm text-gray-500">/month</div>
+                                        </div>
+                                    </label>
+
+                                    <label class="flex items-center p-4 border-2 border-gray-200 rounded-lg hover:border-blue-500 cursor-pointer transition-colors">
+                                        <input type="radio" name="machine_type" value="n4-standard-2" class="mr-4 text-blue-600 focus:ring-blue-500" required />
+                                        <div class="flex-1">
+                                            <div class="font-semibold text-gray-900">Medium</div>
+                                            <div class="text-sm text-gray-600">2 vCPU, 8 GiB RAM</div>
+                                        </div>
+                                        <div class="text-right">
+                                            <div class="font-bold text-gray-900">$290</div>
+                                            <div class="text-sm text-gray-500">/month</div>
+                                        </div>
+                                    </label>
+
+                                    <label class="flex items-center p-4 border-2 border-gray-200 rounded-lg hover:border-blue-500 cursor-pointer transition-colors">
+                                        <input type="radio" name="machine_type" value="n4-standard-4" class="mr-4 text-blue-600 focus:ring-blue-500" required />
+                                        <div class="flex-1">
+                                            <div class="font-semibold text-gray-900">Large</div>
+                                            <div class="text-sm text-gray-600">4 vCPU, 16 GiB RAM</div>
+                                        </div>
+                                        <div class="text-right">
+                                            <div class="font-bold text-gray-900">$550</div>
+                                            <div class="text-sm text-gray-500">/month</div>
+                                        </div>
+                                    </label>
+
+                                    <label class="flex items-center p-4 border-2 border-gray-200 rounded-lg hover:border-blue-500 cursor-pointer transition-colors">
+                                        <input type="radio" name="machine_type" value="n4-standard-8" class="mr-4 text-blue-600 focus:ring-blue-500" required />
+                                        <div class="flex-1">
+                                            <div class="font-semibold text-gray-900">XLarge</div>
+                                            <div class="text-sm text-gray-600">8 vCPU, 32 GiB RAM</div>
+                                        </div>
+                                        <div class="text-right">
+                                            <div class="font-bold text-gray-900">$1000</div>
+                                            <div class="text-sm text-gray-500">/month</div>
+                                        </div>
+                                    </label>
+                                </div>
+                            </div>
+
+                            <!-- Disk Size Slider -->
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-2">
+                                    Disk Storage: <span id="disk-size-display" class="font-bold text-blue-600">${diskSize}</span> GB
+                                    <span class="text-gray-500">($<span id="disk-price-display">${diskPrice}</span>/month)</span>
+                                </label>
+                                <input
+                                    type="range"
+                                    id="disk-size"
+                                    name="disk_size_gb"
+                                    min="10"
+                                    max="2000"
+                                    value="${diskSize}"
+                                    step="10"
+                                    class="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-blue-600"
+                                />
+                                <div class="flex justify-between text-xs text-gray-500 mt-1">
+                                    <span>10 GB</span>
+                                    <span>2000 GB</span>
+                                </div>
+                            </div>
+
+                            <div class="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                                <p class="text-sm text-blue-900">
+                                    <svg class="inline w-5 h-5 mr-2" fill="currentColor" viewBox="0 0 20 20">
+                                        <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd"/>
+                                    </svg>
+                                    7-day free trial included. No charge during trial. Cancel anytime.
+                                </p>
+                            </div>
+
+                            <button type="submit" class="w-full bg-gradient-to-r from-blue-600 to-indigo-600 text-white py-3 px-6 rounded-lg hover:from-blue-700 hover:to-indigo-700 font-medium transition-all shadow-md hover:shadow-lg">
+                                Continue to Payment
+                            </button>
+                        </form>
+                    </div>
+                `;
+            }
+
+            renderStep3() {
+                const checkoutLink = this.sessionData.stripe_checkout_url
+                    ? `<p class="mt-6">
+                           <a href="${this.sessionData.stripe_checkout_url}"
+                              class="inline-flex items-center px-6 py-3 border border-transparent text-base font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
+                               Complete Payment in Stripe
+                           </a>
+                       </p>
+                       <p class="text-sm text-gray-500 mt-3">Payment not completing? Click the button above to return to checkout.</p>`
+                    : '';
+
+                return `
+                    <div class="text-center py-12">
+                        <div class="inline-block animate-spin rounded-full h-16 w-16 border-b-4 border-blue-600 mb-6"></div>
+                        <h2 class="text-2xl font-bold text-gray-900 mb-3">Processing Payment...</h2>
+                        <p class="text-gray-600">Setting up your subscription. This will only take a moment.</p>
+                        ${checkoutLink}
+                    </div>
+                `;
+            }
+
+            renderStep4() {
+                return `
+                    <div class="max-w-md mx-auto">
+                        <h2 class="text-3xl font-bold text-gray-900 mb-3">Create Your First Project</h2>
+                        <p class="text-gray-600 mb-8">
+                            Projects organize your deployments and environments.
+                        </p>
+                        <form id="step4-form" class="space-y-6">
+                            <div>
+                                <label for="project-name" class="block text-sm font-medium text-gray-700 mb-2">Project Name</label>
+                                <input
+                                    type="text"
+                                    id="project-name"
+                                    name="project_name"
+                                    placeholder="My Website"
+                                    value="${this.sessionData.project_name || ''}"
+                                    class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                    required
+                                />
+                            </div>
+                            <button type="submit" class="w-full bg-gradient-to-r from-blue-600 to-indigo-600 text-white py-3 px-6 rounded-lg hover:from-blue-700 hover:to-indigo-700 font-medium transition-all shadow-md hover:shadow-lg">
+                                Continue
+                            </button>
+                        </form>
+                    </div>
+                `;
+            }
+
+            renderStep5() {
+                return `
+                    <div class="max-w-md mx-auto">
+                        <h2 class="text-3xl font-bold text-gray-900 mb-3">Select Deployment Region</h2>
+                        <p class="text-gray-600 mb-8">
+                            Choose where your project will be hosted.
+                        </p>
+                        <form id="step5-form" class="space-y-6">
+                            <div>
+                                <label for="country" class="block text-sm font-medium text-gray-700 mb-2">Country/Region</label>
+                                <select id="country" name="country" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent" required>
+                                    <option value="">Select a region...</option>
+                                    <option value="us">United States</option>
+                                    <option value="ca">Canada</option>
+                                    <option value="eu">Europe</option>
+                                    <option value="asia">Asia Pacific</option>
+                                    <option value="au">Australia</option>
+                                    <option value="sa">South America</option>
+                                </select>
+                            </div>
+
+                            <div>
+                                <label for="region" class="block text-sm font-medium text-gray-700 mb-2">Specific Location</label>
+                                <select id="region" name="region" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-gray-100" required disabled>
+                                    <option value="">Select a country first...</option>
+                                </select>
+                            </div>
+
+                            <button type="submit" class="w-full bg-gradient-to-r from-blue-600 to-indigo-600 text-white py-3 px-6 rounded-lg hover:from-blue-700 hover:to-indigo-700 font-medium transition-all shadow-md hover:shadow-lg">
+                                Continue
+                            </button>
+                        </form>
+                    </div>
+                `;
+            }
+
+            renderStep6() {
+                return `
+                    <div class="max-w-2xl mx-auto">
+                        <h2 class="text-3xl font-bold text-gray-900 mb-3">Configure Your Site</h2>
+                        <p class="text-gray-600 mb-8">
+                            Set up your site name, port, and GitHub repository.
+                        </p>
+                        <form id="step6-form" class="space-y-6">
+                            <div>
+                                <label for="site-name" class="block text-sm font-medium text-gray-700 mb-2">Site Name</label>
+                                <input
+                                    type="text"
+                                    id="site-name"
+                                    name="site_name"
+                                    placeholder="my-awesome-site"
+                                    value="${this.sessionData.site_name || ''}"
+                                    class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                    required
+                                />
+                            </div>
+
+                            <div>
+                                <label for="port" class="block text-sm font-medium text-gray-700 mb-2">Port</label>
+                                <input
+                                    type="number"
+                                    id="port"
+                                    name="port"
+                                    placeholder="80"
+                                    value="${this.sessionData.port || 80}"
+                                    min="1"
+                                    max="65535"
+                                    class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                    required
+                                />
+                                <p class="mt-2 text-xs text-gray-500">Port your application listens on (default: 80)</p>
+                            </div>
+
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-3">GitHub Repository</label>
+                                <div class="space-y-3">
+                            <label class="flex items-start p-4 border-2 border-gray-200 rounded-lg hover:border-blue-500 cursor-pointer transition-colors">
+                                <input type="radio" name="repo_option" value="ojs" class="mr-3 mt-1 text-blue-600 focus:ring-blue-500" required />
+                                <div>
+                                    <div class="font-semibold text-gray-900">Open Journal Systems (OJS)</div>
+                                    <div class="text-sm text-gray-600">github.com/libops/ojs</div>
+                                </div>
+                            </label>
+
+                            <label class="flex items-start p-4 border-2 border-gray-200 rounded-lg hover:border-blue-500 cursor-pointer transition-colors">
+                                <input type="radio" name="repo_option" value="isle-site-template" class="mr-3 mt-1 text-blue-600 focus:ring-blue-500" required />
+                                <div>
+                                    <div class="font-semibold text-gray-900">ISLE Site Template</div>
+                                    <div class="text-sm text-gray-600">github.com/libops/isle-site-template</div>
+                                </div>
+                            </label>
+
+                            <label class="flex items-start p-4 border-2 border-gray-200 rounded-lg hover:border-blue-500 cursor-pointer transition-colors">
+                                <input type="radio" name="repo_option" value="new-from-template" class="mr-3 mt-1 text-blue-600 focus:ring-blue-500" />
+                                <div class="flex-1">
+                                    <div class="font-semibold text-gray-900">Create New from Template</div>
+                                    <div class="text-sm text-gray-600 mb-2">Create a new repository from ISLE template</div>
+                                    <a href="https://github.com/libops/isle-site-template/generate" target="_blank" class="inline-flex items-center text-sm bg-gray-100 px-3 py-1 rounded hover:bg-gray-200 transition-colors">
+                                        Open GitHub to Create →
+                                    </a>
+                                </div>
+                            </label>
+
+                            <label class="flex items-start p-4 border-2 border-gray-200 rounded-lg hover:border-blue-500 cursor-pointer transition-colors">
+                                <input type="radio" name="repo_option" value="custom" class="mr-3 mt-1 text-blue-600 focus:ring-blue-500" />
+                                <div class="flex-1">
+                                    <div class="font-semibold text-gray-900 mb-2">Custom Repository</div>
+                                    <input
+                                        type="url"
+                                        id="custom-url"
+                                        name="custom_url"
+                                        placeholder="https://github.com/username/repo"
+                                        class="w-full px-3 py-2 border border-gray-300 rounded-md text-sm"
+                                        disabled
+                                    />
+                                </div>
+                            </label>
+                            </div>
+
+                            <button type="submit" class="w-full bg-gradient-to-r from-blue-600 to-indigo-600 text-white py-3 px-6 rounded-lg hover:from-blue-700 hover:to-indigo-700 font-medium transition-all shadow-md hover:shadow-lg">
+                                Continue
+                            </button>
+                        </form>
+                    </div>
+                `;
+            }
+
+            renderStep7() {
+                return `
+                    <div class="max-w-md mx-auto">
+                        <h2 class="text-3xl font-bold text-gray-900 mb-3">Configure Firewall</h2>
+                        <p class="text-gray-600 mb-8">
+                            Allow access to your deployment from your IP address.
+                        </p>
+                        <form id="step7-form" class="space-y-6">
+                            <div>
+                                <label for="firewall-ip" class="block text-sm font-medium text-gray-700 mb-2">Your IP Address</label>
+                                <input
+                                    type="text"
+                                    id="firewall-ip"
+                                    name="firewall_ip"
+                                    placeholder="Loading..."
+                                    class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                    required
+                                />
+                                <p class="mt-2 text-xs text-gray-500">
+                                    HTTPS and SSH access will be allowed from this IP
+                                </p>
+                            </div>
+
+                            <button type="submit" class="w-full bg-gradient-to-r from-green-600 to-emerald-600 text-white py-3 px-6 rounded-lg hover:from-green-700 hover:to-emerald-700 font-medium transition-all shadow-md hover:shadow-lg">
+                                Complete Setup 🎉
+                            </button>
+                        </form>
+                    </div>
+                `;
+            }
+
+            // Handler implementations
+            attachStep1Handlers() {
+                const form = document.getElementById('step1-form');
+                form.addEventListener('submit', async (e) => {
+                    e.preventDefault();
+                    const formData = new FormData(form);
+                    await this.submitStep('/api/onboarding/step1', {
+                        organization_name: formData.get('organization_name')
+                    });
+                });
+            }
+
+            attachStep2Handlers() {
+                const diskSlider = document.getElementById('disk-size');
+                const diskDisplay = document.getElementById('disk-size-display');
+                const priceDisplay = document.getElementById('disk-price-display');
+
+                diskSlider.addEventListener('input', (e) => {
+                    const size = e.target.value;
+                    const price = (size * 0.10).toFixed(2);
+                    diskDisplay.textContent = size;
+                    priceDisplay.textContent = price;
+                });
+
+                const form = document.getElementById('step2-form');
+                form.addEventListener('submit', async (e) => {
+                    e.preventDefault();
+                    const formData = new FormData(form);
+                    const response = await this.submitStep('/api/onboarding/step2', {
+                        machine_type: formData.get('machine_type'),
+                        disk_size_gb: parseInt(formData.get('disk_size_gb'))
+                    });
+
+                    if (response) {
+                        if (response.checkout_url) {
+                            // Redirect to Stripe checkout
+                            window.location.href = response.checkout_url;
+                        } else if (response.skip_billing) {
+                            // Billing disabled, advance to next step
+                            this.renderStep(response.next_step || 4);
+                        }
+                    }
+                });
+            }
+
+            attachStep4Handlers() {
+                const form = document.getElementById('step4-form');
+                form.addEventListener('submit', async (e) => {
+                    e.preventDefault();
+                    const formData = new FormData(form);
+                    await this.submitStep('/api/onboarding/step4', {
+                        project_name: formData.get('project_name')
+                    });
+                });
+            }
+
+            attachStep5Handlers() {
+                const countrySelect = document.getElementById('country');
+                const regionSelect = document.getElementById('region');
+
+                countrySelect.addEventListener('change', async (e) => {
+                    const country = e.target.value;
+                    if (!country) {
+                        regionSelect.disabled = true;
+                        regionSelect.innerHTML = '<option value="">Select a country first...</option>';
+                        return;
+                    }
+
+                    try {
+                        const response = await fetch(`/api/onboarding/regions?country=${country}`);
+                        const regions = await response.json();
+
+                        regionSelect.innerHTML = '<option value="">Select a location...</option>';
+                        regions.forEach(region => {
+                            const option = document.createElement('option');
+                            option.value = region.Code;
+                            option.textContent = region.DisplayName;
+                            regionSelect.appendChild(option);
+                        });
+                        regionSelect.disabled = false;
+                        regionSelect.classList.remove('bg-gray-100');
+                    } catch (error) {
+                        console.error('Failed to load regions:', error);
+                    }
+                });
+
+                const form = document.getElementById('step5-form');
+                form.addEventListener('submit', async (e) => {
+                    e.preventDefault();
+                    const formData = new FormData(form);
+                    await this.submitStep('/api/onboarding/step5', {
+                        country: formData.get('country'),
+                        region: formData.get('region')
+                    });
+                });
+            }
+
+            attachStep6Handlers() {
+                const repoOptions = document.querySelectorAll('input[name="repo_option"]');
+                const customURL = document.getElementById('custom-url');
+
+                repoOptions.forEach(radio => {
+                    radio.addEventListener('change', (e) => {
+                        customURL.disabled = e.target.value !== 'custom';
+                        if (e.target.value === 'custom') {
+                            customURL.focus();
+                        }
+                    });
+                });
+
+                const form = document.getElementById('step6-form');
+                form.addEventListener('submit', async (e) => {
+                    e.preventDefault();
+                    const formData = new FormData(form);
+                    await this.submitStep('/api/onboarding/step6', {
+                        site_name: formData.get('site_name'),
+                        port: parseInt(formData.get('port')) || 80,
+                        repo_option: formData.get('repo_option'),
+                        custom_url: formData.get('custom_url') || ''
+                    });
+                });
+            }
+
+            async attachStep7Handlers() {
+                // Fetch and populate IP address
+                try {
+                    const response = await fetch('/api/onboarding/client-ip');
+                    const data = await response.json();
+                    const ipInput = document.getElementById('firewall-ip');
+                    ipInput.value = data.ip;
+                } catch (error) {
+                    console.error('Failed to fetch IP:', error);
+                }
+
+                const form = document.getElementById('step7-form');
+                form.addEventListener('submit', async (e) => {
+                    e.preventDefault();
+                    const formData = new FormData(form);
+                    const response = await this.submitStep('/api/onboarding/step7', {
+                        firewall_ip: formData.get('firewall_ip')
+                    });
+
+                    if (response && response.message) {
+                        // Onboarding complete, redirect to dashboard
+                        window.location.href = '/dashboard';
+                    }
+                });
+            }
+
+            async submitStep(endpoint, data) {
+                try {
+                    const response = await fetch(endpoint, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify(data)
+                    });
+
+                    const result = await response.json();
+
+                    if (!response.ok) {
+                        alert(result.error || 'An error occurred');
+                        return null;
+                    }
+
+                    // Move to next step
+                    if (endpoint !== '/api/onboarding/step2' && endpoint !== '/api/onboarding/step7') {
+                        this.renderStep(this.currentStep + 1);
+                    }
+
+                    return result;
+                } catch (error) {
+                    console.error('Failed to submit step:', error);
+                    alert('Failed to submit. Please try again.');
+                    return null;
+                }
+            }
+
+            updateProgress() {
+                const progress = (this.currentStep / 7) * 100;
+                document.getElementById('progress-bar').style.width = `${progress}%`;
+                document.getElementById('current-step').textContent = this.currentStep.toString();
+            }
+        }
+
+        // Initialize onboarding flow
+        const onboarding = new OnboardingFlow();
+        onboarding.init();
+
+        // Cleanup polling on page unload
+        window.addEventListener('beforeunload', () => {
+            onboarding.stopPolling();
+        });
+    </script>
+</body>
+
+</html>

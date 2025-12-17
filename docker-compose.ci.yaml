@@ -71,13 +71,14 @@ services:
   api:
     environment:
       API_BASE_URL: http://traefik:80
-      API_OIDC_BASE_URL: https://localhost:8080
+      DASH_BASE_URL: https://localhost:8080
       MARIADB_PASSWORD_FILE: /tmp/mdb
       VAULT_ADDR: http://vault:8200
       LOG_LEVEL: DEBUG
       LIBOPS_ENV: development
       CUSTOMER_VAULT_ADDR: http://vault:8200
       CUSTOMER_VAULT_TOKEN: test-root-token
+      DISABLE_BILLING: "true" # Disable Stripe billing for tests
     secrets: [] # Don't use secrets in CI
     volumes:
       - vault-secrets:/vault/secrets:r

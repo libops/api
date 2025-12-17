@@ -48,13 +48,15 @@ services:
     build: .
     environment:
       API_BASE_URL: ${API_BASE_URL:-https://api.libops.io}
-      API_OIDC_BASE_URL: ${API_OIDC_BASE_URL:-https://dash.libops.io}
+      DASH_BASE_URL: ${DASH_BASE_URL:-https://dash.libops.io}
       VAULT_ADDR: http://vault.libops.io
       MARIADB_PASSWORD_FILE: /run/secrets/MARIADB_PASSWORD
       GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID}
       GOOGLE_CLIENT_SECRET: ${GOOGLE_CLIENT_SECRET}
       GITHUB_CLIENT_ID: ${GITHUB_CLIENT_ID}
       GITHUB_CLIENT_SECRET: ${GITHUB_CLIENT_SECRET}
+      STRIPE_SECRET_KEY: ${STRIPE_SECRET_KEY}
+      STRIPE_WEBHOOK_SECRET: ${STRIPE_WEBHOOK_SECRET}
       LIBOPS_ENV: ${LIBOPS_ENV:-development}
       LOG_LEVEL: ${LOG_LEVEL:-INFO}
     secrets:

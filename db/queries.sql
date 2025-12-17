@@ -51,22 +51,23 @@ LIMIT ? OFFSET ?;
 
 -- name: GetAccount :one
 SELECT id, BIN_TO_UUID(public_id) AS public_id, email, `name`, github_username, vault_entity_id,
-       auth_method, verified, verified_at, created_at, updated_at
+       auth_method, verified, verified_at, onboarding_completed, onboarding_session_id, created_at, updated_at
 FROM accounts WHERE public_id = UUID_TO_BIN(sqlc.arg(public_id));
 
 -- name: GetAccountByID :one
 SELECT id, BIN_TO_UUID(public_id) AS public_id, email, `name`, github_username, vault_entity_id,
-       auth_method, verified, verified_at, created_at, updated_at
+       auth_method, verified, verified_at, onboarding_completed, onboarding_session_id, created_at, updated_at
 FROM accounts WHERE id = ?;
 
 -- name: GetAccountByEmail :one
 SELECT id, BIN_TO_UUID(public_id) AS public_id, email, `name`, github_username, vault_entity_id,
-       auth_method, verified, verified_at, failed_login_attempts, last_failed_login_at, created_at, updated_at
+       auth_method, verified, verified_at, failed_login_attempts, last_failed_login_at,
+       onboarding_completed, onboarding_session_id, created_at, updated_at
 FROM accounts WHERE email = ?;
 
 -- name: GetAccountByVaultEntityID :one
 SELECT id, BIN_TO_UUID(public_id) AS public_id, email, `name`, github_username, vault_entity_id,
-       auth_method, verified, verified_at, created_at, updated_at
+       auth_method, verified, verified_at, onboarding_completed, onboarding_session_id, created_at, updated_at
 FROM accounts WHERE vault_entity_id = ?;
 
 -- name: CreateAccount :exec
@@ -168,8 +169,8 @@ FROM organization_members WHERE organization_id = ? AND account_id = ?;
 
 -- name: CreateOrganizationMember :exec
 INSERT INTO organization_members (
-  public_id, organization_id, account_id, `role`, created_at, updated_at, created_by, updated_by
-) VALUES (UUID_TO_BIN(UUID_V7()), ?, ?, ?, NOW(), NOW(), ?, ?);
+  public_id, organization_id, account_id, `role`, status, created_at, updated_at, created_by, updated_by
+) VALUES (UUID_TO_BIN(UUID_V7()), ?, ?, ?, ?, NOW(), NOW(), ?, ?);
 
 -- name: UpdateOrganizationMember :exec
 UPDATE organization_members SET
@@ -350,47 +351,82 @@ ORDER BY p.created_at DESC
 LIMIT ? OFFSET ?;
 
 -- =============================================================================
+-- MACHINE TYPES
+-- =============================================================================
+
+-- name: GetMachineType :one
+SELECT id, machine_type, display_name, vcpu, memory_gib, stripe_price_id, monthly_price_cents, active, created_at, updated_at
+FROM machine_types
+WHERE machine_type = ? AND active = TRUE;
+
+-- name: GetMachineTypeByStripePriceID :one
+SELECT id, machine_type, display_name, vcpu, memory_gib, stripe_price_id, monthly_price_cents, active, created_at, updated_at
+FROM machine_types
+WHERE stripe_price_id = ? AND active = TRUE;
+
+-- name: ListMachineTypes :many
+SELECT id, machine_type, display_name, vcpu, memory_gib, stripe_price_id, monthly_price_cents, active, created_at, updated_at
+FROM machine_types
+WHERE active = TRUE
+ORDER BY vcpu ASC, memory_gib ASC;
+
+-- name: ListAllMachineTypes :many
+SELECT id, machine_type, display_name, vcpu, memory_gib, stripe_price_id, monthly_price_cents, active, created_at, updated_at
+FROM machine_types
+ORDER BY vcpu ASC, memory_gib ASC;
+
+-- name: CreateMachineType :exec
+INSERT INTO machine_types (machine_type, display_name, vcpu, memory_gib, stripe_price_id, monthly_price_cents, active)
+VALUES (?, ?, ?, ?, ?, ?, ?);
+
+-- name: UpdateMachineType :exec
+UPDATE machine_types
+SET display_name = ?, vcpu = ?, memory_gib = ?, stripe_price_id = ?, monthly_price_cents = ?, active = ?, updated_at = NOW()
+WHERE machine_type = ?;
+
+-- name: GetStorageConfig :one
+SELECT id, config_key, stripe_price_id, price_per_gb_cents, min_size_gb, max_size_gb, active, created_at, updated_at
+FROM storage_config
+WHERE config_key = 'disk_storage' AND active = TRUE;
+
+-- =============================================================================
 -- PROJECTS
 -- =============================================================================
 
 -- name: GetProject :one
 SELECT id, BIN_TO_UUID(public_id) AS public_id, organization_id, `name`,
-       github_repository, github_branch, compose_path,
-       gcp_region, gcp_zone, machine_type, disk_size_gb, compose_file, application_type,
+       gcp_region, gcp_zone, machine_type, disk_size_gb, stripe_subscription_item_id,
        promote_strategy,
        monitoring_enabled, monitoring_log_level, monitoring_metrics_enabled, monitoring_health_check_path,
-       gcp_project_id, gcp_project_number, github_team_id, create_branch_sites, `status`,
+       gcp_project_id, gcp_project_number, create_branch_sites, `status`,
        created_at, updated_at, created_by, updated_by
 FROM projects WHERE public_id = UUID_TO_BIN(sqlc.arg(public_id));
 
 -- name: GetProjectByID :one
 SELECT id, BIN_TO_UUID(public_id) AS public_id, organization_id, `name`,
-       github_repository, github_branch, compose_path,
-       gcp_region, gcp_zone, machine_type, disk_size_gb, compose_file, application_type,
+       gcp_region, gcp_zone, machine_type, disk_size_gb, stripe_subscription_item_id,
        promote_strategy,
        monitoring_enabled, monitoring_log_level, monitoring_metrics_enabled, monitoring_health_check_path,
-       gcp_project_id, gcp_project_number, github_team_id, create_branch_sites, `status`,
+       gcp_project_id, gcp_project_number, create_branch_sites, `status`,
        created_at, updated_at, created_by, updated_by
 FROM projects WHERE id = ?;
 
 -- name: GetProjectByGCPProjectID :one
 SELECT id, BIN_TO_UUID(public_id) AS public_id, organization_id, `name`,
-       github_repository, github_branch, compose_path,
-       gcp_region, gcp_zone, machine_type, disk_size_gb, compose_file, application_type,
+       gcp_region, gcp_zone, machine_type, disk_size_gb, stripe_subscription_item_id,
        promote_strategy,
        monitoring_enabled, monitoring_log_level, monitoring_metrics_enabled, monitoring_health_check_path,
-       gcp_project_id, gcp_project_number, github_team_id, create_branch_sites, `status`,
+       gcp_project_id, gcp_project_number, create_branch_sites, `status`,
        created_at, updated_at, created_by, updated_by
 FROM projects WHERE gcp_project_id = ?;
 
 -- name: GetProjectWithOrganization :one
 SELECT
     p.id, BIN_TO_UUID(p.public_id) AS public_id, p.organization_id, p.name,
-    p.github_repository, p.github_branch, p.compose_path,
-    p.gcp_region, p.gcp_zone, p.machine_type, p.disk_size_gb, p.compose_file, p.application_type,
+    p.gcp_region, p.gcp_zone, p.machine_type, p.disk_size_gb, p.stripe_subscription_item_id,
     p.promote_strategy,
     p.monitoring_enabled, p.monitoring_log_level, p.monitoring_metrics_enabled, p.monitoring_health_check_path,
-    p.gcp_project_id, p.gcp_project_number, p.github_team_id, p.create_branch_sites, p.status,
+    p.gcp_project_id, p.gcp_project_number, p.create_branch_sites, p.status,
     p.created_at, p.updated_at, p.created_by, p.updated_by,
     c.gcp_billing_account
 FROM projects p
@@ -399,11 +435,10 @@ WHERE p.public_id = UUID_TO_BIN(sqlc.arg(public_id));
 
 -- name: GetOrganizationProjectByOrganizationID :one
 SELECT id, BIN_TO_UUID(public_id) AS public_id, organization_id, `name`,
-       github_repository, github_branch, compose_path,
-       gcp_region, gcp_zone, machine_type, disk_size_gb, compose_file, application_type,
+       gcp_region, gcp_zone, machine_type, disk_size_gb, stripe_subscription_item_id,
        promote_strategy,
        monitoring_enabled, monitoring_log_level, monitoring_metrics_enabled, monitoring_health_check_path,
-       gcp_project_id, gcp_project_number, github_team_id, create_branch_sites, organization_project, `status`,
+       gcp_project_id, gcp_project_number, create_branch_sites, organization_project, `status`,
        created_at, updated_at, created_by, updated_by
 FROM projects
 WHERE organization_id = ? AND organization_project = TRUE
@@ -411,32 +446,27 @@ LIMIT 1;
 
 -- name: CreateProject :exec
 INSERT INTO projects (
-  public_id, organization_id, `name`, github_repository, github_branch, compose_path,
-  gcp_region, gcp_zone, machine_type, disk_size_gb, compose_file, application_type,
+  public_id, organization_id, `name`,
+  gcp_region, gcp_zone, machine_type, disk_size_gb, stripe_subscription_item_id,
   monitoring_enabled, monitoring_log_level, monitoring_metrics_enabled, monitoring_health_check_path,
-  gcp_project_id, gcp_project_number, github_team_id, create_branch_sites, `status`,
+  gcp_project_id, gcp_project_number, create_branch_sites, `status`,
   created_at, updated_at, created_by, updated_by
-) VALUES (UUID_TO_BIN(UUID_V7()), ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW(), NOW(), ?, ?);
+) VALUES (UUID_TO_BIN(sqlc.arg(public_id)), ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW(), NOW(), ?, ?);
 
 -- name: UpdateProject :exec
 UPDATE projects SET
   `name` = ?,
-  github_repository = ?,
-  github_branch = ?,
-  compose_path = ?,
   gcp_region = ?,
   gcp_zone = ?,
   machine_type = ?,
   disk_size_gb = ?,
-  compose_file = ?,
-  application_type = ?,
+  stripe_subscription_item_id = ?,
   monitoring_enabled = ?,
   monitoring_log_level = ?,
   monitoring_metrics_enabled = ?,
   monitoring_health_check_path = ?,
   gcp_project_id = ?,
   gcp_project_number = ?,
-  github_team_id = ?,
   create_branch_sites = ?,
   `status` = ?,
   updated_at = NOW(),
@@ -447,13 +477,13 @@ WHERE public_id = UUID_TO_BIN(sqlc.arg(public_id));
 DELETE FROM projects WHERE public_id = UUID_TO_BIN(sqlc.arg(public_id));
 
 -- name: ListProjects :many
-SELECT id, BIN_TO_UUID(public_id) AS public_id, organization_id, name, github_repository, github_repository_template, github_branch, compose_path, gcp_region, gcp_zone, machine_type, disk_size_gb, compose_file, application_type, promote_strategy, monitoring_enabled, monitoring_log_level, monitoring_metrics_enabled, monitoring_health_check_path, gcp_project_id, gcp_project_number, github_team_id, organization_project, create_branch_sites, up_cmd, init_cmd, rollout_cmd, status, created_at, updated_at, created_by, updated_by
+SELECT id, BIN_TO_UUID(public_id) AS public_id, organization_id, name, gcp_region, gcp_zone, machine_type, disk_size_gb, stripe_subscription_item_id, promote_strategy, monitoring_enabled, monitoring_log_level, monitoring_metrics_enabled, monitoring_health_check_path, gcp_project_id, gcp_project_number, organization_project, create_branch_sites, status, created_at, updated_at, created_by, updated_by
 FROM projects
 ORDER BY created_at DESC
 LIMIT ? OFFSET ?;
 
 -- name: ListOrganizationProjects :many
-SELECT id, BIN_TO_UUID(public_id) AS public_id, organization_id, name, github_repository, github_repository_template, github_branch, compose_path, gcp_region, gcp_zone, machine_type, disk_size_gb, compose_file, application_type, promote_strategy, monitoring_enabled, monitoring_log_level, monitoring_metrics_enabled, monitoring_health_check_path, gcp_project_id, gcp_project_number, github_team_id, organization_project, create_branch_sites, up_cmd, init_cmd, rollout_cmd, status, created_at, updated_at, created_by, updated_by
+SELECT id, BIN_TO_UUID(public_id) AS public_id, organization_id, name, gcp_region, gcp_zone, machine_type, disk_size_gb, stripe_subscription_item_id, promote_strategy, monitoring_enabled, monitoring_log_level, monitoring_metrics_enabled, monitoring_health_check_path, gcp_project_id, gcp_project_number, organization_project, create_branch_sites, status, created_at, updated_at, created_by, updated_by
 FROM projects
 WHERE organization_id = ?
 ORDER BY created_at DESC
@@ -468,7 +498,7 @@ WITH RECURSIVE user_orgs AS (
     INNER JOIN user_orgs uo ON r.source_organization_id = uo.organization_id
     WHERE r.status = 'approved'
 )
-SELECT DISTINCT p.id, BIN_TO_UUID(p.public_id) AS public_id, p.organization_id, BIN_TO_UUID(o.public_id) AS organization_public_id, p.name, p.github_repository, p.github_repository_template, p.github_branch, p.compose_path, p.gcp_region, p.gcp_zone, p.machine_type, p.disk_size_gb, p.compose_file, p.application_type, p.promote_strategy, p.monitoring_enabled, p.monitoring_log_level, p.monitoring_metrics_enabled, p.monitoring_health_check_path, p.gcp_project_id, p.gcp_project_number, p.github_team_id, p.organization_project, p.create_branch_sites, p.up_cmd, p.init_cmd, p.rollout_cmd, p.status, p.created_at, p.updated_at, p.created_by, p.updated_by
+SELECT DISTINCT p.id, BIN_TO_UUID(p.public_id) AS public_id, p.organization_id, BIN_TO_UUID(o.public_id) AS organization_public_id, p.name, p.gcp_region, p.gcp_zone, p.machine_type, p.disk_size_gb, p.stripe_subscription_item_id, p.promote_strategy, p.monitoring_enabled, p.monitoring_log_level, p.monitoring_metrics_enabled, p.monitoring_health_check_path, p.gcp_project_id, p.gcp_project_number, p.organization_project, p.create_branch_sites, p.status, p.created_at, p.updated_at, p.created_by, p.updated_by
 FROM projects p
 JOIN organizations o ON p.organization_id = o.id
 LEFT JOIN project_members pm ON p.id = pm.project_id AND pm.account_id = sqlc.arg(account_id) AND pm.status = 'active'
@@ -483,29 +513,38 @@ LIMIT ? OFFSET ?;
 -- =============================================================================
 
 -- name: GetSite :one
-SELECT id, BIN_TO_UUID(public_id) AS public_id, project_id, `name`, github_ref, gcp_external_ip, `status`,
+SELECT id, BIN_TO_UUID(public_id) AS public_id, project_id, `name`, github_repository, github_ref, github_team_id, compose_path, compose_file, port, application_type, up_cmd, init_cmd, rollout_cmd, gcp_external_ip, `status`,
        created_at, updated_at, created_by, updated_by
 FROM sites WHERE public_id = UUID_TO_BIN(sqlc.arg(public_id));
 
 -- name: GetSiteByID :one
-SELECT id, BIN_TO_UUID(public_id) AS public_id, project_id, `name`, github_ref, gcp_external_ip, `status`,
+SELECT id, BIN_TO_UUID(public_id) AS public_id, project_id, `name`, github_repository, github_ref, github_team_id, compose_path, compose_file, port, application_type, up_cmd, init_cmd, rollout_cmd, gcp_external_ip, `status`,
        created_at, updated_at, created_by, updated_by
 FROM sites WHERE id = ?;
 
 -- name: GetSiteByProjectAndName :one
-SELECT id, BIN_TO_UUID(public_id) AS public_id, project_id, `name`, github_ref, gcp_external_ip, `status`,
+SELECT id, BIN_TO_UUID(public_id) AS public_id, project_id, `name`, github_repository, github_ref, github_team_id, compose_path, compose_file, port, application_type, up_cmd, init_cmd, rollout_cmd, gcp_external_ip, `status`,
        created_at, updated_at, created_by, updated_by
 FROM sites WHERE project_id = ? AND `name` = ?;
 
 -- name: CreateSite :exec
 INSERT INTO sites (
-  public_id, project_id, `name`, github_ref, gcp_external_ip, `status`, created_at, updated_at, created_by, updated_by
-) VALUES (UUID_TO_BIN(UUID_V7()), ?, ?, ?, ?, ?, NOW(), NOW(), ?, ?);
+  public_id, project_id, `name`, github_repository, github_ref, github_team_id, compose_path, compose_file, port, application_type, up_cmd, init_cmd, rollout_cmd, gcp_external_ip, `status`, created_at, updated_at, created_by, updated_by
+) VALUES (UUID_TO_BIN(UUID_V7()), ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW(), NOW(), ?, ?);
 
 -- name: UpdateSite :exec
 UPDATE sites SET
   `name` = ?,
+  github_repository = ?,
   github_ref = ?,
+  github_team_id = ?,
+  compose_path = ?,
+  compose_file = ?,
+  port = ?,
+  application_type = ?,
+  up_cmd = ?,
+  init_cmd = ?,
+  rollout_cmd = ?,
   gcp_external_ip = ?,
   `status` = ?,
   updated_at = NOW(),
@@ -516,13 +555,13 @@ WHERE public_id = UUID_TO_BIN(sqlc.arg(public_id));
 DELETE FROM sites WHERE public_id = UUID_TO_BIN(sqlc.arg(public_id));
 
 -- name: ListSites :many
-SELECT id, BIN_TO_UUID(public_id) AS public_id, project_id, name, github_ref, gcp_external_ip, status, created_at, updated_at, created_by, updated_by
+SELECT id, BIN_TO_UUID(public_id) AS public_id, project_id, name, github_repository, github_ref, github_team_id, compose_path, compose_file, port, application_type, up_cmd, init_cmd, rollout_cmd, gcp_external_ip, status, created_at, updated_at, created_by, updated_by
 FROM sites
 ORDER BY created_at DESC
 LIMIT ? OFFSET ?;
 
 -- name: ListProjectSites :many
-SELECT id, BIN_TO_UUID(public_id) AS public_id, project_id, name, github_ref, gcp_external_ip, status, created_at, updated_at, created_by, updated_by
+SELECT id, BIN_TO_UUID(public_id) AS public_id, project_id, name, github_repository, github_ref, github_team_id, compose_path, compose_file, port, application_type, up_cmd, init_cmd, rollout_cmd, gcp_external_ip, status, created_at, updated_at, created_by, updated_by
 FROM sites
 WHERE project_id = ?
 ORDER BY created_at DESC
@@ -537,7 +576,7 @@ WITH RECURSIVE user_orgs AS (
     INNER JOIN user_orgs uo ON r.source_organization_id = uo.organization_id
     WHERE r.status = 'approved'
 )
-SELECT DISTINCT p.id, BIN_TO_UUID(p.public_id) AS public_id, p.organization_id, BIN_TO_UUID(o.public_id) AS organization_public_id, o.name AS organization_name, p.name, p.github_repository, p.github_repository_template, p.github_branch, p.compose_path, p.gcp_region, p.gcp_zone, p.machine_type, p.disk_size_gb, p.compose_file, p.application_type, p.promote_strategy, p.monitoring_enabled, p.monitoring_log_level, p.monitoring_metrics_enabled, p.monitoring_health_check_path, p.gcp_project_id, p.gcp_project_number, p.github_team_id, p.organization_project, p.create_branch_sites, p.up_cmd, p.init_cmd, p.rollout_cmd, p.status, p.created_at, p.updated_at, p.created_by, p.updated_by
+SELECT DISTINCT p.id, BIN_TO_UUID(p.public_id) AS public_id, p.organization_id, BIN_TO_UUID(o.public_id) AS organization_public_id, o.name AS organization_name, p.name, p.gcp_region, p.gcp_zone, p.machine_type, p.disk_size_gb, p.stripe_subscription_item_id, p.promote_strategy, p.monitoring_enabled, p.monitoring_log_level, p.monitoring_metrics_enabled, p.monitoring_health_check_path, p.gcp_project_id, p.gcp_project_number, p.organization_project, p.create_branch_sites, p.status, p.created_at, p.updated_at, p.created_by, p.updated_by
 FROM projects p
 JOIN organizations o ON p.organization_id = o.id
 LEFT JOIN project_members pm ON p.id = pm.project_id AND pm.account_id = sqlc.arg(account_id) AND pm.status = 'active'
@@ -556,7 +595,7 @@ WITH RECURSIVE user_orgs AS (
     INNER JOIN user_orgs uo ON r.source_organization_id = uo.organization_id
     WHERE r.status = 'approved'
 )
-SELECT DISTINCT s.id, BIN_TO_UUID(s.public_id) AS public_id, s.project_id, BIN_TO_UUID(p.public_id) AS project_public_id, p.name AS project_name, BIN_TO_UUID(o.public_id) AS organization_public_id, s.name, s.github_ref, s.gcp_external_ip, s.status, s.created_at, s.updated_at, s.created_by, s.updated_by
+SELECT DISTINCT s.id, BIN_TO_UUID(s.public_id) AS public_id, s.project_id, BIN_TO_UUID(p.public_id) AS project_public_id, p.name AS project_name, BIN_TO_UUID(o.public_id) AS organization_public_id, s.name, s.github_repository, s.github_ref, s.github_team_id, s.compose_path, s.compose_file, s.port, s.application_type, s.up_cmd, s.init_cmd, s.rollout_cmd, s.gcp_external_ip, s.status, s.created_at, s.updated_at, s.created_by, s.updated_by
 FROM sites s
 JOIN projects p ON s.project_id = p.id
 JOIN organizations o ON p.organization_id = o.id
@@ -578,7 +617,7 @@ WITH RECURSIVE user_orgs AS (
     INNER JOIN user_orgs uo ON r.source_organization_id = uo.organization_id
     WHERE r.status = 'approved'
 )
-SELECT DISTINCT s.id, BIN_TO_UUID(s.public_id) AS public_id, s.project_id, BIN_TO_UUID(p.public_id) AS project_public_id, BIN_TO_UUID(o.public_id) AS organization_public_id, s.name, s.github_ref, s.gcp_external_ip, s.status, s.created_at, s.updated_at, s.created_by, s.updated_by
+SELECT DISTINCT s.id, BIN_TO_UUID(s.public_id) AS public_id, s.project_id, BIN_TO_UUID(p.public_id) AS project_public_id, BIN_TO_UUID(o.public_id) AS organization_public_id, s.name, s.github_repository, s.github_ref, s.github_team_id, s.compose_path, s.compose_file, s.port, s.application_type, s.up_cmd, s.init_cmd, s.rollout_cmd, s.gcp_external_ip, s.status, s.created_at, s.updated_at, s.created_by, s.updated_by
 FROM sites s
 JOIN projects p ON s.project_id = p.id
 JOIN organizations o ON p.organization_id = o.id
@@ -1377,3 +1416,114 @@ JOIN user_orgs uo ON o.id = uo.organization_id
 LEFT JOIN organization_members om ON o.id = om.organization_id AND om.account_id = sqlc.arg(account_id)
 ORDER BY o.created_at DESC
 LIMIT ? OFFSET ?;
+
+-- =============================================================================
+-- ONBOARDING
+-- =============================================================================
+
+-- name: UpdateAccountOnboarding :exec
+UPDATE accounts SET
+  onboarding_completed = ?,
+  onboarding_session_id = ?,
+  updated_at = NOW()
+WHERE id = ?;
+
+-- name: CreateOnboardingSession :execresult
+INSERT INTO onboarding_sessions (
+  public_id, account_id, org_name, machine_type, machine_price_id, disk_size_gb,
+  stripe_checkout_session_id, stripe_subscription_id, organization_id,
+  project_name, gcp_country, gcp_region, site_name, github_repo_url, port, firewall_ip,
+  current_step, completed, expires_at, created_at, updated_at
+) VALUES (UUID_TO_BIN(UUID_V7()), ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW(), NOW());
+
+-- name: GetOnboardingSession :one
+SELECT id, BIN_TO_UUID(public_id) AS public_id, account_id, org_name, machine_type, machine_price_id, disk_size_gb,
+       stripe_checkout_session_id, stripe_checkout_url, stripe_subscription_id, organization_id,
+       project_name, gcp_country, gcp_region, site_name, github_repo_url, port, firewall_ip,
+       current_step, completed, expires_at, created_at, updated_at
+FROM onboarding_sessions WHERE public_id = UUID_TO_BIN(sqlc.arg(public_id));
+
+-- name: GetOnboardingSessionByAccountID :one
+SELECT id, BIN_TO_UUID(public_id) AS public_id, account_id, org_name, machine_type, machine_price_id, disk_size_gb,
+       stripe_checkout_session_id, stripe_checkout_url, stripe_subscription_id, organization_id,
+       project_name, gcp_country, gcp_region, site_name, github_repo_url, port, firewall_ip,
+       current_step, completed, expires_at, created_at, updated_at
+FROM onboarding_sessions WHERE account_id = ? AND completed = FALSE ORDER BY created_at DESC LIMIT 1;
+
+-- name: GetOnboardingSessionByStripeCheckoutID :one
+SELECT id, BIN_TO_UUID(public_id) AS public_id, account_id, org_name, machine_type, machine_price_id, disk_size_gb,
+       stripe_checkout_session_id, stripe_checkout_url, stripe_subscription_id, organization_id,
+       project_name, gcp_country, gcp_region, site_name, github_repo_url, port, firewall_ip,
+       current_step, completed, expires_at, created_at, updated_at
+FROM onboarding_sessions WHERE stripe_checkout_session_id = ?;
+
+-- name: UpdateOnboardingSession :exec
+UPDATE onboarding_sessions SET
+  org_name = ?,
+  machine_type = ?,
+  machine_price_id = ?,
+  disk_size_gb = ?,
+  stripe_checkout_session_id = ?,
+  stripe_checkout_url = ?,
+  stripe_subscription_id = ?,
+  organization_id = ?,
+  project_name = ?,
+  gcp_country = ?,
+  gcp_region = ?,
+  site_name = ?,
+  github_repo_url = ?,
+  port = ?,
+  firewall_ip = ?,
+  current_step = ?,
+  completed = ?,
+  updated_at = NOW()
+WHERE id = ?;
+
+-- name: DeleteExpiredOnboardingSessions :exec
+DELETE FROM onboarding_sessions WHERE expires_at < NOW() AND completed = FALSE;
+
+-- =============================================================================
+-- STRIPE SUBSCRIPTIONS
+-- =============================================================================
+
+-- name: CreateStripeSubscription :execresult
+INSERT INTO stripe_subscriptions (
+  public_id, organization_id, stripe_subscription_id, stripe_customer_id, stripe_checkout_session_id,
+  status, current_period_start, current_period_end, trial_start, trial_end,
+  cancel_at_period_end, canceled_at, machine_type, disk_size_gb, created_at, updated_at
+) VALUES (UUID_TO_BIN(UUID_V7()), ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW(), NOW());
+
+-- name: GetStripeSubscription :one
+SELECT id, BIN_TO_UUID(public_id) AS public_id, organization_id, stripe_subscription_id, stripe_customer_id, stripe_checkout_session_id,
+       status, current_period_start, current_period_end, trial_start, trial_end,
+       cancel_at_period_end, canceled_at, machine_type, disk_size_gb, created_at, updated_at
+FROM stripe_subscriptions WHERE public_id = UUID_TO_BIN(sqlc.arg(public_id));
+
+-- name: GetStripeSubscriptionByOrganizationID :one
+SELECT id, BIN_TO_UUID(public_id) AS public_id, organization_id, stripe_subscription_id, stripe_customer_id, stripe_checkout_session_id,
+       status, current_period_start, current_period_end, trial_start, trial_end,
+       cancel_at_period_end, canceled_at, machine_type, disk_size_gb, created_at, updated_at
+FROM stripe_subscriptions WHERE organization_id = ?;
+
+-- name: GetStripeSubscriptionByStripeID :one
+SELECT id, BIN_TO_UUID(public_id) AS public_id, organization_id, stripe_subscription_id, stripe_customer_id, stripe_checkout_session_id,
+       status, current_period_start, current_period_end, trial_start, trial_end,
+       cancel_at_period_end, canceled_at, machine_type, disk_size_gb, created_at, updated_at
+FROM stripe_subscriptions WHERE stripe_subscription_id = ?;
+
+-- name: UpdateStripeSubscription :exec
+UPDATE stripe_subscriptions SET
+  status = ?,
+  current_period_start = ?,
+  current_period_end = ?,
+  trial_start = ?,
+  trial_end = ?,
+  cancel_at_period_end = ?,
+  canceled_at = ?,
+  machine_type = ?,
+  disk_size_gb = ?,
+  updated_at = NOW()
+WHERE stripe_subscription_id = ?;
+
+-- name: DeleteStripeSubscription :exec
+DELETE FROM stripe_subscriptions WHERE stripe_subscription_id = ?;

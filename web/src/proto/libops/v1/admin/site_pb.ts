@@ -21,25 +21,46 @@ export class AdminSiteConfig extends Message<AdminSiteConfig> {
   config?: SiteConfig;
 
   /**
+   * GitHub integration
+   *
+   * @generated from field: optional string github_webhook_url = 2;
+   */
+  githubWebhookUrl?: string;
+
+  /**
+   * Sensitive
+   *
+   * @generated from field: optional string github_webhook_secret = 3;
+   */
+  githubWebhookSecret?: string;
+
+  /**
+   * GitHub team ID for access control
+   *
+   * @generated from field: optional string github_team_id = 7;
+   */
+  githubTeamId?: string;
+
+  /**
    * Computed/managed fields (output from orchestration)
    *
    * GCE instance name
    *
-   * @generated from field: optional string gcp_instance_name = 2;
+   * @generated from field: optional string gcp_instance_name = 4;
    */
   gcpInstanceName?: string;
 
   /**
    * External IP address
    *
-   * @generated from field: optional string gcp_external_ip = 3;
+   * @generated from field: optional string gcp_external_ip = 5;
    */
   gcpExternalIp?: string;
 
   /**
    * Internal IP address
    *
-   * @generated from field: optional string gcp_internal_ip = 4;
+   * @generated from field: optional string gcp_internal_ip = 6;
    */
   gcpInternalIp?: string;
 
@@ -52,9 +73,12 @@ export class AdminSiteConfig extends Message<AdminSiteConfig> {
   static readonly typeName = "libops.v1.admin.AdminSiteConfig";
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
     { no: 1, name: "config", kind: "message", T: SiteConfig },
-    { no: 2, name: "gcp_instance_name", kind: "scalar", T: 9 /* ScalarType.STRING */, opt: true },
-    { no: 3, name: "gcp_external_ip", kind: "scalar", T: 9 /* ScalarType.STRING */, opt: true },
-    { no: 4, name: "gcp_internal_ip", kind: "scalar", T: 9 /* ScalarType.STRING */, opt: true },
+    { no: 2, name: "github_webhook_url", kind: "scalar", T: 9 /* ScalarType.STRING */, opt: true },
+    { no: 3, name: "github_webhook_secret", kind: "scalar", T: 9 /* ScalarType.STRING */, opt: true },
+    { no: 7, name: "github_team_id", kind: "scalar", T: 9 /* ScalarType.STRING */, opt: true },
+    { no: 4, name: "gcp_instance_name", kind: "scalar", T: 9 /* ScalarType.STRING */, opt: true },
+    { no: 5, name: "gcp_external_ip", kind: "scalar", T: 9 /* ScalarType.STRING */, opt: true },
+    { no: 6, name: "gcp_internal_ip", kind: "scalar", T: 9 /* ScalarType.STRING */, opt: true },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): AdminSiteConfig {

@@ -17,6 +17,33 @@ import (
 	commonv1 "github.com/libops/api/proto/libops/v1/common"
 )
 
+// mockBillingManager is a mock implementation of BillingManager for testing
+type mockBillingManager struct{}
+
+func (m *mockBillingManager) ValidateMachineType(ctx context.Context, machineType string) error {
+	return nil
+}
+
+func (m *mockBillingManager) ValidateDiskSize(ctx context.Context, diskSizeGB int) error {
+	return nil
+}
+
+func (m *mockBillingManager) AddProjectToSubscription(ctx context.Context, organizationID int64, projectName, machineType string, diskSizeGB int) (string, error) {
+	return "si_test_123", nil
+}
+
+func (m *mockBillingManager) RemoveProjectFromSubscription(ctx context.Context, machineItemID string, diskSizeGB int, organizationID int64) error {
+	return nil
+}
+
+func (m *mockBillingManager) UpdateProjectMachine(ctx context.Context, oldMachineItemID, newMachineType, projectName string, organizationID int64) (string, error) {
+	return "si_test_456", nil
+}
+
+func (m *mockBillingManager) UpdateProjectDiskSize(ctx context.Context, organizationID int64, oldDiskSizeGB, newDiskSizeGB int) error {
+	return nil
+}
+
 // TestGetProject tests the GetProject method of the ProjectService.
 func TestGetProject(t *testing.T) {
 	projID := uuid.New()
@@ -54,7 +81,7 @@ func TestGetProject(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			svc := NewProjectService(tt.setupMock())
+			svc := NewProjectServiceWithBilling(tt.setupMock(), &mockBillingManager{})
 			req := connect.NewRequest(&libopsv1.GetProjectRequest{ProjectId: tt.projectID})
 			resp, err := svc.GetProject(context.Background(), req)
 
@@ -90,7 +117,6 @@ func TestCreateProject(t *testing.T) {
 			organizationID: orgID.String(),
 			projectConfig: &commonv1.ProjectConfig{
 				ProjectName:       "test-project",
-				GithubRepo:        stringPtr("libops/api"),
 				Region:            "us-central1",
 				Zone:              "us-central1-a",
 				MachineType:       "e2-medium",
@@ -106,6 +132,36 @@ func TestCreateProject(t *testing.T) {
 							PublicID: orgID.String(),
 						}, nil
 					},
+					GetMachineTypeFunc: func(ctx context.Context, machineType string) (db.MachineType, error) {
+						return db.MachineType{
+							ID:                1,
+							MachineType:       "e2-medium",
+							DisplayName:       "Small (1 vCPU, 4 GiB)",
+							Vcpu:              1,
+							MemoryGib:         4,
+							StripePriceID:     "price_test",
+							MonthlyPriceCents: 12500,
+							Active:            sql.NullBool{Bool: true, Valid: true},
+						}, nil
+					},
+					GetStripeSubscriptionByOrganizationIDFunc: func(ctx context.Context, organizationID int64) (db.GetStripeSubscriptionByOrganizationIDRow, error) {
+						return db.GetStripeSubscriptionByOrganizationIDRow{
+							ID:                   1,
+							StripeSubscriptionID: "sub_test",
+							StripeCustomerID:     "cus_test",
+						}, nil
+					},
+					GetStorageConfigFunc: func(ctx context.Context) (db.StorageConfig, error) {
+						return db.StorageConfig{
+							ID:              1,
+							ConfigKey:       "disk_storage",
+							StripePriceID:   "price_disk_test",
+							PricePerGbCents: 10,
+							MinSizeGb:       10,
+							MaxSizeGb:       2000,
+							Active:          sql.NullBool{Bool: true, Valid: true},
+						}, nil
+					},
 					CreateProjectFunc: func(ctx context.Context, params db.CreateProjectParams) error {
 						return nil
 					},
@@ -116,9 +172,6 @@ func TestCreateProject(t *testing.T) {
 				t.Helper()
 				assert.Equal(t, orgInternalID, params.OrganizationID)
 				assert.Equal(t, "test-project", params.Name)
-				assert.Equal(t, "libops/api", params.GithubRepository.String)
-				assert.True(t, params.GithubRepository.Valid)
-				assert.Equal(t, "main", params.GithubBranch.String)
 				assert.Equal(t, "us-central1", params.GcpRegion.String)
 				assert.True(t, params.GcpRegion.Valid)
 				assert.Equal(t, "us-central1-a", params.GcpZone.String)
@@ -127,8 +180,6 @@ func TestCreateProject(t *testing.T) {
 				assert.True(t, params.MachineType.Valid)
 				assert.Equal(t, int32(100), params.DiskSizeGb.Int32)
 				assert.True(t, params.DiskSizeGb.Valid)
-				assert.Equal(t, "docker-compose.yml", params.ComposeFile.String)
-				assert.Equal(t, "generic", params.ApplicationType.String)
 				assert.True(t, params.CreateBranchSites.Bool)
 				assert.Equal(t, db.ProjectsStatusProvisioning, params.Status.ProjectsStatus)
 				assert.Equal(t, accountID, params.CreatedBy.Int64)
@@ -147,6 +198,36 @@ func TestCreateProject(t *testing.T) {
 					GetOrganizationFunc: func(ctx context.Context, publicID string) (db.GetOrganizationRow, error) {
 						return db.GetOrganizationRow{ID: orgInternalID, PublicID: orgID.String()}, nil
 					},
+					GetMachineTypeFunc: func(ctx context.Context, machineType string) (db.MachineType, error) {
+						return db.MachineType{
+							ID:                1,
+							MachineType:       "e2-medium",
+							DisplayName:       "Small (1 vCPU, 4 GiB)",
+							Vcpu:              1,
+							MemoryGib:         4,
+							StripePriceID:     "price_test",
+							MonthlyPriceCents: 12500,
+							Active:            sql.NullBool{Bool: true, Valid: true},
+						}, nil
+					},
+					GetStripeSubscriptionByOrganizationIDFunc: func(ctx context.Context, organizationID int64) (db.GetStripeSubscriptionByOrganizationIDRow, error) {
+						return db.GetStripeSubscriptionByOrganizationIDRow{
+							ID:                   1,
+							StripeSubscriptionID: "sub_test",
+							StripeCustomerID:     "cus_test",
+						}, nil
+					},
+					GetStorageConfigFunc: func(ctx context.Context) (db.StorageConfig, error) {
+						return db.StorageConfig{
+							ID:              1,
+							ConfigKey:       "disk_storage",
+							StripePriceID:   "price_disk_test",
+							PricePerGbCents: 10,
+							MinSizeGb:       10,
+							MaxSizeGb:       2000,
+							Active:          sql.NullBool{Bool: true, Valid: true},
+						}, nil
+					},
 					CreateProjectFunc: func(ctx context.Context, params db.CreateProjectParams) error {
 						return nil
 					},
@@ -155,11 +236,14 @@ func TestCreateProject(t *testing.T) {
 			wantErr: false,
 			validateParams: func(t *testing.T, params db.CreateProjectParams) {
 				t.Helper()
-				assert.False(t, params.GithubRepository.Valid)
+				// Region and zone remain invalid when not provided
 				assert.False(t, params.GcpRegion.Valid)
 				assert.False(t, params.GcpZone.Valid)
-				assert.False(t, params.MachineType.Valid)
-				assert.False(t, params.DiskSizeGb.Valid)
+				// Machine type and disk size get defaults for billing
+				assert.True(t, params.MachineType.Valid)
+				assert.Equal(t, "e2-medium", params.MachineType.String)
+				assert.True(t, params.DiskSizeGb.Valid)
+				assert.Equal(t, int32(20), params.DiskSizeGb.Int32)
 			},
 		},
 		{
@@ -228,6 +312,13 @@ func TestCreateProject(t *testing.T) {
 					GetOrganizationFunc: func(ctx context.Context, publicID string) (db.GetOrganizationRow, error) {
 						return db.GetOrganizationRow{ID: orgInternalID, PublicID: orgID.String()}, nil
 					},
+					GetStripeSubscriptionByOrganizationIDFunc: func(ctx context.Context, organizationID int64) (db.GetStripeSubscriptionByOrganizationIDRow, error) {
+						return db.GetStripeSubscriptionByOrganizationIDRow{
+							ID:                   1,
+							StripeSubscriptionID: "sub_test",
+							StripeCustomerID:     "cus_test",
+						}, nil
+					},
 					CreateProjectFunc: func(ctx context.Context, params db.CreateProjectParams) error {
 						return fmt.Errorf("database error")
 					},
@@ -250,7 +341,7 @@ func TestCreateProject(t *testing.T) {
 				}
 			}
 
-			svc := NewProjectService(mockDB)
+			svc := NewProjectServiceWithBilling(mockDB, &mockBillingManager{})
 
 			authorizer := auth.NewAuthorizer(mockDB)
 			ctx := auth.WithAuthorizer(context.Background(), authorizer)
@@ -282,9 +373,4 @@ func TestCreateProject(t *testing.T) {
 			}
 		})
 	}
-}
-
-// stringPtr is a test helper function that returns a pointer to a string.
-func stringPtr(s string) *string {
-	return &s
 }

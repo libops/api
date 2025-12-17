@@ -27,16 +27,12 @@ const (
 type AdminProjectConfig struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
 	// Organization-safe fields (embedded)
-	Config         *common.ProjectConfig `protobuf:"bytes,1,opt,name=config,proto3" json:"config,omitempty"`
-	BillingAccount string                `protobuf:"bytes,2,opt,name=billing_account,json=billingAccount,proto3" json:"billing_account,omitempty"`
-	// GitHub integration
-	GithubWebhookUrl    *string `protobuf:"bytes,3,opt,name=github_webhook_url,json=githubWebhookUrl,proto3,oneof" json:"github_webhook_url,omitempty"`
-	GithubWebhookSecret *string `protobuf:"bytes,4,opt,name=github_webhook_secret,json=githubWebhookSecret,proto3,oneof" json:"github_webhook_secret,omitempty"` // Sensitive
-	HostDockerConfig    *string `protobuf:"bytes,5,opt,name=host_docker_config,json=hostDockerConfig,proto3,oneof" json:"host_docker_config,omitempty"`          // Sensitive
+	Config           *common.ProjectConfig `protobuf:"bytes,1,opt,name=config,proto3" json:"config,omitempty"`
+	BillingAccount   string                `protobuf:"bytes,2,opt,name=billing_account,json=billingAccount,proto3" json:"billing_account,omitempty"`
+	HostDockerConfig *string               `protobuf:"bytes,5,opt,name=host_docker_config,json=hostDockerConfig,proto3,oneof" json:"host_docker_config,omitempty"` // Sensitive
 	// GCP-managed resources (output from orchestration)
 	GcpProjectId     *string `protobuf:"bytes,6,opt,name=gcp_project_id,json=gcpProjectId,proto3,oneof" json:"gcp_project_id,omitempty"`             // Set after project creation
 	GcpProjectNumber *string `protobuf:"bytes,7,opt,name=gcp_project_number,json=gcpProjectNumber,proto3,oneof" json:"gcp_project_number,omitempty"` // Set after project creation
-	GithubTeamId     *string `protobuf:"bytes,8,opt,name=github_team_id,json=githubTeamId,proto3,oneof" json:"github_team_id,omitempty"`             // Set after GitHub team creation
 	// Flag to identify if this is the organization's libops project (for vault, etc.)
 	OrganizationProject bool `protobuf:"varint,9,opt,name=organization_project,json=organizationProject,proto3" json:"organization_project,omitempty"`
 	unknownFields       protoimpl.UnknownFields
@@ -87,20 +83,6 @@ func (x *AdminProjectConfig) GetBillingAccount() string {
 	return ""
 }
 
-func (x *AdminProjectConfig) GetGithubWebhookUrl() string {
-	if x != nil && x.GithubWebhookUrl != nil {
-		return *x.GithubWebhookUrl
-	}
-	return ""
-}
-
-func (x *AdminProjectConfig) GetGithubWebhookSecret() string {
-	if x != nil && x.GithubWebhookSecret != nil {
-		return *x.GithubWebhookSecret
-	}
-	return ""
-}
-
 func (x *AdminProjectConfig) GetHostDockerConfig() string {
 	if x != nil && x.HostDockerConfig != nil {
 		return *x.HostDockerConfig
@@ -122,13 +104,6 @@ func (x *AdminProjectConfig) GetGcpProjectNumber() string {
 	return ""
 }
 
-func (x *AdminProjectConfig) GetGithubTeamId() string {
-	if x != nil && x.GithubTeamId != nil {
-		return *x.GithubTeamId
-	}
-	return ""
-}
-
 func (x *AdminProjectConfig) GetOrganizationProject() bool {
 	if x != nil {
 		return x.OrganizationProject
@@ -140,23 +115,17 @@ var File_libops_v1_admin_project_proto protoreflect.FileDescriptor
 
 const file_libops_v1_admin_project_proto_rawDesc = "" +
 	"\n" +
-	"\x1dlibops/v1/admin/project.proto\x12\x0flibops.v1.admin\x1a\x1elibops/v1/common/project.proto\x1a google/protobuf/field_mask.proto\"\xd6\x04\n" +
+	"\x1dlibops/v1/admin/project.proto\x12\x0flibops.v1.admin\x1a\x1elibops/v1/common/project.proto\x1a google/protobuf/field_mask.proto\"\xfb\x02\n" +
 	"\x12AdminProjectConfig\x127\n" +
 	"\x06config\x18\x01 \x01(\v2\x1f.libops.v1.common.ProjectConfigR\x06config\x12'\n" +
 	"\x0fbilling_account\x18\x02 \x01(\tR\x0ebillingAccount\x121\n" +
-	"\x12github_webhook_url\x18\x03 \x01(\tH\x00R\x10githubWebhookUrl\x88\x01\x01\x127\n" +
-	"\x15github_webhook_secret\x18\x04 \x01(\tH\x01R\x13githubWebhookSecret\x88\x01\x01\x121\n" +
-	"\x12host_docker_config\x18\x05 \x01(\tH\x02R\x10hostDockerConfig\x88\x01\x01\x12)\n" +
-	"\x0egcp_project_id\x18\x06 \x01(\tH\x03R\fgcpProjectId\x88\x01\x01\x121\n" +
-	"\x12gcp_project_number\x18\a \x01(\tH\x04R\x10gcpProjectNumber\x88\x01\x01\x12)\n" +
-	"\x0egithub_team_id\x18\b \x01(\tH\x05R\fgithubTeamId\x88\x01\x01\x121\n" +
+	"\x12host_docker_config\x18\x05 \x01(\tH\x00R\x10hostDockerConfig\x88\x01\x01\x12)\n" +
+	"\x0egcp_project_id\x18\x06 \x01(\tH\x01R\fgcpProjectId\x88\x01\x01\x121\n" +
+	"\x12gcp_project_number\x18\a \x01(\tH\x02R\x10gcpProjectNumber\x88\x01\x01\x121\n" +
 	"\x14organization_project\x18\t \x01(\bR\x13organizationProjectB\x15\n" +
-	"\x13_github_webhook_urlB\x18\n" +
-	"\x16_github_webhook_secretB\x15\n" +
 	"\x13_host_docker_configB\x11\n" +
 	"\x0f_gcp_project_idB\x15\n" +
-	"\x13_gcp_project_numberB\x11\n" +
-	"\x0f_github_team_idB\xae\x01\n" +
+	"\x13_gcp_project_numberB\xae\x01\n" +
 	"\x13com.libops.v1.adminB\fProjectProtoP\x01Z+github.com/libops/api/proto/libops/v1/admin\xa2\x02\x03LVA\xaa\x02\x0fLibops.V1.Admin\xca\x02\x0fLibops\\V1\\Admin\xe2\x02\x1bLibops\\V1\\Admin\\GPBMetadata\xea\x02\x11Libops::V1::Adminb\x06proto3"
 
 var (

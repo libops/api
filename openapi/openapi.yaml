@@ -7686,16 +7686,6 @@ components:
         billingAccount:
           type: string
           title: billing_account
-        githubWebhookUrl:
-          type: string
-          title: github_webhook_url
-          description: GitHub integration
-          nullable: true
-        githubWebhookSecret:
-          type: string
-          title: github_webhook_secret
-          description: Sensitive
-          nullable: true
         hostDockerConfig:
           type: string
           title: host_docker_config
@@ -7711,11 +7701,6 @@ components:
           type: string
           title: gcp_project_number
           description: Set after project creation
-          nullable: true
-        githubTeamId:
-          type: string
-          title: github_team_id
-          description: Set after GitHub team creation
           nullable: true
         organizationProject:
           type: boolean
@@ -7733,6 +7718,21 @@ components:
           title: config
           description: Organization-safe fields (embedded)
           $ref: '#/components/schemas/libops.v1.common.SiteConfig'
+        githubWebhookUrl:
+          type: string
+          title: github_webhook_url
+          description: GitHub integration
+          nullable: true
+        githubWebhookSecret:
+          type: string
+          title: github_webhook_secret
+          description: Sensitive
+          nullable: true
+        githubTeamId:
+          type: string
+          title: github_team_id
+          description: GitHub team ID for access control
+          nullable: true
         gcpInstanceName:
           type: string
           title: gcp_instance_name
@@ -7837,38 +7837,10 @@ components:
           title: disk_size_gb
           format: int32
           description: Disk size in GB
-        githubRepo:
-          type: string
-          title: github_repo
-          description: "GitHub repository configuration\n Either github_repo (existing)\
-            \ or github_repo_template (new from template) Existing GitHub repository\
-            \ URL"
-          nullable: true
-        githubRepoTemplate:
-          type: string
-          title: github_repo_template
-          description: GitHub template repository URL
-          nullable: true
         promote:
           title: promote
           description: Promotion strategy How to promote code to production
           $ref: '#/components/schemas/libops.v1.common.PromoteStrategy'
-        upCmd:
-          type: string
-          title: up_cmd
-          description: 'Docker compose commands Command to start containers (default:
-            "docker compose up --remove-orphans -d")'
-        initCmd:
-          type: string
-          title: init_cmd
-          description: 'Command to run on initial setup (default: "")'
-        rolloutCmd:
-          type: array
-          items:
-            type: string
-          title: rollout_cmd
-          description: 'Commands to run during rollout (default: ["docker compose
-            pull", "docker compose up --remove-orphans -d"])'
         status:
           title: status
           description: Status
@@ -7904,11 +7876,51 @@ components:
           type: string
           title: site_name
           description: '"production", "staging", "development"'
+        githubRepository:
+          type: string
+          title: github_repository
+          description: GitHub repository configuration GitHub repository URL
         githubRef:
           type: string
           title: github_ref
           description: 'GitHub reference: heads/{branch_name}, tags/{tag_name}, or
             "release"'
+        composePath:
+          type: string
+          title: compose_path
+          description: 'Path to docker-compose directory (default: "")'
+        composeFile:
+          type: string
+          title: compose_file
+          description: 'Docker compose file name (default: "docker-compose.yml")'
+        port:
+          type: integer
+          title: port
+          format: int32
+          description: 'Application configuration Port the application listens on
+            (default: 80)'
+        applicationType:
+          type: string
+          title: application_type
+          description: 'Type of application (default: "generic")'
+        upCmd:
+          type: array
+          items:
+            type: string
+          title: up_cmd
+          description: Docker compose commands Commands to start containers
+        initCmd:
+          type: array
+          items:
+            type: string
+          title: init_cmd
+          description: Commands to run on initial setup
+        rolloutCmd:
+          type: array
+          items:
+            type: string
+          title: rollout_cmd
+          description: Commands to run during rollout
         status:
           title: status
           description: Status (organization-visible)

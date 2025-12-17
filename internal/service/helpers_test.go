@@ -255,15 +255,15 @@ func TestIsValidMemberRole(t *testing.T) {
 
 // TestNullStringConversions tests SQL null string conversions.
 func TestNullStringConversions(t *testing.T) {
-	t.Run("toNullString with non-empty string", func(t *testing.T) {
-		result := toNullString("test")
+	t.Run("ToNullString with non-empty string", func(t *testing.T) {
+		result := ToNullString("test")
 
 		assert.True(t, result.Valid)
 		assert.Equal(t, "test", result.String)
 	})
 
-	t.Run("toNullString with empty string", func(t *testing.T) {
-		result := toNullString("")
+	t.Run("ToNullString with empty string", func(t *testing.T) {
+		result := ToNullString("")
 
 		assert.False(t, result.Valid)
 	})
@@ -304,31 +304,31 @@ func TestNullStringConversions(t *testing.T) {
 
 // TestNullInt64Conversions tests SQL null int64 conversions.
 func TestNullInt64Conversions(t *testing.T) {
-	t.Run("toNullInt64 with non-zero value", func(t *testing.T) {
-		result := toNullInt64(42)
+	t.Run("ToNullInt64 with non-zero value", func(t *testing.T) {
+		result := ToNullInt64(42)
 
 		assert.True(t, result.Valid)
 		assert.Equal(t, int64(42), result.Int64)
 	})
 
-	t.Run("toNullInt64 with zero value", func(t *testing.T) {
-		result := toNullInt64(0)
+	t.Run("ToNullInt64 with zero value", func(t *testing.T) {
+		result := ToNullInt64(0)
 
 		assert.False(t, result.Valid)
 	})
 
-	t.Run("fromNullInt64 with valid value", func(t *testing.T) {
+	t.Run("FromNullInt64 with valid value", func(t *testing.T) {
 		ni := sql.NullInt64{Int64: 999, Valid: true}
 
-		result := fromNullInt64(ni)
+		result := FromNullInt64(ni)
 
 		assert.Equal(t, int64(999), result)
 	})
 
-	t.Run("fromNullInt64 with invalid returns zero", func(t *testing.T) {
+	t.Run("FromNullInt64 with invalid returns zero", func(t *testing.T) {
 		ni := sql.NullInt64{Valid: false}
 
-		result := fromNullInt64(ni)
+		result := FromNullInt64(ni)
 
 		assert.Equal(t, int64(0), result)
 	})
@@ -336,35 +336,45 @@ func TestNullInt64Conversions(t *testing.T) {
 
 // TestNullBoolConversion tests SQL null bool conversion.
 func TestNullBoolConversion(t *testing.T) {
-	t.Run("toNullBool with true", func(t *testing.T) {
-		result := toNullBool(true)
+	t.Run("ToNullBool with true", func(t *testing.T) {
+		result := ToNullBool(true)
 
 		assert.True(t, result.Valid)
 		assert.True(t, result.Bool)
 	})
 
-	t.Run("toNullBool with false", func(t *testing.T) {
-		result := toNullBool(false)
+	t.Run("ToNullBool with false", func(t *testing.T) {
+		result := ToNullBool(false)
 
 		assert.True(t, result.Valid)
 		assert.False(t, result.Bool)
 	})
 }
 
-// TestPtrToString tests pointer to string conversion.
 func TestPtrToString(t *testing.T) {
-	t.Run("ptrToString with value", func(t *testing.T) {
-		s := "hello"
-		result := ptrToString(&s)
+	tests := []struct {
+		name     string
+		input    *string
+		expected string
+	}{
+		{
+			name:     "Nil pointer",
+			input:    nil,
+			expected: "",
+		},
+		{
+			name:     "Non-nil pointer",
+			input:    stringPtr("test"),
+			expected: "test",
+		},
+	}
 
-		assert.Equal(t, "hello", result)
-	})
-
-	t.Run("ptrToString with nil", func(t *testing.T) {
-		result := ptrToString(nil)
-
-		assert.Equal(t, "", result)
-	})
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			result := PtrToString(tt.input)
+			assert.Equal(t, tt.expected, result)
+		})
+	}
 }
 
 // TestParseUUID tests UUID parsing with field name context.

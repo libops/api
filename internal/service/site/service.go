@@ -110,6 +110,9 @@ func (s *SiteService) ListSites(
 			ProjectId:      site.ProjectPublicID,
 			SiteName:       site.Name,
 			GithubRef:      site.GithubRef,
+			UpCmd:          service.FromJSONStringArray(site.UpCmd),
+			InitCmd:        service.FromJSONStringArray(site.InitCmd),
+			RolloutCmd:     service.FromJSONStringArray(site.RolloutCmd),
 			Status:         DbSiteStatusToProto(site.Status),
 		})
 	}
@@ -162,7 +165,10 @@ func (s *SiteService) GetSite(
 		ProjectId:      project.PublicID,
 		SiteName:       site.Name,
 		GithubRef:      site.GithubRef,
-		Status:         DbSiteStatusToProto(site.Status),
+		UpCmd:          service.FromJSONStringArray(site.UpCmd),
+		InitCmd:        service.FromJSONStringArray(site.InitCmd),
+		RolloutCmd:     service.FromJSONStringArray(site.RolloutCmd),
+		Status:         service.DbSiteStatusToProto(site.Status),
 	}
 
 	return connect.NewResponse(&libopsv1.GetSiteResponse{
@@ -209,13 +215,22 @@ func (s *SiteService) CreateSite(
 
 	// Organizations can create sites but GCP fields are set by orchestration
 	params := db.CreateSiteParams{
-		ProjectID:     project.ID,
-		Name:          site.SiteName,
-		GithubRef:     site.GithubRef,
-		GcpExternalIp: sql.NullString{Valid: false}, // Set by orchestration
-		Status:        db.NullSitesStatus{SitesStatus: db.SitesStatusProvisioning, Valid: true},
-		CreatedBy:     sql.NullInt64{Int64: accountID, Valid: true},
-		UpdatedBy:     sql.NullInt64{Int64: accountID, Valid: true},
+		ProjectID:        project.ID,
+		Name:             site.SiteName,
+		GithubRepository: site.GithubRepository,
+		GithubRef:        site.GithubRef,
+		ComposePath:      service.ToNullString(site.ComposePath),
+		ComposeFile:      service.ToNullString(site.ComposeFile),
+		Port:             service.ToNullInt32(site.Port),
+		ApplicationType:  service.ToNullString(site.ApplicationType),
+		UpCmd:            service.ToJSON(site.UpCmd),
+		InitCmd:          service.ToJSON(site.InitCmd),
+		RolloutCmd:       service.ToJSON(site.RolloutCmd),
+		GcpExternalIp:    sql.NullString{Valid: false}, // Set by orchestration
+		GithubTeamID:     sql.NullString{Valid: false}, // Set by orchestration or admin
+		Status:           db.NullSitesStatus{SitesStatus: db.SitesStatusProvisioning, Valid: true},
+		CreatedBy:        sql.NullInt64{Int64: accountID, Valid: true},
+		UpdatedBy:        sql.NullInt64{Int64: accountID, Valid: true},
 	}
 
 	err = s.repo.CreateSite(ctx, params)
@@ -242,7 +257,10 @@ func (s *SiteService) CreateSite(
 			ProjectId:      project.PublicID,
 			SiteName:       createdSite.Name,
 			GithubRef:      createdSite.GithubRef,
-			Status:         DbSiteStatusToProto(createdSite.Status),
+			UpCmd:          service.FromJSONStringArray(createdSite.UpCmd),
+			InitCmd:        service.FromJSONStringArray(createdSite.InitCmd),
+			RolloutCmd:     service.FromJSONStringArray(createdSite.RolloutCmd),
+			Status:         service.DbSiteStatusToProto(createdSite.Status),
 		},
 	}), nil
 }
@@ -282,7 +300,16 @@ func (s *SiteService) UpdateSite(
 
 	// Apply field mask - organizations can update name and github_ref
 	name := existing.Name
+	githubRepository := existing.GithubRepository
 	githubRef := existing.GithubRef
+	composePath := existing.ComposePath
+	composeFile := existing.ComposeFile
+	port := existing.Port
+	applicationType := existing.ApplicationType
+	upCmd := existing.UpCmd
+	initCmd := existing.InitCmd
+	rolloutCmd := existing.RolloutCmd
+	gcpExternalIp := existing.GcpExternalIp
 
 	if service.ShouldUpdateField(req.Msg.UpdateMask, "site.site_name") {
 		name = site.SiteName
@@ -290,15 +317,33 @@ func (s *SiteService) UpdateSite(
 	if service.ShouldUpdateField(req.Msg.UpdateMask, "site.github_ref") {
 		githubRef = site.GithubRef
 	}
+	if service.ShouldUpdateField(req.Msg.UpdateMask, "site.up_cmd") {
+		upCmd = service.ToJSON(site.UpCmd)
+	}
+	if service.ShouldUpdateField(req.Msg.UpdateMask, "site.init_cmd") {
+		initCmd = service.ToJSON(site.InitCmd)
+	}
+	if service.ShouldUpdateField(req.Msg.UpdateMask, "site.rollout_cmd") {
+		rolloutCmd = service.ToJSON(site.RolloutCmd)
+	}
 
 	// Preserve all GCP fields
 	params := db.UpdateSiteParams{
-		Name:          name,
-		GithubRef:     githubRef,
-		GcpExternalIp: existing.GcpExternalIp,
-		Status:        existing.Status,
-		UpdatedBy:     sql.NullInt64{Int64: accountID, Valid: true},
-		PublicID:      siteUUID.String(),
+		Name:             name,
+		GithubRepository: githubRepository,
+		GithubRef:        githubRef,
+		ComposePath:      composePath,
+		ComposeFile:      composeFile,
+		Port:             port,
+		ApplicationType:  applicationType,
+		UpCmd:            upCmd,
+		InitCmd:          initCmd,
+		RolloutCmd:       rolloutCmd,
+		GcpExternalIp:    gcpExternalIp,
+		GithubTeamID:     existing.GithubTeamID,
+		Status:           existing.Status,
+		UpdatedBy:        sql.NullInt64{Int64: accountID, Valid: true},
+		PublicID:         siteUUID.String(),
 	}
 
 	err = s.repo.UpdateSite(ctx, params)

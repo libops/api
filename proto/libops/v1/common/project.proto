@@ -23,18 +23,8 @@ message ProjectConfig {
   string machine_type = 7;        // GCP machine type (e.g., "e2-standard-2")
   int32 disk_size_gb = 8;         // Disk size in GB
 
-  // GitHub repository configuration
-  // Either github_repo (existing) or github_repo_template (new from template)
-  optional string github_repo = 9;           // Existing GitHub repository URL
-  optional string github_repo_template = 10; // GitHub template repository URL
-
   // Promotion strategy
   PromoteStrategy promote = 11;   // How to promote code to production
-
-  // Docker compose commands
-  string up_cmd = 13;              // Command to start containers (default: "docker compose up --remove-orphans -d")
-  string init_cmd = 14;            // Command to run on initial setup (default: "")
-  repeated string rollout_cmd = 15; // Commands to run during rollout (default: ["docker compose pull", "docker compose up --remove-orphans -d"])
 
   // Status
   Status status = 16;

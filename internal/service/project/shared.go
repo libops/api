@@ -142,22 +142,6 @@ func (r *Repository) GetOrganizationByPublicID(ctx context.Context, publicID uui
 
 // Helper functions
 
-// toNullString converts a string to a sql.NullString, setting Valid to false if the string is empty.
-func toNullString(s string) sql.NullString {
-	if s == "" {
-		return sql.NullString{Valid: false}
-	}
-	return sql.NullString{String: s, Valid: true}
-}
-
-// toNullInt32 converts an int32 to a sql.NullInt32, setting Valid to false if the int32 is 0.
-func toNullInt32(i int32) sql.NullInt32 {
-	if i == 0 {
-		return sql.NullInt32{Valid: false}
-	}
-	return sql.NullInt32{Int32: i, Valid: true}
-}
-
 // FromNullString extracts the string value from a sql.NullString, returning an empty string if not valid.
 func FromNullString(ns sql.NullString) string {
 	if ns.Valid {
@@ -172,22 +156,6 @@ func FromNullStringPtr(ns sql.NullString) *string {
 		return &ns.String
 	}
 	return nil
-}
-
-// fromNullInt32 extracts the int32 value from a sql.NullInt32, returning 0 if not valid.
-func fromNullInt32(ni sql.NullInt32) int32 {
-	if ni.Valid {
-		return ni.Int32
-	}
-	return 0
-}
-
-// ptrToString converts a *string to a string, returning an empty string if the pointer is nil.
-func ptrToString(s *string) string {
-	if s == nil {
-		return ""
-	}
-	return *s
 }
 
 // ShouldUpdateField checks if a field should be updated based on the field mask.

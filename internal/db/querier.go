@@ -29,6 +29,8 @@ type Querier interface {
 	// EMAIL VERIFICATION TOKENS
 	// =============================================================================
 	CreateEmailVerificationToken(ctx context.Context, arg CreateEmailVerificationTokenParams) error
+	CreateMachineType(ctx context.Context, arg CreateMachineTypeParams) error
+	CreateOnboardingSession(ctx context.Context, arg CreateOnboardingSessionParams) (sql.Result, error)
 	CreateOrganization(ctx context.Context, arg CreateOrganizationParams) error
 	CreateOrganizationFirewallRule(ctx context.Context, arg CreateOrganizationFirewallRuleParams) error
 	CreateOrganizationMember(ctx context.Context, arg CreateOrganizationMemberParams) error
@@ -53,11 +55,16 @@ type Querier interface {
 	CreateSiteSecret(ctx context.Context, arg CreateSiteSecretParams) (sql.Result, error)
 	CreateSshAccess(ctx context.Context, arg CreateSshAccessParams) error
 	CreateSshKey(ctx context.Context, arg CreateSshKeyParams) (sql.Result, error)
+	// =============================================================================
+	// STRIPE SUBSCRIPTIONS
+	// =============================================================================
+	CreateStripeSubscription(ctx context.Context, arg CreateStripeSubscriptionParams) (sql.Result, error)
 	DeleteAPIKey(ctx context.Context, publicID string) error
 	DeleteAccount(ctx context.Context, publicID string) error
 	DeleteDeployment(ctx context.Context, deploymentID string) error
 	DeleteDomain(ctx context.Context, id int64) error
 	DeleteEmailVerificationToken(ctx context.Context, email string) error
+	DeleteExpiredOnboardingSessions(ctx context.Context) error
 	DeleteOrganization(ctx context.Context, publicID string) error
 	DeleteOrganizationFirewallRule(ctx context.Context, id int64) error
 	DeleteOrganizationFirewallRuleByPublicID(ctx context.Context, uuidTOBIN string) error
@@ -75,6 +82,7 @@ type Querier interface {
 	DeleteSiteSecret(ctx context.Context, arg DeleteSiteSecretParams) error
 	DeleteSshAccess(ctx context.Context, arg DeleteSshAccessParams) error
 	DeleteSshKey(ctx context.Context, publicID string) error
+	DeleteStripeSubscription(ctx context.Context, stripeSubscriptionID string) error
 	// =============================================================================
 	// EVENT QUEUE
 	// =============================================================================
@@ -102,6 +110,14 @@ type Querier interface {
 	GetEmailVerificationToken(ctx context.Context, arg GetEmailVerificationTokenParams) (EmailVerificationToken, error)
 	GetEmailVerificationTokenByEmail(ctx context.Context, email string) (EmailVerificationToken, error)
 	GetLatestSiteDeployment(ctx context.Context, siteID string) (Deployment, error)
+	// =============================================================================
+	// MACHINE TYPES
+	// =============================================================================
+	GetMachineType(ctx context.Context, machineType string) (MachineType, error)
+	GetMachineTypeByStripePriceID(ctx context.Context, stripePriceID string) (MachineType, error)
+	GetOnboardingSession(ctx context.Context, publicID string) (GetOnboardingSessionRow, error)
+	GetOnboardingSessionByAccountID(ctx context.Context, accountID int64) (GetOnboardingSessionByAccountIDRow, error)
+	GetOnboardingSessionByStripeCheckoutID(ctx context.Context, stripeCheckoutSessionID sql.NullString) (GetOnboardingSessionByStripeCheckoutIDRow, error)
 	GetOrganization(ctx context.Context, publicID string) (GetOrganizationRow, error)
 	GetOrganizationByGCPProjectID(ctx context.Context, gcpProjectID sql.NullString) (GetOrganizationByGCPProjectIDRow, error)
 	GetOrganizationByID(ctx context.Context, id int64) (GetOrganizationByIDRow, error)
@@ -171,6 +187,10 @@ type Querier interface {
 	// Ssh KEYS
 	// =============================================================================
 	GetSshKey(ctx context.Context, publicID string) (GetSshKeyRow, error)
+	GetStorageConfig(ctx context.Context) (StorageConfig, error)
+	GetStripeSubscription(ctx context.Context, publicID string) (GetStripeSubscriptionRow, error)
+	GetStripeSubscriptionByOrganizationID(ctx context.Context, organizationID int64) (GetStripeSubscriptionByOrganizationIDRow, error)
+	GetStripeSubscriptionByStripeID(ctx context.Context, stripeSubscriptionID string) (GetStripeSubscriptionByStripeIDRow, error)
 	HasUserProjectAccessInOrganization(ctx context.Context, arg HasUserProjectAccessInOrganizationParams) (bool, error)
 	HasUserRelationshipAccessToOrganization(ctx context.Context, arg HasUserRelationshipAccessToOrganizationParams) (bool, error)
 	HasUserSiteAccessInOrganization(ctx context.Context, arg HasUserSiteAccessInOrganizationParams) (bool, error)
@@ -182,8 +202,10 @@ type Querier interface {
 	ListAccountSites(ctx context.Context, arg ListAccountSitesParams) ([]ListAccountSitesRow, error)
 	ListAccountSshAccess(ctx context.Context, arg ListAccountSshAccessParams) ([]SshAccess, error)
 	ListAccounts(ctx context.Context, arg ListAccountsParams) ([]ListAccountsRow, error)
+	ListAllMachineTypes(ctx context.Context) ([]MachineType, error)
 	// Get all approved relationships for a source org where the account has access to the target org
 	ListApprovedRelatedOrganizationsForAccount(ctx context.Context, arg ListApprovedRelatedOrganizationsForAccountParams) ([]ListApprovedRelatedOrganizationsForAccountRow, error)
+	ListMachineTypes(ctx context.Context) ([]MachineType, error)
 	ListOrganizationFirewallRules(ctx context.Context, organizationID sql.NullInt64) ([]ListOrganizationFirewallRulesRow, error)
 	ListOrganizationMembers(ctx context.Context, arg ListOrganizationMembersParams) ([]ListOrganizationMembersRow, error)
 	ListOrganizationProjects(ctx context.Context, arg ListOrganizationProjectsParams) ([]ListOrganizationProjectsRow, error)
@@ -223,7 +245,13 @@ type Querier interface {
 	UpdateAPIKeyActive(ctx context.Context, arg UpdateAPIKeyActiveParams) error
 	UpdateAPIKeyLastUsed(ctx context.Context, publicID string) error
 	UpdateAccount(ctx context.Context, arg UpdateAccountParams) error
+	// =============================================================================
+	// ONBOARDING
+	// =============================================================================
+	UpdateAccountOnboarding(ctx context.Context, arg UpdateAccountOnboardingParams) error
 	UpdateDeployment(ctx context.Context, arg UpdateDeploymentParams) error
+	UpdateMachineType(ctx context.Context, arg UpdateMachineTypeParams) error
+	UpdateOnboardingSession(ctx context.Context, arg UpdateOnboardingSessionParams) error
 	UpdateOrganization(ctx context.Context, arg UpdateOrganizationParams) error
 	UpdateOrganizationMember(ctx context.Context, arg UpdateOrganizationMemberParams) error
 	UpdateOrganizationSecret(ctx context.Context, arg UpdateOrganizationSecretParams) error
@@ -234,6 +262,7 @@ type Querier interface {
 	UpdateSiteMember(ctx context.Context, arg UpdateSiteMemberParams) error
 	UpdateSiteSecret(ctx context.Context, arg UpdateSiteSecretParams) error
 	UpdateSshKey(ctx context.Context, arg UpdateSshKeyParams) (sql.Result, error)
+	UpdateStripeSubscription(ctx context.Context, arg UpdateStripeSubscriptionParams) error
 }
 
 var _ Querier = (*Queries)(nil)

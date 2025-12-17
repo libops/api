@@ -4,12 +4,14 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
+	"log/slog"
 
 	"connectrpc.com/connect"
 	"github.com/google/uuid"
 	"google.golang.org/protobuf/types/known/emptypb"
 
 	"github.com/libops/api/internal/auth"
+	"github.com/libops/api/internal/billing"
 	"github.com/libops/api/internal/db"
 	"github.com/libops/api/internal/service"
 	"github.com/libops/api/internal/validation"
@@ -18,18 +20,45 @@ import (
 	"github.com/libops/api/proto/libops/v1/libopsv1connect"
 )
 
+// BillingManager defines the interface for billing operations.
+type BillingManager interface {
+	ValidateMachineType(ctx context.Context, machineType string) error
+	ValidateDiskSize(ctx context.Context, diskSizeGB int) error
+	AddProjectToSubscription(ctx context.Context, organizationID int64, projectName, machineType string, diskSizeGB int) (machineItemID string, err error)
+	RemoveProjectFromSubscription(ctx context.Context, machineItemID string, diskSizeGB int, organizationID int64) error
+	UpdateProjectMachine(ctx context.Context, oldMachineItemID, newMachineType, projectName string, organizationID int64) (newMachineItemID string, err error)
+	UpdateProjectDiskSize(ctx context.Context, organizationID int64, oldDiskSizeGB, newDiskSizeGB int) error
+}
+
 // ProjectService implements the organization-facing project API.
 type ProjectService struct {
-	repo *Repository
+	repo           *Repository
+	billingManager BillingManager
 }
 
 // Compile-time check.
 var _ libopsv1connect.ProjectServiceHandler = (*ProjectService)(nil)
 
-// NewProjectService creates a new organization-facing project service.
-func NewProjectService(querier db.Querier) *ProjectService {
+// NewProjectServiceWithConfig creates a new project service with config-based billing
+func NewProjectServiceWithConfig(querier db.Querier, disableBilling bool) *ProjectService {
+	var billingMgr BillingManager
+	if disableBilling {
+		billingMgr = billing.NewNoOpBillingManager()
+	} else {
+		billingMgr = billing.NewStripeManager(querier)
+	}
+
 	return &ProjectService{
-		repo: NewRepository(querier),
+		repo:           NewRepository(querier),
+		billingManager: billingMgr,
+	}
+}
+
+// NewProjectServiceWithBilling creates a new project service with a custom billing manager (for testing).
+func NewProjectServiceWithBilling(querier db.Querier, billingMgr BillingManager) *ProjectService {
+	return &ProjectService{
+		repo:           NewRepository(querier),
+		billingManager: billingMgr,
 	}
 }
 
@@ -62,8 +91,7 @@ func (s *ProjectService) GetProject(
 		Region:            service.FromNullString(project.GcpRegion),
 		Zone:              service.FromNullString(project.GcpZone),
 		MachineType:       service.FromNullString(project.MachineType),
-		DiskSizeGb:        fromNullInt32(project.DiskSizeGb),
-		GithubRepo:        service.FromNullStringPtr(project.GithubRepository),
+		DiskSizeGb:        service.FromNullInt32(project.DiskSizeGb),
 		Promote:           service.DbPromoteStrategyToProto(project.PromoteStrategy),
 		Status:            DbProjectStatusToProto(project.Status),
 	}
@@ -100,13 +128,6 @@ func (s *ProjectService) CreateProject(
 		}
 	}
 
-	// Validate GitHub repository if provided
-	if project.GithubRepo != nil && *project.GithubRepo != "" {
-		if err := validation.GitHubRepoIsPublic(ctx, *project.GithubRepo); err != nil {
-			return nil, connect.NewError(connect.CodeInvalidArgument, err)
-		}
-	}
-
 	organizationPublicID, err := uuid.Parse(organizationID)
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInvalidArgument, fmt.Errorf("invalid organization_id format: %w", err))
@@ -124,26 +145,51 @@ func (s *ProjectService) CreateProject(
 		return nil, err
 	}
 
+	// Validate machine type and disk size
+	machineType := project.MachineType
+	if machineType == "" {
+		machineType = "e2-medium" // Default
+	}
+
+	diskSizeGB := project.DiskSizeGb
+	if diskSizeGB == 0 {
+		diskSizeGB = 20 // Default
+	}
+
+	if diskSizeGB < 10 || diskSizeGB > 2000 {
+		return nil, connect.NewError(connect.CodeInvalidArgument, fmt.Errorf("disk_size_gb must be between 10 and 2000"))
+	}
+
+	// Add project to Stripe subscription (adds machine + increases disk)
+	machineItemID, err := s.billingManager.AddProjectToSubscription(
+		ctx,
+		organization.ID,
+		project.ProjectName,
+		machineType,
+		int(diskSizeGB),
+	)
+	if err != nil {
+		slog.Error("Failed to add project to Stripe subscription", "error", err, "project", project.ProjectName)
+		return nil, connect.NewError(connect.CodeInternal, fmt.Errorf("failed to setup billing for project: %w", err))
+	}
+
 	// Organizations can set most fields but not sensitive ones
+	projectPublicID := uuid.New().String()
 	params := db.CreateProjectParams{
+		PublicID:                  projectPublicID,
 		OrganizationID:            organization.ID,
 		Name:                      project.ProjectName,
-		GithubRepository:          toNullString(ptrToString(project.GithubRepo)),
-		GithubBranch:              sql.NullString{String: "main", Valid: true},
-		ComposePath:               sql.NullString{String: "", Valid: true},
-		GcpRegion:                 toNullString(project.Region),
-		GcpZone:                   toNullString(project.Zone),
-		MachineType:               toNullString(project.MachineType),
-		DiskSizeGb:                toNullInt32(project.DiskSizeGb),
-		ComposeFile:               sql.NullString{String: "docker-compose.yml", Valid: true},
-		ApplicationType:           sql.NullString{String: "generic", Valid: true},
+		GcpRegion:                 service.ToNullString(project.Region),
+		GcpZone:                   service.ToNullString(project.Zone),
+		MachineType:               sql.NullString{String: machineType, Valid: true},
+		DiskSizeGb:                sql.NullInt32{Int32: diskSizeGB, Valid: true},
+		StripeSubscriptionItemID:  sql.NullString{String: machineItemID, Valid: true},
 		MonitoringEnabled:         sql.NullBool{Bool: false, Valid: true},
 		MonitoringLogLevel:        sql.NullString{String: "INFO", Valid: true},
 		MonitoringMetricsEnabled:  sql.NullBool{Bool: false, Valid: true},
 		MonitoringHealthCheckPath: sql.NullString{String: "/", Valid: true},
 		GcpProjectID:              sql.NullString{Valid: false}, // Set by orchestration
 		GcpProjectNumber:          sql.NullString{Valid: false}, // Set by orchestration
-		GithubTeamID:              sql.NullString{Valid: false}, // Set by orchestration
 		CreateBranchSites:         sql.NullBool{Bool: project.CreateBranchSites, Valid: true},
 		Status:                    db.NullProjectsStatus{ProjectsStatus: db.ProjectsStatusProvisioning, Valid: true},
 		CreatedBy:                 sql.NullInt64{Int64: accountID, Valid: true},
@@ -152,8 +198,21 @@ func (s *ProjectService) CreateProject(
 
 	err = s.repo.CreateProject(ctx, params)
 	if err != nil {
+		// Rollback: remove from Stripe if database creation fails
+		slog.Error("Failed to create project in database, rolling back Stripe", "error", err)
+		_ = s.billingManager.RemoveProjectFromSubscription(ctx, machineItemID, int(diskSizeGB), organization.ID)
 		return nil, err
 	}
+
+	slog.Info("Project created with billing",
+		"project", project.ProjectName,
+		"organization_id", organization.ID,
+		"machine_type", machineType,
+		"disk_gb", diskSizeGB,
+		"stripe_item_id", machineItemID)
+
+	// Set the project ID in the response
+	project.ProjectId = projectPublicID
 
 	return connect.NewResponse(&libopsv1.CreateProjectResponse{
 		Project: project,
@@ -194,7 +253,6 @@ func (s *ProjectService) UpdateProject(
 	}
 
 	name := existing.Name
-	githubRepository := existing.GithubRepository
 	gcpRegion := existing.GcpRegion
 	gcpZone := existing.GcpZone
 	machineType := existing.MachineType
@@ -204,15 +262,6 @@ func (s *ProjectService) UpdateProject(
 	if service.ShouldUpdateField(req.Msg.UpdateMask, "project.project_name") {
 		name = project.ProjectName
 	}
-	if service.ShouldUpdateField(req.Msg.UpdateMask, "project.github_repo") {
-		// Validate GitHub repository if being updated
-		if project.GithubRepo != nil && *project.GithubRepo != "" {
-			if err := validation.GitHubRepoIsPublic(ctx, *project.GithubRepo); err != nil {
-				return nil, connect.NewError(connect.CodeInvalidArgument, err)
-			}
-		}
-		githubRepository = toNullString(ptrToString(project.GithubRepo))
-	}
 	// Region and zone cannot be updated after project creation
 	if service.ShouldUpdateField(req.Msg.UpdateMask, "project.region") {
 		return nil, connect.NewError(connect.CodeInvalidArgument, fmt.Errorf("region cannot be updated after project creation"))
@@ -220,39 +269,103 @@ func (s *ProjectService) UpdateProject(
 	if service.ShouldUpdateField(req.Msg.UpdateMask, "project.zone") {
 		return nil, connect.NewError(connect.CodeInvalidArgument, fmt.Errorf("zone cannot be updated after project creation"))
 	}
+	// Track changes for billing updates
+	machineTypeChanged := false
+	diskSizeChanged := false
+	var newMachineItemID string
+
 	if service.ShouldUpdateField(req.Msg.UpdateMask, "project.machine_type") {
-		machineType = toNullString(project.MachineType)
+		newMachineType := project.MachineType
+		if newMachineType != "" && newMachineType != existing.MachineType.String {
+			// Validate new machine type
+			if err := s.billingManager.ValidateMachineType(ctx, newMachineType); err != nil {
+				return nil, connect.NewError(connect.CodeInvalidArgument, err)
+			}
+
+			// Update machine type in Stripe
+			if existing.StripeSubscriptionItemID.Valid && existing.StripeSubscriptionItemID.String != "" {
+				newItemID, err := s.billingManager.UpdateProjectMachine(
+					ctx,
+					existing.StripeSubscriptionItemID.String,
+					newMachineType,
+					existing.Name,
+					existing.OrganizationID,
+				)
+				if err != nil {
+					slog.Error("Failed to update machine type in Stripe", "error", err)
+					return nil, connect.NewError(connect.CodeInternal, fmt.Errorf("failed to update billing: %w", err))
+				}
+				newMachineItemID = newItemID
+				machineTypeChanged = true
+			}
+
+			machineType = sql.NullString{String: newMachineType, Valid: true}
+		}
 	}
+
 	if service.ShouldUpdateField(req.Msg.UpdateMask, "project.disk_size_gb") {
-		diskSizeGb = toNullInt32(project.DiskSizeGb)
+		newDiskSize := project.DiskSizeGb
+		oldDiskSize := int32(20) // Default
+		if existing.DiskSizeGb.Valid {
+			oldDiskSize = existing.DiskSizeGb.Int32
+		}
+
+		if newDiskSize > 0 && newDiskSize != oldDiskSize {
+			// Validate new disk size
+			if err := s.billingManager.ValidateDiskSize(ctx, int(newDiskSize)); err != nil {
+				return nil, connect.NewError(connect.CodeInvalidArgument, err)
+			}
+
+			// Update disk size in Stripe
+			err := s.billingManager.UpdateProjectDiskSize(
+				ctx,
+				existing.OrganizationID,
+				int(oldDiskSize),
+				int(newDiskSize),
+			)
+			if err != nil {
+				slog.Error("Failed to update disk size in Stripe", "error", err)
+				return nil, connect.NewError(connect.CodeInternal, fmt.Errorf("failed to update billing: %w", err))
+			}
+			diskSizeChanged = true
+			diskSizeGb = sql.NullInt32{Int32: newDiskSize, Valid: true}
+		}
 	}
 	if service.ShouldUpdateField(req.Msg.UpdateMask, "project.create_branch_sites") {
 		createBranchSites = sql.NullBool{Bool: project.CreateBranchSites, Valid: true}
 	}
 
+	// Update Stripe subscription item ID if machine type changed
+	stripeSubItemID := existing.StripeSubscriptionItemID
+	if machineTypeChanged && newMachineItemID != "" {
+		stripeSubItemID = sql.NullString{String: newMachineItemID, Valid: true}
+	}
+
 	// Preserve all admin/orchestration fields
 	params := db.UpdateProjectParams{
 		Name:                      name,
-		GithubRepository:          githubRepository,
-		GithubBranch:              existing.GithubBranch,
-		ComposePath:               existing.ComposePath,
 		GcpRegion:                 gcpRegion,
 		GcpZone:                   gcpZone,
 		MachineType:               machineType,
 		DiskSizeGb:                diskSizeGb,
-		ComposeFile:               existing.ComposeFile,
-		ApplicationType:           existing.ApplicationType,
+		StripeSubscriptionItemID:  stripeSubItemID,
 		MonitoringEnabled:         existing.MonitoringEnabled,
 		MonitoringLogLevel:        existing.MonitoringLogLevel,
 		MonitoringMetricsEnabled:  existing.MonitoringMetricsEnabled,
 		MonitoringHealthCheckPath: existing.MonitoringHealthCheckPath,
 		GcpProjectID:              existing.GcpProjectID,
 		GcpProjectNumber:          existing.GcpProjectNumber,
-		GithubTeamID:              existing.GithubTeamID,
 		CreateBranchSites:         createBranchSites,
 		Status:                    db.NullProjectsStatus{ProjectsStatus: db.ProjectsStatusActive, Valid: true},
 		UpdatedBy:                 sql.NullInt64{Int64: accountID, Valid: true},
 		PublicID:                  publicID.String(),
+	}
+
+	if machineTypeChanged || diskSizeChanged {
+		slog.Info("Project configuration updated with billing changes",
+			"project_id", publicID.String(),
+			"machine_changed", machineTypeChanged,
+			"disk_changed", diskSizeChanged)
 	}
 
 	err = s.repo.UpdateProject(ctx, params)
@@ -279,6 +392,39 @@ func (s *ProjectService) DeleteProject(
 	publicID, err := uuid.Parse(projectID)
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInvalidArgument, fmt.Errorf("invalid project_id format: %w", err))
+	}
+
+	// Get project to retrieve billing info
+	project, err := s.repo.GetProjectByPublicID(ctx, publicID)
+	if err != nil {
+		return nil, err
+	}
+
+	// Remove project from Stripe subscription
+	if project.StripeSubscriptionItemID.Valid && project.StripeSubscriptionItemID.String != "" {
+		diskSize := 20 // Default
+		if project.DiskSizeGb.Valid {
+			diskSize = int(project.DiskSizeGb.Int32)
+		}
+
+		err = s.billingManager.RemoveProjectFromSubscription(
+			ctx,
+			project.StripeSubscriptionItemID.String,
+			diskSize,
+			project.OrganizationID,
+		)
+		if err != nil {
+			// Log error but don't fail deletion - we don't want orphaned projects
+			slog.Error("Failed to remove project from Stripe, continuing with deletion",
+				"error", err,
+				"project_id", projectID,
+				"stripe_item_id", project.StripeSubscriptionItemID.String)
+		} else {
+			slog.Info("Removed project from Stripe subscription",
+				"project", project.Name,
+				"organization_id", project.OrganizationID,
+				"stripe_item_id", project.StripeSubscriptionItemID.String)
+		}
 	}
 
 	err = s.repo.DeleteProject(ctx, publicID)
@@ -351,10 +497,8 @@ func (s *ProjectService) ListProjects(
 			Region:            service.FromNullString(project.GcpRegion),
 			Zone:              service.FromNullString(project.GcpZone),
 			MachineType:       service.FromNullString(project.MachineType),
-			DiskSizeGb:        fromNullInt32(project.DiskSizeGb),
-			GithubRepo:        service.FromNullStringPtr(project.GithubRepository),
+			DiskSizeGb:        service.FromNullInt32(project.DiskSizeGb),
 			Promote:           commonv1.PromoteStrategy_PROMOTE_STRATEGY_GITHUB_TAG,
-			Status:            DbProjectStatusToProto(project.Status),
 		})
 	}
 

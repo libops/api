@@ -7,6 +7,7 @@ import (
 
 	"github.com/DATA-DOG/go-sqlmock"
 
+	"github.com/libops/api/internal/config"
 	"github.com/libops/api/internal/db"
 	"github.com/libops/api/internal/events"
 	"github.com/libops/api/internal/middleware"
@@ -25,6 +26,7 @@ func TestNew(t *testing.T) {
 	emitter := events.NewEmitter(ceClient, events.EventSourceLibOpsAPI, queries)
 
 	deps := &Dependencies{
+		Config:         &config.Config{},
 		Queries:        queries,
 		Emitter:        emitter,
 		Authorizer:     nil,
@@ -53,6 +55,7 @@ func TestHealthEndpoint(t *testing.T) {
 	emitter := events.NewEmitter(ceClient, events.EventSourceLibOpsAPI, queries)
 
 	deps := &Dependencies{
+		Config:         &config.Config{},
 		Queries:        queries,
 		Emitter:        emitter,
 		AllowedOrigins: []string{"*"},
@@ -87,6 +90,7 @@ func TestVersionEndpoint(t *testing.T) {
 	emitter := events.NewEmitter(ceClient, events.EventSourceLibOpsAPI, queries)
 
 	deps := &Dependencies{
+		Config:         &config.Config{},
 		Queries:        queries,
 		Emitter:        emitter,
 		AllowedOrigins: []string{"*"},
@@ -179,6 +183,7 @@ func BenchmarkHealthEndpoint(b *testing.B) {
 	emitter := events.NewEmitter(ceClient, events.EventSourceLibOpsAPI, queries)
 
 	deps := &Dependencies{
+		Config:         &config.Config{},
 		Queries:        queries,
 		Emitter:        emitter,
 		AllowedOrigins: []string{"*"},

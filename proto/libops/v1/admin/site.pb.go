@@ -27,10 +27,14 @@ type AdminSiteConfig struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
 	// Organization-safe fields (embedded)
 	Config *common.SiteConfig `protobuf:"bytes,1,opt,name=config,proto3" json:"config,omitempty"`
+	// GitHub integration
+	GithubWebhookUrl    *string `protobuf:"bytes,2,opt,name=github_webhook_url,json=githubWebhookUrl,proto3,oneof" json:"github_webhook_url,omitempty"`
+	GithubWebhookSecret *string `protobuf:"bytes,3,opt,name=github_webhook_secret,json=githubWebhookSecret,proto3,oneof" json:"github_webhook_secret,omitempty"` // Sensitive
+	GithubTeamId        *string `protobuf:"bytes,7,opt,name=github_team_id,json=githubTeamId,proto3,oneof" json:"github_team_id,omitempty"`                      // GitHub team ID for access control
 	// Computed/managed fields (output from orchestration)
-	GcpInstanceName *string `protobuf:"bytes,2,opt,name=gcp_instance_name,json=gcpInstanceName,proto3,oneof" json:"gcp_instance_name,omitempty"` // GCE instance name
-	GcpExternalIp   *string `protobuf:"bytes,3,opt,name=gcp_external_ip,json=gcpExternalIp,proto3,oneof" json:"gcp_external_ip,omitempty"`       // External IP address
-	GcpInternalIp   *string `protobuf:"bytes,4,opt,name=gcp_internal_ip,json=gcpInternalIp,proto3,oneof" json:"gcp_internal_ip,omitempty"`       // Internal IP address
+	GcpInstanceName *string `protobuf:"bytes,4,opt,name=gcp_instance_name,json=gcpInstanceName,proto3,oneof" json:"gcp_instance_name,omitempty"` // GCE instance name
+	GcpExternalIp   *string `protobuf:"bytes,5,opt,name=gcp_external_ip,json=gcpExternalIp,proto3,oneof" json:"gcp_external_ip,omitempty"`       // External IP address
+	GcpInternalIp   *string `protobuf:"bytes,6,opt,name=gcp_internal_ip,json=gcpInternalIp,proto3,oneof" json:"gcp_internal_ip,omitempty"`       // Internal IP address
 	unknownFields   protoimpl.UnknownFields
 	sizeCache       protoimpl.SizeCache
 }
@@ -72,6 +76,27 @@ func (x *AdminSiteConfig) GetConfig() *common.SiteConfig {
 	return nil
 }
 
+func (x *AdminSiteConfig) GetGithubWebhookUrl() string {
+	if x != nil && x.GithubWebhookUrl != nil {
+		return *x.GithubWebhookUrl
+	}
+	return ""
+}
+
+func (x *AdminSiteConfig) GetGithubWebhookSecret() string {
+	if x != nil && x.GithubWebhookSecret != nil {
+		return *x.GithubWebhookSecret
+	}
+	return ""
+}
+
+func (x *AdminSiteConfig) GetGithubTeamId() string {
+	if x != nil && x.GithubTeamId != nil {
+		return *x.GithubTeamId
+	}
+	return ""
+}
+
 func (x *AdminSiteConfig) GetGcpInstanceName() string {
 	if x != nil && x.GcpInstanceName != nil {
 		return *x.GcpInstanceName
@@ -97,12 +122,18 @@ var File_libops_v1_admin_site_proto protoreflect.FileDescriptor
 
 const file_libops_v1_admin_site_proto_rawDesc = "" +
 	"\n" +
-	"\x1alibops/v1/admin/site.proto\x12\x0flibops.v1.admin\x1a\x1blibops/v1/common/site.proto\"\x90\x02\n" +
+	"\x1alibops/v1/admin/site.proto\x12\x0flibops.v1.admin\x1a\x1blibops/v1/common/site.proto\"\xeb\x03\n" +
 	"\x0fAdminSiteConfig\x124\n" +
-	"\x06config\x18\x01 \x01(\v2\x1c.libops.v1.common.SiteConfigR\x06config\x12/\n" +
-	"\x11gcp_instance_name\x18\x02 \x01(\tH\x00R\x0fgcpInstanceName\x88\x01\x01\x12+\n" +
-	"\x0fgcp_external_ip\x18\x03 \x01(\tH\x01R\rgcpExternalIp\x88\x01\x01\x12+\n" +
-	"\x0fgcp_internal_ip\x18\x04 \x01(\tH\x02R\rgcpInternalIp\x88\x01\x01B\x14\n" +
+	"\x06config\x18\x01 \x01(\v2\x1c.libops.v1.common.SiteConfigR\x06config\x121\n" +
+	"\x12github_webhook_url\x18\x02 \x01(\tH\x00R\x10githubWebhookUrl\x88\x01\x01\x127\n" +
+	"\x15github_webhook_secret\x18\x03 \x01(\tH\x01R\x13githubWebhookSecret\x88\x01\x01\x12)\n" +
+	"\x0egithub_team_id\x18\a \x01(\tH\x02R\fgithubTeamId\x88\x01\x01\x12/\n" +
+	"\x11gcp_instance_name\x18\x04 \x01(\tH\x03R\x0fgcpInstanceName\x88\x01\x01\x12+\n" +
+	"\x0fgcp_external_ip\x18\x05 \x01(\tH\x04R\rgcpExternalIp\x88\x01\x01\x12+\n" +
+	"\x0fgcp_internal_ip\x18\x06 \x01(\tH\x05R\rgcpInternalIp\x88\x01\x01B\x15\n" +
+	"\x13_github_webhook_urlB\x18\n" +
+	"\x16_github_webhook_secretB\x11\n" +
+	"\x0f_github_team_idB\x14\n" +
 	"\x12_gcp_instance_nameB\x12\n" +
 	"\x10_gcp_external_ipB\x12\n" +
 	"\x10_gcp_internal_ipB\xab\x01\n" +

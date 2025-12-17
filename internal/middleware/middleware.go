@@ -106,7 +106,8 @@ func CSRFMiddleware(next http.Handler) http.Handler {
 			strings.HasPrefix(r.URL.Path, "/auth/register/") ||
 			strings.HasPrefix(r.URL.Path, "/auth/userpass/") ||
 			r.URL.Path == "/auth/login" ||
-			r.URL.Path == "/auth/callback" {
+			r.URL.Path == "/auth/callback" ||
+			r.URL.Path == "/webhooks/stripe" {
 			next.ServeHTTP(w, r)
 			return
 		}

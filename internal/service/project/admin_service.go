@@ -13,6 +13,7 @@ import (
 	"google.golang.org/protobuf/types/known/emptypb"
 
 	"github.com/libops/api/internal/auth"
+	"github.com/libops/api/internal/billing"
 	"github.com/libops/api/internal/db"
 	"github.com/libops/api/internal/service"
 	"github.com/libops/api/internal/validation"
@@ -24,16 +25,33 @@ import (
 
 // AdminProjectService implements the admin-level project API.
 type AdminProjectService struct {
-	repo *Repository
+	repo           *Repository
+	billingManager BillingManager
 }
 
 // Compile-time check.
 var _ libopsv1connect.AdminProjectServiceHandler = (*AdminProjectService)(nil)
 
-// NewAdminProjectService creates a new admin project service.
-func NewAdminProjectService(querier db.Querier) *AdminProjectService {
+// NewAdminProjectServiceWithConfig creates a new admin project service with config-based billing
+func NewAdminProjectServiceWithConfig(querier db.Querier, disableBilling bool) *AdminProjectService {
+	var billingMgr BillingManager
+	if disableBilling {
+		billingMgr = billing.NewNoOpBillingManager()
+	} else {
+		billingMgr = billing.NewStripeManager(querier)
+	}
+
 	return &AdminProjectService{
-		repo: NewRepository(querier),
+		repo:           NewRepository(querier),
+		billingManager: billingMgr,
+	}
+}
+
+// NewAdminProjectServiceWithBilling creates a new admin project service with a custom billing manager (for testing).
+func NewAdminProjectServiceWithBilling(querier db.Querier, billingMgr BillingManager) *AdminProjectService {
+	return &AdminProjectService{
+		repo:           NewRepository(querier),
+		billingManager: billingMgr,
 	}
 }
 
@@ -67,18 +85,13 @@ func (s *AdminProjectService) GetProject(
 			Region:            service.FromNullString(project.GcpRegion),
 			Zone:              service.FromNullString(project.GcpZone),
 			MachineType:       service.FromNullString(project.MachineType),
-			DiskSizeGb:        fromNullInt32(project.DiskSizeGb),
-			GithubRepo:        service.FromNullStringPtr(project.GithubRepository),
+			DiskSizeGb:        service.FromNullInt32(project.DiskSizeGb),
 			Promote:           service.DbPromoteStrategyToProto(project.PromoteStrategy),
 			Status:            DbProjectStatusToProto(project.Status),
 		},
-		BillingAccount:      project.GcpBillingAccount,
-		GithubWebhookUrl:    service.FromNullStringPtr(project.GithubRepository),
-		GithubWebhookSecret: nil, // Sensitive - don't return
-		HostDockerConfig:    nil, // Sensitive - don't return
-		GcpProjectId:        service.FromNullStringPtr(project.GcpProjectID),
-		GcpProjectNumber:    service.FromNullStringPtr(project.GcpProjectNumber),
-		GithubTeamId:        service.FromNullStringPtr(project.GithubTeamID),
+		BillingAccount:   project.GcpBillingAccount,
+		GcpProjectId:     service.FromNullStringPtr(project.GcpProjectID),
+		GcpProjectNumber: service.FromNullStringPtr(project.GcpProjectNumber),
 	}
 
 	return connect.NewResponse(&libopsv1.AdminGetProjectResponse{
@@ -122,12 +135,6 @@ func (s *AdminProjectService) CreateProject(
 		}
 	}
 
-	if project.Config.GithubRepo != nil && *project.Config.GithubRepo != "" {
-		if err := validation.GitHubRepoIsPublic(ctx, *project.Config.GithubRepo); err != nil {
-			return nil, connect.NewError(connect.CodeInvalidArgument, err)
-		}
-	}
-
 	// Validate zone matches region
 	if project.Config.Region != "" && project.Config.Zone != "" {
 		if err := validation.GCPZoneMatchesRegion(project.Config.Region, project.Config.Zone); err != nil {
@@ -152,25 +159,50 @@ func (s *AdminProjectService) CreateProject(
 		return nil, err
 	}
 
+	// Validate machine type and disk size
+	machineType := project.Config.MachineType
+	if machineType == "" {
+		machineType = "e2-medium" // Default
+	}
+
+	diskSizeGB := project.Config.DiskSizeGb
+	if diskSizeGB == 0 {
+		diskSizeGB = 20 // Default
+	}
+
+	if diskSizeGB < 10 || diskSizeGB > 2000 {
+		return nil, connect.NewError(connect.CodeInvalidArgument, fmt.Errorf("disk_size_gb must be between 10 and 2000"))
+	}
+
+	// Add project to Stripe subscription (adds machine + increases disk)
+	machineItemID, err := s.billingManager.AddProjectToSubscription(
+		ctx,
+		organization.ID,
+		project.Config.ProjectName,
+		machineType,
+		int(diskSizeGB),
+	)
+	if err != nil {
+		slog.Error("Failed to add project to Stripe subscription", "error", err, "project", project.Config.ProjectName)
+		return nil, connect.NewError(connect.CodeInternal, fmt.Errorf("failed to setup billing for project: %w", err))
+	}
+
+	projectPublicID := uuid.New().String()
 	params := db.CreateProjectParams{
+		PublicID:                  projectPublicID,
 		OrganizationID:            organization.ID,
 		Name:                      project.Config.ProjectName,
-		GithubRepository:          toNullString(ptrToString(project.Config.GithubRepo)),
-		GithubBranch:              sql.NullString{String: "main", Valid: true},
-		ComposePath:               sql.NullString{String: "", Valid: true},
-		GcpRegion:                 toNullString(project.Config.Region),
-		GcpZone:                   toNullString(project.Config.Zone),
-		MachineType:               toNullString(project.Config.MachineType),
-		DiskSizeGb:                toNullInt32(project.Config.DiskSizeGb),
-		ComposeFile:               sql.NullString{String: "docker-compose.yml", Valid: true},
-		ApplicationType:           sql.NullString{String: "generic", Valid: true},
+		GcpRegion:                 service.ToNullString(project.Config.Region),
+		GcpZone:                   service.ToNullString(project.Config.Zone),
+		MachineType:               sql.NullString{String: machineType, Valid: true},
+		DiskSizeGb:                sql.NullInt32{Int32: diskSizeGB, Valid: true},
+		StripeSubscriptionItemID:  sql.NullString{String: machineItemID, Valid: true},
 		MonitoringEnabled:         sql.NullBool{Bool: false, Valid: true},
 		MonitoringLogLevel:        sql.NullString{String: "INFO", Valid: true},
 		MonitoringMetricsEnabled:  sql.NullBool{Bool: false, Valid: true},
 		MonitoringHealthCheckPath: sql.NullString{String: "/", Valid: true},
-		GcpProjectID:              toNullString(ptrToString(project.GcpProjectId)),
-		GcpProjectNumber:          toNullString(ptrToString(project.GcpProjectNumber)),
-		GithubTeamID:              toNullString(ptrToString(project.GithubTeamId)),
+		GcpProjectID:              service.ToNullString(service.PtrToString(project.GcpProjectId)),
+		GcpProjectNumber:          service.ToNullString(service.PtrToString(project.GcpProjectNumber)),
 		CreateBranchSites:         sql.NullBool{Bool: project.Config.CreateBranchSites, Valid: true},
 		Status:                    db.NullProjectsStatus{ProjectsStatus: db.ProjectsStatusProvisioning, Valid: true},
 		CreatedBy:                 sql.NullInt64{Int64: accountID, Valid: true},
@@ -179,8 +211,21 @@ func (s *AdminProjectService) CreateProject(
 
 	err = s.repo.CreateProject(ctx, params)
 	if err != nil {
+		// Rollback: remove from Stripe if database creation fails
+		slog.Error("Failed to create project in database, rolling back Stripe", "error", err)
+		_ = s.billingManager.RemoveProjectFromSubscription(ctx, machineItemID, int(diskSizeGB), organization.ID)
 		return nil, err
 	}
+
+	slog.Info("Project created with billing (admin)",
+		"project", project.Config.ProjectName,
+		"organization_id", organization.ID,
+		"machine_type", machineType,
+		"disk_gb", diskSizeGB,
+		"stripe_item_id", machineItemID)
+
+	// Set the project ID in the response
+	project.Config.ProjectId = projectPublicID
 
 	return connect.NewResponse(&libopsv1.AdminCreateProjectResponse{
 		Project: project,
@@ -221,12 +266,6 @@ func (s *AdminProjectService) UpdateProject(
 		}
 	}
 
-	if project.Config.GithubRepo != nil && *project.Config.GithubRepo != "" {
-		if err := validation.GitHubRepoIsPublic(ctx, *project.Config.GithubRepo); err != nil {
-			return nil, connect.NewError(connect.CodeInvalidArgument, err)
-		}
-	}
-
 	publicID, err := uuid.Parse(projectID)
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInvalidArgument, fmt.Errorf("invalid project_id format: %w", err))
@@ -245,21 +284,16 @@ func (s *AdminProjectService) UpdateProject(
 	}
 
 	name := existing.Name
-	githubRepository := existing.GithubRepository
 	gcpRegion := existing.GcpRegion
 	gcpZone := existing.GcpZone
 	machineType := existing.MachineType
 	diskSizeGb := existing.DiskSizeGb
 	gcpProjectID := existing.GcpProjectID
 	gcpProjectNumber := existing.GcpProjectNumber
-	githubTeamID := existing.GithubTeamID
 	createBranchSites := existing.CreateBranchSites
 
 	if service.ShouldUpdateField(req.Msg.UpdateMask, "project.config.project_name") {
 		name = project.Config.ProjectName
-	}
-	if service.ShouldUpdateField(req.Msg.UpdateMask, "project.config.github_repo") {
-		githubRepository = toNullString(ptrToString(project.Config.GithubRepo))
 	}
 	// Region and zone cannot be updated after project creation
 	if service.ShouldUpdateField(req.Msg.UpdateMask, "project.config.region") {
@@ -269,42 +303,33 @@ func (s *AdminProjectService) UpdateProject(
 		return nil, connect.NewError(connect.CodeInvalidArgument, fmt.Errorf("zone cannot be updated after project creation"))
 	}
 	if service.ShouldUpdateField(req.Msg.UpdateMask, "project.config.machine_type") {
-		machineType = toNullString(project.Config.MachineType)
+		machineType = service.ToNullString(project.Config.MachineType)
 	}
 	if service.ShouldUpdateField(req.Msg.UpdateMask, "project.config.disk_size_gb") {
-		diskSizeGb = toNullInt32(project.Config.DiskSizeGb)
+		diskSizeGb = service.ToNullInt32(project.Config.DiskSizeGb)
 	}
 	if service.ShouldUpdateField(req.Msg.UpdateMask, "project.config.create_branch_sites") {
 		createBranchSites = sql.NullBool{Bool: project.Config.CreateBranchSites, Valid: true}
 	}
 	if service.ShouldUpdateField(req.Msg.UpdateMask, "project.gcp_project_id") {
-		gcpProjectID = toNullString(ptrToString(project.GcpProjectId))
+		gcpProjectID = service.ToNullString(service.PtrToString(project.GcpProjectId))
 	}
 	if service.ShouldUpdateField(req.Msg.UpdateMask, "project.gcp_project_number") {
-		gcpProjectNumber = toNullString(ptrToString(project.GcpProjectNumber))
-	}
-	if service.ShouldUpdateField(req.Msg.UpdateMask, "project.github_team_id") {
-		githubTeamID = toNullString(ptrToString(project.GithubTeamId))
+		gcpProjectNumber = service.ToNullString(service.PtrToString(project.GcpProjectNumber))
 	}
 
 	params := db.UpdateProjectParams{
 		Name:                      name,
-		GithubRepository:          githubRepository,
-		GithubBranch:              existing.GithubBranch,
-		ComposePath:               existing.ComposePath,
 		GcpRegion:                 gcpRegion,
 		GcpZone:                   gcpZone,
 		MachineType:               machineType,
 		DiskSizeGb:                diskSizeGb,
-		ComposeFile:               existing.ComposeFile,
-		ApplicationType:           existing.ApplicationType,
 		MonitoringEnabled:         existing.MonitoringEnabled,
 		MonitoringLogLevel:        existing.MonitoringLogLevel,
 		MonitoringMetricsEnabled:  existing.MonitoringMetricsEnabled,
 		MonitoringHealthCheckPath: existing.MonitoringHealthCheckPath,
 		GcpProjectID:              gcpProjectID,
 		GcpProjectNumber:          gcpProjectNumber,
-		GithubTeamID:              githubTeamID,
 		CreateBranchSites:         createBranchSites,
 		Status:                    db.NullProjectsStatus{ProjectsStatus: db.ProjectsStatusActive, Valid: true},
 		UpdatedBy:                 sql.NullInt64{Int64: accountID, Valid: true},
@@ -335,6 +360,39 @@ func (s *AdminProjectService) DeleteProject(
 	publicID, err := uuid.Parse(projectID)
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInvalidArgument, fmt.Errorf("invalid project_id format: %w", err))
+	}
+
+	// Get project to retrieve billing info
+	project, err := s.repo.GetProjectByPublicID(ctx, publicID)
+	if err != nil {
+		return nil, err
+	}
+
+	// Remove project from Stripe subscription
+	if project.StripeSubscriptionItemID.Valid && project.StripeSubscriptionItemID.String != "" {
+		diskSize := 20 // Default
+		if project.DiskSizeGb.Valid {
+			diskSize = int(project.DiskSizeGb.Int32)
+		}
+
+		err = s.billingManager.RemoveProjectFromSubscription(
+			ctx,
+			project.StripeSubscriptionItemID.String,
+			diskSize,
+			project.OrganizationID,
+		)
+		if err != nil {
+			// Log error but don't fail deletion - we don't want orphaned projects
+			slog.Error("Failed to remove project from Stripe, continuing with deletion",
+				"error", err,
+				"project_id", projectID,
+				"stripe_item_id", project.StripeSubscriptionItemID.String)
+		} else {
+			slog.Info("Removed project from Stripe subscription (admin)",
+				"project", project.Name,
+				"organization_id", project.OrganizationID,
+				"stripe_item_id", project.StripeSubscriptionItemID.String)
+		}
 	}
 
 	err = s.repo.DeleteProject(ctx, publicID)
@@ -404,15 +462,13 @@ func (s *AdminProjectService) ListProjects(
 				Region:            service.FromNullString(project.GcpRegion),
 				Zone:              service.FromNullString(project.GcpZone),
 				MachineType:       service.FromNullString(project.MachineType),
-				DiskSizeGb:        fromNullInt32(project.DiskSizeGb),
-				GithubRepo:        service.FromNullStringPtr(project.GithubRepository),
+				DiskSizeGb:        service.FromNullInt32(project.DiskSizeGb),
 				Promote:           commonv1.PromoteStrategy_PROMOTE_STRATEGY_GITHUB_TAG,
 				Status:            DbProjectStatusToProto(project.Status),
 			},
 			BillingAccount:   "",
 			GcpProjectId:     service.FromNullStringPtr(project.GcpProjectID),
 			GcpProjectNumber: service.FromNullStringPtr(project.GcpProjectNumber),
-			GithubTeamId:     service.FromNullStringPtr(project.GithubTeamID),
 		})
 	}
 

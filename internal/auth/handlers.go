@@ -142,6 +142,19 @@ func (h *Handler) HandleUserpassLogin(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// Web request - check if onboarding is complete
+	account, err := h.db.GetAccountByEmail(r.Context(), email)
+	if err != nil {
+		slog.Error("Failed to get account for onboarding check", "error", err)
+		http.Redirect(w, r, "/dashboard", http.StatusSeeOther)
+		return
+	}
+
+	if !account.OnboardingCompleted {
+		http.Redirect(w, r, "/onboarding", http.StatusSeeOther)
+		return
+	}
+
 	// Web request - redirect to dashboard
 	http.Redirect(w, r, "/dashboard", http.StatusSeeOther)
 }
@@ -461,6 +474,12 @@ func (h *Handler) HandleOAuthCallback(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Browser request - redirect
+	// Check if onboarding is complete
+	if !account.OnboardingCompleted {
+		http.Redirect(w, r, "/onboarding", http.StatusSeeOther)
+		return
+	}
+
 	if stateData.RedirectPath == "/" || stateData.RedirectPath == "" {
 		http.Redirect(w, r, "/dashboard", http.StatusSeeOther)
 		return
