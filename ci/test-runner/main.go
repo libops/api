@@ -619,7 +619,6 @@ func (tr *TestRunner) testProjectOperations(ctx context.Context) {
 		"no-access": false,
 	})
 
-
 	// Matrix: Project Secrets
 	tr.testMatrix("Create Project Secret", func(user string) error {
 		c := tr.projectSecretClient(user)

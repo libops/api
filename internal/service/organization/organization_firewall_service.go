@@ -4,12 +4,13 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
+	"log/slog"
 
 	"connectrpc.com/connect"
 	"google.golang.org/protobuf/types/known/emptypb"
 
+	"github.com/libops/api/db"
 	"github.com/libops/api/internal/auth"
-	"github.com/libops/api/internal/db"
 	"github.com/libops/api/internal/service"
 	"github.com/libops/api/internal/validation"
 	libopsv1 "github.com/libops/api/proto/libops/v1"
@@ -49,6 +50,7 @@ func (s *FirewallService) ListOrganizationFirewallRules(
 
 	rules, err := s.db.ListOrganizationFirewallRules(ctx, sql.NullInt64{Int64: organization.ID, Valid: true})
 	if err != nil {
+		slog.Error("Failed to list organization firewall rules", "error", err, "organization_id", organization.ID)
 		return nil, connect.NewError(connect.CodeInternal, fmt.Errorf("database error: %w", err))
 	}
 
@@ -86,6 +88,10 @@ func (s *FirewallService) CreateOrganizationFirewallRule(
 	req *connect.Request[libopsv1.CreateOrganizationFirewallRuleRequest],
 ) (*connect.Response[libopsv1.CreateOrganizationFirewallRuleResponse], error) {
 	organizationID := req.Msg.OrganizationId
+	slog.Debug("CreateOrganizationFirewallRule called",
+		"organization_id", organizationID,
+		"cidr", req.Msg.Cidr,
+		"rule_type", req.Msg.RuleType)
 
 	if err := validation.UUID(organizationID); err != nil {
 		return nil, connect.NewError(connect.CodeInvalidArgument, err)
@@ -107,6 +113,10 @@ func (s *FirewallService) CreateOrganizationFirewallRule(
 		return nil, connect.NewError(connect.CodeInvalidArgument, err)
 	}
 
+	if req.Msg.RuleType == libopsv1.FirewallRuleType_FIREWALL_RULE_TYPE_UNSPECIFIED {
+		return nil, connect.NewError(connect.CodeInvalidArgument, fmt.Errorf("rule_type is required"))
+	}
+
 	organization, err := service.GetOrganizationByPublicID(ctx, s.db, organizationID)
 	if err != nil {
 		return nil, err
@@ -121,6 +131,7 @@ func (s *FirewallService) CreateOrganizationFirewallRule(
 
 	err = s.db.CreateOrganizationFirewallRule(ctx, params)
 	if err != nil {
+		slog.Error("Failed to create firewall rule in DB", "error", err, "params", params)
 		return nil, connect.NewError(connect.CodeInternal, fmt.Errorf("database error: %w", err))
 	}
 
@@ -156,6 +167,7 @@ func (s *FirewallService) DeleteOrganizationFirewallRule(
 
 	err := s.db.DeleteOrganizationFirewallRuleByPublicID(ctx, ruleID)
 	if err != nil {
+		slog.Error("Failed to delete organization firewall rule", "error", err, "rule_id", ruleID)
 		return nil, connect.NewError(connect.CodeInternal, fmt.Errorf("database error: %w", err))
 	}
 

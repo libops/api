@@ -10,13 +10,17 @@ import (
 	"github.com/fsnotify/fsnotify"
 )
 
+// TokenChangeCallback is called when the Vault token changes
+type TokenChangeCallback func(newToken string)
+
 // Reloader watches for configuration changes and reloads config in memory
 type Reloader struct {
-	config       atomic.Pointer[Config]
-	loader       *VaultLoader
-	watcher      *fsnotify.Watcher
-	watchedFiles map[string]bool
-	stopCh       chan struct{}
+	config            atomic.Pointer[Config]
+	loader            *VaultLoader
+	watcher           *fsnotify.Watcher
+	watchedFiles      map[string]bool
+	stopCh            chan struct{}
+	tokenChangeCallbacks []TokenChangeCallback
 }
 
 // NewReloader creates a new config reloader
@@ -27,10 +31,11 @@ func NewReloader(initialConfig *Config, loader *VaultLoader) (*Reloader, error) 
 	}
 
 	r := &Reloader{
-		loader:       loader,
-		watcher:      watcher,
-		watchedFiles: make(map[string]bool),
-		stopCh:       make(chan struct{}),
+		loader:               loader,
+		watcher:              watcher,
+		watchedFiles:         make(map[string]bool),
+		stopCh:               make(chan struct{}),
+		tokenChangeCallbacks: make([]TokenChangeCallback, 0),
 	}
 	r.config.Store(initialConfig)
 
@@ -40,6 +45,11 @@ func NewReloader(initialConfig *Config, loader *VaultLoader) (*Reloader, error) 
 // GetConfig returns the current configuration atomically
 func (r *Reloader) GetConfig() *Config {
 	return r.config.Load()
+}
+
+// OnTokenChange registers a callback to be called when the Vault token changes
+func (r *Reloader) OnTokenChange(callback TokenChangeCallback) {
+	r.tokenChangeCallbacks = append(r.tokenChangeCallbacks, callback)
 }
 
 // Start begins watching for configuration changes
@@ -142,5 +152,9 @@ func (r *Reloader) logChanges(old, new *Config) {
 	}
 	if old.VaultToken != new.VaultToken {
 		slog.Info("Config changed", "key", "VAULT_TOKEN")
+		// Notify all registered callbacks about the token change
+		for _, callback := range r.tokenChangeCallbacks {
+			callback(new.VaultToken)
+		}
 	}
 }

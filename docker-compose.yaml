@@ -11,6 +11,7 @@ secrets:
 
 volumes:
   mariadb-data: {}
+  postgres-data: {}
   vault-secrets: {}
   vault-data: {}
 
@@ -21,6 +22,7 @@ services:
       context: ./conf/init
     environment:
       VAULT_ADDR: ${VAULT_ADDR:-http://vault:8200}
+      VAULT_TOKEN: ${VAULT_TOKEN}
     profiles: [none]
     restart: no
     volumes:
@@ -28,7 +30,7 @@ services:
       - ./docker-compose.yaml:/docker-compose.yaml:ro
     depends_on:
       vault:
-        condition: service_healthy
+        condition: service_started
   docs:
     image: nginx:alpine
     volumes:
@@ -59,6 +61,8 @@ services:
       STRIPE_WEBHOOK_SECRET: ${STRIPE_WEBHOOK_SECRET}
       LIBOPS_ENV: ${LIBOPS_ENV:-development}
       LOG_LEVEL: ${LOG_LEVEL:-INFO}
+      GCP_PROJECT_ID: libops-api
+      EVENTS_TOPIC_ID: libops-control-plane
     secrets:
       - source: MARIADB_PASSWORD
     volumes:
@@ -91,8 +95,6 @@ services:
       - source: MARIADB_PASSWORD
     volumes:
       - mariadb-data:/var/lib/mysql:rw
-      - ./db/schema.sql:/docker-entrypoint-initdb.d/01-schema.sql:ro
-      - ./conf/mariadb/seed.sql:/docker-entrypoint-initdb.d/02-seed.sql:ro
     healthcheck:
       test: ["CMD", "healthcheck.sh", "--connect", "--innodb_initialized"]
       interval: 5s
@@ -107,6 +109,10 @@ services:
       default:
     cap_add:
       - IPC_LOCK
+    ulimits:
+      memlock:
+        soft: -1
+        hard: -1
     volumes:
       - vault-data:/vault/data:rw
       - ./conf/vault/default.hcl:/etc/vault/server.hcl:r
@@ -132,6 +138,28 @@ services:
     depends_on:
       vault:
         condition: service_healthy
+
+  event-router:
+    image: ghcr.io/libops/control-plane:main
+    build:
+      context: .
+      dockerfile: ./control-plane/Dockerfile
+    environment:
+      LIBOPS_ENV: ${LIBOPS_ENV:-development}
+      MARIADB_PASSWORD_FILE: /run/secrets/MARIADB_PASSWORD
+      POLL_INTERVAL_SECONDS: 2
+      MAX_CONCURRENT_EVENTS: 5
+      PROJECT_ID: libops-api
+      GOOGLE_APPLICATION_CREDENTIALS: /run/secrets/GOOGLE_APPLICATION_CREDENTIALS
+    secrets:
+      - source: GOOGLE_APPLICATION_CREDENTIALS
+      - source: MARIADB_PASSWORD
+    networks:
+      - default
+    depends_on:
+      api:
+        condition: service_healthy
+
   traefik:
     image: traefik:v3.6.2@sha256:aaf0f6185419a50c74651448c1a5bf4606bd2d2ddb7b8749eed505d55bf8b8ea
     command: >-

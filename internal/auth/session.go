@@ -5,7 +5,7 @@ import (
 	"log/slog"
 	"net/http"
 
-	"github.com/libops/api/internal/db"
+	"github.com/libops/api/db"
 )
 
 // SessionManager handles session management with cookies and tokens.

@@ -10,9 +10,9 @@ import (
 	"github.com/google/uuid"
 	"google.golang.org/protobuf/types/known/emptypb"
 
+	"github.com/libops/api/db"
 	"github.com/libops/api/internal/auth"
 	"github.com/libops/api/internal/billing"
-	"github.com/libops/api/internal/db"
 	"github.com/libops/api/internal/service"
 	"github.com/libops/api/internal/validation"
 	libopsv1 "github.com/libops/api/proto/libops/v1"
@@ -80,6 +80,7 @@ func (s *ProjectService) GetProject(
 
 	project, err := s.repo.GetProjectByPublicID(ctx, publicID)
 	if err != nil {
+		slog.Error("Failed to get project by public ID", "error", err, "project_id", projectID)
 		return nil, err
 	}
 
@@ -92,6 +93,8 @@ func (s *ProjectService) GetProject(
 		Zone:              service.FromNullString(project.GcpZone),
 		MachineType:       service.FromNullString(project.MachineType),
 		DiskSizeGb:        service.FromNullInt32(project.DiskSizeGb),
+		Os:                service.FromNullString(project.Os),
+		DiskType:          service.FromNullString(project.DiskType),
 		Promote:           service.DbPromoteStrategyToProto(project.PromoteStrategy),
 		Status:            DbProjectStatusToProto(project.Status),
 	}
@@ -109,15 +112,20 @@ func (s *ProjectService) CreateProject(
 	organizationID := req.Msg.OrganizationId
 	project := req.Msg.Project
 
+	slog.Debug("CreateProject called", "organization_id", organizationID, "project", project)
+
 	if err := validation.UUID(organizationID); err != nil {
+		slog.Error("CreateProject validation failed: invalid organization_id", "error", err, "organization_id", organizationID)
 		return nil, connect.NewError(connect.CodeInvalidArgument, err)
 	}
 
 	if project == nil {
+		slog.Error("CreateProject validation failed: project is required")
 		return nil, connect.NewError(connect.CodeInvalidArgument, fmt.Errorf("project is required"))
 	}
 
 	if err := validation.ProjectName(project.ProjectName); err != nil {
+		slog.Error("CreateProject validation failed: invalid project name", "error", err, "project_name", project.ProjectName)
 		return nil, connect.NewError(connect.CodeInvalidArgument, err)
 	}
 
@@ -145,6 +153,11 @@ func (s *ProjectService) CreateProject(
 		return nil, err
 	}
 
+	// Validate project limit for this organization
+	if err := s.repo.ValidateProjectLimit(ctx, organization.ID); err != nil {
+		return nil, err
+	}
+
 	// Validate machine type and disk size
 	machineType := project.MachineType
 	if machineType == "" {
@@ -160,17 +173,62 @@ func (s *ProjectService) CreateProject(
 		return nil, connect.NewError(connect.CodeInvalidArgument, fmt.Errorf("disk_size_gb must be between 10 and 2000"))
 	}
 
-	// Add project to Stripe subscription (adds machine + increases disk)
-	machineItemID, err := s.billingManager.AddProjectToSubscription(
-		ctx,
-		organization.ID,
-		project.ProjectName,
-		machineType,
-		int(diskSizeGB),
-	)
+	// Check if this is the first project for the organization (onboarding flow)
+	// During onboarding, the Stripe subscription is already created with machine+disk items
+	// So we skip adding billing items for the first project to avoid duplicates
+	allProjects, err := s.repo.db.ListProjects(ctx, db.ListProjectsParams{
+		Limit:  100,
+		Offset: 0,
+	})
 	if err != nil {
-		slog.Error("Failed to add project to Stripe subscription", "error", err, "project", project.ProjectName)
-		return nil, connect.NewError(connect.CodeInternal, fmt.Errorf("failed to setup billing for project: %w", err))
+		slog.Error("Failed to check existing projects", "error", err)
+		return nil, connect.NewError(connect.CodeInternal, fmt.Errorf("failed to check existing projects: %w", err))
+	}
+
+	// Count projects for this organization
+	var orgProjectCount int
+	for _, p := range allProjects {
+		if p.OrganizationID == organization.ID {
+			orgProjectCount++
+		}
+	}
+
+	var machineItemID string
+	isFirstProject := orgProjectCount == 0
+
+	if !isFirstProject {
+		// Add project to Stripe subscription (adds machine + increases disk)
+		// Only for projects created after onboarding
+		machineItemID, err = s.billingManager.AddProjectToSubscription(
+			ctx,
+			organization.ID,
+			project.ProjectName,
+			machineType,
+			int(diskSizeGB),
+		)
+		if err != nil {
+			slog.Error("Failed to add project to Stripe subscription", "error", err, "project", project.ProjectName)
+			return nil, connect.NewError(connect.CodeInternal, fmt.Errorf("failed to setup billing for project: %w", err))
+		}
+	} else {
+		slog.Info("Skipping billing setup for first project (onboarding)", "project", project.ProjectName, "org_id", organization.ID)
+		// For the first project, get the machine item ID from the onboarding session's machine_price_id field
+		// This was stored by the webhook when processing the checkout
+		onboardSession, err := s.repo.db.GetOnboardingSessionByAccountID(ctx, userInfo.AccountID)
+		if err == nil && onboardSession.MachinePriceID.Valid {
+			machineItemID = onboardSession.MachinePriceID.String
+		}
+	}
+
+	// Set defaults for new fields
+	osImage := project.Os
+	if osImage == "" {
+		osImage = "cos-125-19216-104-74" // Default
+	}
+
+	diskType := project.DiskType
+	if diskType == "" {
+		diskType = "hyperdisk-balanced" // Default
 	}
 
 	// Organizations can set most fields but not sensitive ones
@@ -183,6 +241,8 @@ func (s *ProjectService) CreateProject(
 		GcpZone:                   service.ToNullString(project.Zone),
 		MachineType:               sql.NullString{String: machineType, Valid: true},
 		DiskSizeGb:                sql.NullInt32{Int32: diskSizeGB, Valid: true},
+		Os:                        sql.NullString{String: osImage, Valid: true},
+		DiskType:                  sql.NullString{String: diskType, Valid: true},
 		StripeSubscriptionItemID:  sql.NullString{String: machineItemID, Valid: true},
 		MonitoringEnabled:         sql.NullBool{Bool: false, Valid: true},
 		MonitoringLogLevel:        sql.NullString{String: "INFO", Valid: true},
@@ -249,6 +309,7 @@ func (s *ProjectService) UpdateProject(
 
 	existing, err := s.repo.GetProjectByPublicID(ctx, publicID)
 	if err != nil {
+		slog.Error("Failed to get project by public ID for update", "error", err, "project_id", projectID)
 		return nil, err
 	}
 
@@ -257,10 +318,18 @@ func (s *ProjectService) UpdateProject(
 	gcpZone := existing.GcpZone
 	machineType := existing.MachineType
 	diskSizeGb := existing.DiskSizeGb
+	osImage := existing.Os
+	diskType := existing.DiskType
 	createBranchSites := existing.CreateBranchSites
 
 	if service.ShouldUpdateField(req.Msg.UpdateMask, "project.project_name") {
 		name = project.ProjectName
+	}
+	if service.ShouldUpdateField(req.Msg.UpdateMask, "project.os") {
+		osImage = sql.NullString{String: project.Os, Valid: true}
+	}
+	if service.ShouldUpdateField(req.Msg.UpdateMask, "project.disk_type") {
+		diskType = sql.NullString{String: project.DiskType, Valid: true}
 	}
 	// Region and zone cannot be updated after project creation
 	if service.ShouldUpdateField(req.Msg.UpdateMask, "project.region") {
@@ -348,6 +417,8 @@ func (s *ProjectService) UpdateProject(
 		GcpZone:                   gcpZone,
 		MachineType:               machineType,
 		DiskSizeGb:                diskSizeGb,
+		Os:                        osImage,
+		DiskType:                  diskType,
 		StripeSubscriptionItemID:  stripeSubItemID,
 		MonitoringEnabled:         existing.MonitoringEnabled,
 		MonitoringLogLevel:        existing.MonitoringLogLevel,
@@ -370,6 +441,7 @@ func (s *ProjectService) UpdateProject(
 
 	err = s.repo.UpdateProject(ctx, params)
 	if err != nil {
+		slog.Error("Failed to update project in DB", "error", err, "project_id", projectID)
 		return nil, err
 	}
 
@@ -397,6 +469,7 @@ func (s *ProjectService) DeleteProject(
 	// Get project to retrieve billing info
 	project, err := s.repo.GetProjectByPublicID(ctx, publicID)
 	if err != nil {
+		slog.Error("Failed to get project by public ID for deletion", "error", err, "project_id", projectID)
 		return nil, err
 	}
 
@@ -429,6 +502,7 @@ func (s *ProjectService) DeleteProject(
 
 	err = s.repo.DeleteProject(ctx, publicID)
 	if err != nil {
+		slog.Error("Failed to delete project from DB", "error", err, "project_id", projectID)
 		return nil, err
 	}
 
@@ -457,6 +531,7 @@ func (s *ProjectService) ListProjects(
 		}
 		org, err := s.repo.GetOrganizationByPublicID(ctx, organizationPublicID)
 		if err != nil {
+			slog.Error("Failed to get organization by public ID for filtering", "error", err, "organization_id", *req.Msg.OrganizationId)
 			return nil, err
 		}
 		filterOrgID = sql.NullInt64{Int64: org.ID, Valid: true}
@@ -484,6 +559,7 @@ func (s *ProjectService) ListProjects(
 
 	projects, err := s.repo.ListUserProjects(ctx, params)
 	if err != nil {
+		slog.Error("Failed to list user projects", "error", err, "account_id", accountID)
 		return nil, err
 	}
 
@@ -498,6 +574,8 @@ func (s *ProjectService) ListProjects(
 			Zone:              service.FromNullString(project.GcpZone),
 			MachineType:       service.FromNullString(project.MachineType),
 			DiskSizeGb:        service.FromNullInt32(project.DiskSizeGb),
+			Os:                service.FromNullString(project.Os),
+			DiskType:          service.FromNullString(project.DiskType),
 			Promote:           commonv1.PromoteStrategy_PROMOTE_STRATEGY_GITHUB_TAG,
 		})
 	}
@@ -531,6 +609,7 @@ func (s *ProjectService) ListProjectSites(
 
 	project, err := s.repo.GetProjectByPublicID(ctx, publicID)
 	if err != nil {
+		slog.Error("Failed to get project by public ID for site listing", "error", err, "project_id", projectID)
 		return nil, err
 	}
 
@@ -555,6 +634,7 @@ func (s *ProjectService) ListProjectSites(
 
 	sites, err := s.repo.ListProjectSites(ctx, params)
 	if err != nil {
+		slog.Error("Failed to list project sites", "error", err, "project_id", project.ID)
 		return nil, err
 	}
 

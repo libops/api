@@ -85,6 +85,8 @@ type ProjectConfig struct {
 	Zone        string `protobuf:"bytes,6,opt,name=zone,proto3" json:"zone,omitempty"`                                  // GCP zone (e.g., "us-central1-f")
 	MachineType string `protobuf:"bytes,7,opt,name=machine_type,json=machineType,proto3" json:"machine_type,omitempty"` // GCP machine type (e.g., "e2-standard-2")
 	DiskSizeGb  int32  `protobuf:"varint,8,opt,name=disk_size_gb,json=diskSizeGb,proto3" json:"disk_size_gb,omitempty"` // Disk size in GB
+	Os          string `protobuf:"bytes,9,opt,name=os,proto3" json:"os,omitempty"`                                      // OS image (default: "cos-125-19216-104-74")
+	DiskType    string `protobuf:"bytes,10,opt,name=disk_type,json=diskType,proto3" json:"disk_type,omitempty"`         // Disk type (default: "hyperdisk-balanced")
 	// Promotion strategy
 	Promote PromoteStrategy `protobuf:"varint,11,opt,name=promote,proto3,enum=libops.v1.common.PromoteStrategy" json:"promote,omitempty"` // How to promote code to production
 	// Status
@@ -179,6 +181,20 @@ func (x *ProjectConfig) GetDiskSizeGb() int32 {
 	return 0
 }
 
+func (x *ProjectConfig) GetOs() string {
+	if x != nil {
+		return x.Os
+	}
+	return ""
+}
+
+func (x *ProjectConfig) GetDiskType() string {
+	if x != nil {
+		return x.DiskType
+	}
+	return ""
+}
+
 func (x *ProjectConfig) GetPromote() PromoteStrategy {
 	if x != nil {
 		return x.Promote
@@ -197,7 +213,7 @@ var File_libops_v1_common_project_proto protoreflect.FileDescriptor
 
 const file_libops_v1_common_project_proto_rawDesc = "" +
 	"\n" +
-	"\x1elibops/v1/common/project.proto\x12\x10libops.v1.common\x1a$gnostic/openapi/v3/annotations.proto\x1a\x1clibops/v1/common/types.proto\"\xa2\x03\n" +
+	"\x1elibops/v1/common/project.proto\x12\x10libops.v1.common\x1a$gnostic/openapi/v3/annotations.proto\x1a\x1clibops/v1/common/types.proto\"\xcf\x03\n" +
 	"\rProjectConfig\x123\n" +
 	"\x0forganization_id\x18\x01 \x01(\tB\n" +
 	"\xbaG\a\x9a\x02\x04uuidR\x0eorganizationId\x12)\n" +
@@ -210,7 +226,10 @@ const file_libops_v1_common_project_proto_rawDesc = "" +
 	"\x04zone\x18\x06 \x01(\tR\x04zone\x12!\n" +
 	"\fmachine_type\x18\a \x01(\tR\vmachineType\x12 \n" +
 	"\fdisk_size_gb\x18\b \x01(\x05R\n" +
-	"diskSizeGb\x12;\n" +
+	"diskSizeGb\x12\x0e\n" +
+	"\x02os\x18\t \x01(\tR\x02os\x12\x1b\n" +
+	"\tdisk_type\x18\n" +
+	" \x01(\tR\bdiskType\x12;\n" +
 	"\apromote\x18\v \x01(\x0e2!.libops.v1.common.PromoteStrategyR\apromote\x120\n" +
 	"\x06status\x18\x10 \x01(\x0e2\x18.libops.v1.common.StatusR\x06status*y\n" +
 	"\x0fPromoteStrategy\x12 \n" +

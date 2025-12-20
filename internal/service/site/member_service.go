@@ -5,12 +5,14 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
+	"log/slog"
 
 	"connectrpc.com/connect"
 	"github.com/google/uuid"
 	"google.golang.org/protobuf/types/known/emptypb"
 
-	"github.com/libops/api/internal/db"
+	"github.com/libops/api/db"
+	"github.com/libops/api/internal/reconciler"
 	"github.com/libops/api/internal/service"
 	"github.com/libops/api/internal/validation"
 	libopsv1 "github.com/libops/api/proto/libops/v1"
@@ -19,16 +21,18 @@ import (
 
 // SiteMemberService implements the LibOps SiteMemberService API.
 type SiteMemberService struct {
-	db db.Querier
+	db          db.Querier
+	connManager *reconciler.ConnectionManager
 }
 
 // Compile-time check.
 var _ libopsv1connect.SiteMemberServiceHandler = (*SiteMemberService)(nil)
 
 // NewSiteMemberService creates a new SiteMemberService instance.
-func NewSiteMemberService(querier db.Querier) *SiteMemberService {
+func NewSiteMemberService(querier db.Querier, connManager *reconciler.ConnectionManager) *SiteMemberService {
 	return &SiteMemberService{
-		db: querier,
+		db:          querier,
+		connManager: connManager,
 	}
 }
 
@@ -114,10 +118,19 @@ func (s *SiteMemberService) CreateSiteMember(
 		return nil, connect.NewError(connect.CodeInternal, fmt.Errorf("database error: %w", err))
 	}
 
+	// Determine initial status based on role
+	// Owner/developer roles require reconciliation (SSH keys, secrets, firewall)
+	status := db.SiteMembersStatusActive
+	if req.Msg.Role == "owner" || req.Msg.Role == "developer" {
+		status = db.SiteMembersStatusProvisioning
+	}
+
 	params := db.CreateSiteMemberParams{
 		SiteID:    site.ID,
 		AccountID: account.ID,
 		Role:      db.SiteMembersRole(req.Msg.Role),
+		CreatedBy: sql.NullInt64{Valid: false},
+		UpdatedBy: sql.NullInt64{Valid: false},
 	}
 
 	err = s.db.CreateSiteMember(ctx, params)
@@ -125,11 +138,24 @@ func (s *SiteMemberService) CreateSiteMember(
 		return nil, connect.NewError(connect.CodeInternal, fmt.Errorf("database error: %w", err))
 	}
 
+	// Trigger reconciliation via WebSocket if owner/developer role
+	if s.connManager != nil && (req.Msg.Role == "owner" || req.Msg.Role == "developer") {
+		if err := s.connManager.TriggerReconciliation(site.ID, "ssh_keys"); err != nil {
+			slog.Debug("site not connected, skipping reconciliation",
+				"site_id", siteID,
+				"error", err)
+		} else {
+			slog.Info("triggered ssh_keys reconciliation for site member addition",
+				"site_id", siteID)
+		}
+	}
+
 	member := &libopsv1.MemberDetail{
 		AccountId:      accountID,
 		Email:          account.Email,
 		Name:           service.FromNullString(account.Name),
 		Role:           req.Msg.Role,
+		Status:         service.DbStatusToProto(string(status)),
 		GithubUsername: service.FromNullStringPtr(account.GithubUsername),
 	}
 
@@ -234,6 +260,18 @@ func (s *SiteMemberService) DeleteSiteMember(
 		return nil, connect.NewError(connect.CodeInternal, fmt.Errorf("database error: %w", err))
 	}
 
+	// Get member role before deletion for reconciliation check
+	existingMember, err := s.db.GetSiteMember(ctx, db.GetSiteMemberParams{
+		SiteID:    site.ID,
+		AccountID: account.ID,
+	})
+	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return nil, connect.NewError(connect.CodeNotFound, fmt.Errorf("member not found"))
+		}
+		return nil, connect.NewError(connect.CodeInternal, fmt.Errorf("database error: %w", err))
+	}
+
 	params := db.DeleteSiteMemberParams{
 		SiteID:    site.ID,
 		AccountID: account.ID,
@@ -242,6 +280,15 @@ func (s *SiteMemberService) DeleteSiteMember(
 	err = s.db.DeleteSiteMember(ctx, params)
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInternal, fmt.Errorf("database error: %w", err))
+	}
+
+	// Trigger reconciliation via WebSocket if owner/developer role was removed
+	memberRole := string(existingMember.Role)
+	if s.connManager != nil && (memberRole == "owner" || memberRole == "developer") {
+		if err := s.connManager.TriggerReconciliation(site.ID, "ssh_keys"); err == nil {
+			slog.Info("triggered ssh_keys reconciliation for site member removal",
+				"site_id", siteID)
+		}
 	}
 
 	return connect.NewResponse(&emptypb.Empty{}), nil

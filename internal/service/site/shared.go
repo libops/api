@@ -10,7 +10,7 @@ import (
 	"github.com/google/uuid"
 	"google.golang.org/protobuf/types/known/fieldmaskpb"
 
-	"github.com/libops/api/internal/db"
+	"github.com/libops/api/db"
 	"github.com/libops/api/internal/service"
 	commonv1 "github.com/libops/api/proto/libops/v1/common"
 )

@@ -14,6 +14,10 @@ path "identity/entity/id/*" {
   capabilities = [ "create", "read", "update", "delete" ]
 }
 
+path "identity/entity/name/*" {
+  capabilities = [ "read" ]
+}
+
 path "identity/entity-alias" {
   capabilities = [ "create", "update" ]
 }

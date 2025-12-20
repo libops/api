@@ -1,0 +1,12 @@
+[Unit]
+Description=SSH Keys Reconciliation Timer
+Requires=reconcile-ssh-keys.service
+
+[Timer]
+# Run every 1h
+OnBootSec=1min
+OnUnitActiveSec=1h
+Unit=reconcile-ssh-keys.service
+
+[Install]
+WantedBy=timers.target

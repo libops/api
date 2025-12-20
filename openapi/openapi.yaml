@@ -1555,6 +1555,218 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/libops.v1.AdminUpdateProjectResponse'
+  /libops.v1.AdminReconciliationService/GenerateTerraformVars:
+    get:
+      tags:
+      - libops.v1.AdminReconciliationService
+      summary: Generate terraform variables JSON from database state
+      description: Generate terraform variables JSON from database state
+      operationId: libops.v1.AdminReconciliationService.GenerateTerraformVars.get
+      parameters:
+      - name: Connect-Protocol-Version
+        in: header
+        required: true
+        schema:
+          $ref: '#/components/schemas/connect-protocol-version'
+      - name: Connect-Timeout-Ms
+        in: header
+        schema:
+          $ref: '#/components/schemas/connect-timeout-header'
+      - name: message
+        in: query
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/libops.v1.GenerateTerraformVarsRequest'
+      - name: encoding
+        in: query
+        required: true
+        schema:
+          $ref: '#/components/schemas/encoding'
+      - name: base64
+        in: query
+        schema:
+          $ref: '#/components/schemas/base64'
+      - name: compression
+        in: query
+        schema:
+          $ref: '#/components/schemas/compression'
+      - name: connect
+        in: query
+        schema:
+          $ref: '#/components/schemas/connect'
+      responses:
+        default:
+          description: Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/connect.error'
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/libops.v1.GenerateTerraformVarsResponse'
+    post:
+      tags:
+      - libops.v1.AdminReconciliationService
+      summary: Generate terraform variables JSON from database state
+      description: Generate terraform variables JSON from database state
+      operationId: libops.v1.AdminReconciliationService.GenerateTerraformVars
+      parameters:
+      - name: Connect-Protocol-Version
+        in: header
+        required: true
+        schema:
+          $ref: '#/components/schemas/connect-protocol-version'
+      - name: Connect-Timeout-Ms
+        in: header
+        schema:
+          $ref: '#/components/schemas/connect-timeout-header'
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/libops.v1.GenerateTerraformVarsRequest'
+        required: true
+      responses:
+        default:
+          description: Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/connect.error'
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/libops.v1.GenerateTerraformVarsResponse'
+  /libops.v1.AdminReconciliationService/GetReconciliationRun:
+    get:
+      tags:
+      - libops.v1.AdminReconciliationService
+      summary: Get reconciliation run details from control-plane database
+      description: Get reconciliation run details from control-plane database
+      operationId: libops.v1.AdminReconciliationService.GetReconciliationRun.get
+      parameters:
+      - name: Connect-Protocol-Version
+        in: header
+        required: true
+        schema:
+          $ref: '#/components/schemas/connect-protocol-version'
+      - name: Connect-Timeout-Ms
+        in: header
+        schema:
+          $ref: '#/components/schemas/connect-timeout-header'
+      - name: message
+        in: query
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/libops.v1.GetReconciliationRunRequest'
+      - name: encoding
+        in: query
+        required: true
+        schema:
+          $ref: '#/components/schemas/encoding'
+      - name: base64
+        in: query
+        schema:
+          $ref: '#/components/schemas/base64'
+      - name: compression
+        in: query
+        schema:
+          $ref: '#/components/schemas/compression'
+      - name: connect
+        in: query
+        schema:
+          $ref: '#/components/schemas/connect'
+      responses:
+        default:
+          description: Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/connect.error'
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/libops.v1.GetReconciliationRunResponse'
+    post:
+      tags:
+      - libops.v1.AdminReconciliationService
+      summary: Get reconciliation run details from control-plane database
+      description: Get reconciliation run details from control-plane database
+      operationId: libops.v1.AdminReconciliationService.GetReconciliationRun
+      parameters:
+      - name: Connect-Protocol-Version
+        in: header
+        required: true
+        schema:
+          $ref: '#/components/schemas/connect-protocol-version'
+      - name: Connect-Timeout-Ms
+        in: header
+        schema:
+          $ref: '#/components/schemas/connect-timeout-header'
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/libops.v1.GetReconciliationRunRequest'
+        required: true
+      responses:
+        default:
+          description: Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/connect.error'
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/libops.v1.GetReconciliationRunResponse'
+  /libops.v1.AdminReconciliationService/UpdateReconciliationStatus:
+    post:
+      tags:
+      - libops.v1.AdminReconciliationService
+      summary: Update reconciliation run status
+      description: Update reconciliation run status
+      operationId: libops.v1.AdminReconciliationService.UpdateReconciliationStatus
+      parameters:
+      - name: Connect-Protocol-Version
+        in: header
+        required: true
+        schema:
+          $ref: '#/components/schemas/connect-protocol-version'
+      - name: Connect-Timeout-Ms
+        in: header
+        schema:
+          $ref: '#/components/schemas/connect-timeout-header'
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/libops.v1.UpdateReconciliationStatusRequest'
+        required: true
+      responses:
+        default:
+          description: Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/connect.error'
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/libops.v1.UpdateReconciliationStatusResponse'
   /libops.v1.AdminSiteService/CreateSite:
     post:
       tags:
@@ -1627,6 +1839,98 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/google.protobuf.Empty'
+  /libops.v1.AdminSiteService/GetBlob:
+    get:
+      tags:
+      - libops.v1.AdminSiteService
+      summary: Get blob content via signed GCS URL (optional - VMs can fetch directly
+        from GCS)
+      description: Get blob content via signed GCS URL (optional - VMs can fetch directly
+        from GCS)
+      operationId: libops.v1.AdminSiteService.GetBlob.get
+      parameters:
+      - name: Connect-Protocol-Version
+        in: header
+        required: true
+        schema:
+          $ref: '#/components/schemas/connect-protocol-version'
+      - name: Connect-Timeout-Ms
+        in: header
+        schema:
+          $ref: '#/components/schemas/connect-timeout-header'
+      - name: message
+        in: query
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/libops.v1.GetBlobRequest'
+      - name: encoding
+        in: query
+        required: true
+        schema:
+          $ref: '#/components/schemas/encoding'
+      - name: base64
+        in: query
+        schema:
+          $ref: '#/components/schemas/base64'
+      - name: compression
+        in: query
+        schema:
+          $ref: '#/components/schemas/compression'
+      - name: connect
+        in: query
+        schema:
+          $ref: '#/components/schemas/connect'
+      responses:
+        default:
+          description: Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/connect.error'
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/libops.v1.GetBlobResponse'
+    post:
+      tags:
+      - libops.v1.AdminSiteService
+      summary: Get blob content via signed GCS URL (optional - VMs can fetch directly
+        from GCS)
+      description: Get blob content via signed GCS URL (optional - VMs can fetch directly
+        from GCS)
+      operationId: libops.v1.AdminSiteService.GetBlob
+      parameters:
+      - name: Connect-Protocol-Version
+        in: header
+        required: true
+        schema:
+          $ref: '#/components/schemas/connect-protocol-version'
+      - name: Connect-Timeout-Ms
+        in: header
+        schema:
+          $ref: '#/components/schemas/connect-timeout-header'
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/libops.v1.GetBlobRequest'
+        required: true
+      responses:
+        default:
+          description: Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/connect.error'
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/libops.v1.GetBlobResponse'
   /libops.v1.AdminSiteService/GetSite:
     get:
       tags:
@@ -1715,6 +2019,274 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/libops.v1.AdminGetSiteResponse'
+  /libops.v1.AdminSiteService/GetSiteFirewall:
+    get:
+      tags:
+      - libops.v1.AdminSiteService
+      summary: Get firewall rules for a site VM (called by VM controller with GSA
+        auth)
+      description: Get firewall rules for a site VM (called by VM controller with
+        GSA auth)
+      operationId: libops.v1.AdminSiteService.GetSiteFirewall.get
+      parameters:
+      - name: Connect-Protocol-Version
+        in: header
+        required: true
+        schema:
+          $ref: '#/components/schemas/connect-protocol-version'
+      - name: Connect-Timeout-Ms
+        in: header
+        schema:
+          $ref: '#/components/schemas/connect-timeout-header'
+      - name: message
+        in: query
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/libops.v1.GetSiteFirewallRequest'
+      - name: encoding
+        in: query
+        required: true
+        schema:
+          $ref: '#/components/schemas/encoding'
+      - name: base64
+        in: query
+        schema:
+          $ref: '#/components/schemas/base64'
+      - name: compression
+        in: query
+        schema:
+          $ref: '#/components/schemas/compression'
+      - name: connect
+        in: query
+        schema:
+          $ref: '#/components/schemas/connect'
+      responses:
+        default:
+          description: Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/connect.error'
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/libops.v1.GetSiteFirewallResponse'
+    post:
+      tags:
+      - libops.v1.AdminSiteService
+      summary: Get firewall rules for a site VM (called by VM controller with GSA
+        auth)
+      description: Get firewall rules for a site VM (called by VM controller with
+        GSA auth)
+      operationId: libops.v1.AdminSiteService.GetSiteFirewall
+      parameters:
+      - name: Connect-Protocol-Version
+        in: header
+        required: true
+        schema:
+          $ref: '#/components/schemas/connect-protocol-version'
+      - name: Connect-Timeout-Ms
+        in: header
+        schema:
+          $ref: '#/components/schemas/connect-timeout-header'
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/libops.v1.GetSiteFirewallRequest'
+        required: true
+      responses:
+        default:
+          description: Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/connect.error'
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/libops.v1.GetSiteFirewallResponse'
+  /libops.v1.AdminSiteService/GetSiteSSHKeys:
+    get:
+      tags:
+      - libops.v1.AdminSiteService
+      summary: Get SSH keys for a site VM (called by VM controller with GSA auth)
+      description: Get SSH keys for a site VM (called by VM controller with GSA auth)
+      operationId: libops.v1.AdminSiteService.GetSiteSSHKeys.get
+      parameters:
+      - name: Connect-Protocol-Version
+        in: header
+        required: true
+        schema:
+          $ref: '#/components/schemas/connect-protocol-version'
+      - name: Connect-Timeout-Ms
+        in: header
+        schema:
+          $ref: '#/components/schemas/connect-timeout-header'
+      - name: message
+        in: query
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/libops.v1.GetSiteSSHKeysRequest'
+      - name: encoding
+        in: query
+        required: true
+        schema:
+          $ref: '#/components/schemas/encoding'
+      - name: base64
+        in: query
+        schema:
+          $ref: '#/components/schemas/base64'
+      - name: compression
+        in: query
+        schema:
+          $ref: '#/components/schemas/compression'
+      - name: connect
+        in: query
+        schema:
+          $ref: '#/components/schemas/connect'
+      responses:
+        default:
+          description: Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/connect.error'
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/libops.v1.GetSiteSSHKeysResponse'
+    post:
+      tags:
+      - libops.v1.AdminSiteService
+      summary: Get SSH keys for a site VM (called by VM controller with GSA auth)
+      description: Get SSH keys for a site VM (called by VM controller with GSA auth)
+      operationId: libops.v1.AdminSiteService.GetSiteSSHKeys
+      parameters:
+      - name: Connect-Protocol-Version
+        in: header
+        required: true
+        schema:
+          $ref: '#/components/schemas/connect-protocol-version'
+      - name: Connect-Timeout-Ms
+        in: header
+        schema:
+          $ref: '#/components/schemas/connect-timeout-header'
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/libops.v1.GetSiteSSHKeysRequest'
+        required: true
+      responses:
+        default:
+          description: Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/connect.error'
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/libops.v1.GetSiteSSHKeysResponse'
+  /libops.v1.AdminSiteService/GetSiteSecrets:
+    get:
+      tags:
+      - libops.v1.AdminSiteService
+      summary: Get secrets for a site VM (called by VM controller with GSA auth)
+      description: Get secrets for a site VM (called by VM controller with GSA auth)
+      operationId: libops.v1.AdminSiteService.GetSiteSecrets.get
+      parameters:
+      - name: Connect-Protocol-Version
+        in: header
+        required: true
+        schema:
+          $ref: '#/components/schemas/connect-protocol-version'
+      - name: Connect-Timeout-Ms
+        in: header
+        schema:
+          $ref: '#/components/schemas/connect-timeout-header'
+      - name: message
+        in: query
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/libops.v1.GetSiteSecretsRequest'
+      - name: encoding
+        in: query
+        required: true
+        schema:
+          $ref: '#/components/schemas/encoding'
+      - name: base64
+        in: query
+        schema:
+          $ref: '#/components/schemas/base64'
+      - name: compression
+        in: query
+        schema:
+          $ref: '#/components/schemas/compression'
+      - name: connect
+        in: query
+        schema:
+          $ref: '#/components/schemas/connect'
+      responses:
+        default:
+          description: Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/connect.error'
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/libops.v1.GetSiteSecretsResponse'
+    post:
+      tags:
+      - libops.v1.AdminSiteService
+      summary: Get secrets for a site VM (called by VM controller with GSA auth)
+      description: Get secrets for a site VM (called by VM controller with GSA auth)
+      operationId: libops.v1.AdminSiteService.GetSiteSecrets
+      parameters:
+      - name: Connect-Protocol-Version
+        in: header
+        required: true
+        schema:
+          $ref: '#/components/schemas/connect-protocol-version'
+      - name: Connect-Timeout-Ms
+        in: header
+        schema:
+          $ref: '#/components/schemas/connect-timeout-header'
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/libops.v1.GetSiteSecretsRequest'
+        required: true
+      responses:
+        default:
+          description: Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/connect.error'
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/libops.v1.GetSiteSecretsResponse'
   /libops.v1.AdminSiteService/ListAllSites:
     get:
       tags:
@@ -1891,6 +2463,136 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/libops.v1.AdminListSitesResponse'
+  /libops.v1.AdminSiteService/SiteCheckIn:
+    post:
+      tags:
+      - libops.v1.AdminSiteService
+      summary: Site VM check-in (updates checkin_at timestamp)
+      description: Site VM check-in (updates checkin_at timestamp)
+      operationId: libops.v1.AdminSiteService.SiteCheckIn
+      parameters:
+      - name: Connect-Protocol-Version
+        in: header
+        required: true
+        schema:
+          $ref: '#/components/schemas/connect-protocol-version'
+      - name: Connect-Timeout-Ms
+        in: header
+        schema:
+          $ref: '#/components/schemas/connect-timeout-header'
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/libops.v1.SiteCheckInRequest'
+        required: true
+      responses:
+        default:
+          description: Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/connect.error'
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/libops.v1.SiteCheckInResponse'
+  /libops.v1.AdminSiteService/SyncManifest:
+    get:
+      tags:
+      - libops.v1.AdminSiteService
+      summary: Sync site manifest - returns state hash and signed URLs to blobs (for
+        eventual consistency)  Called by site VMs every ~24h for eventual consistency
+      description: "Sync site manifest - returns state hash and signed URLs to blobs\
+        \ (for eventual consistency)\n Called by site VMs every ~24h for eventual\
+        \ consistency"
+      operationId: libops.v1.AdminSiteService.SyncManifest.get
+      parameters:
+      - name: Connect-Protocol-Version
+        in: header
+        required: true
+        schema:
+          $ref: '#/components/schemas/connect-protocol-version'
+      - name: Connect-Timeout-Ms
+        in: header
+        schema:
+          $ref: '#/components/schemas/connect-timeout-header'
+      - name: message
+        in: query
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/libops.v1.SyncManifestRequest'
+      - name: encoding
+        in: query
+        required: true
+        schema:
+          $ref: '#/components/schemas/encoding'
+      - name: base64
+        in: query
+        schema:
+          $ref: '#/components/schemas/base64'
+      - name: compression
+        in: query
+        schema:
+          $ref: '#/components/schemas/compression'
+      - name: connect
+        in: query
+        schema:
+          $ref: '#/components/schemas/connect'
+      responses:
+        default:
+          description: Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/connect.error'
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/libops.v1.SyncManifestResponse'
+    post:
+      tags:
+      - libops.v1.AdminSiteService
+      summary: Sync site manifest - returns state hash and signed URLs to blobs (for
+        eventual consistency)  Called by site VMs every ~24h for eventual consistency
+      description: "Sync site manifest - returns state hash and signed URLs to blobs\
+        \ (for eventual consistency)\n Called by site VMs every ~24h for eventual\
+        \ consistency"
+      operationId: libops.v1.AdminSiteService.SyncManifest
+      parameters:
+      - name: Connect-Protocol-Version
+        in: header
+        required: true
+        schema:
+          $ref: '#/components/schemas/connect-protocol-version'
+      - name: Connect-Timeout-Ms
+        in: header
+        schema:
+          $ref: '#/components/schemas/connect-timeout-header'
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/libops.v1.SyncManifestRequest'
+        required: true
+      responses:
+        default:
+          description: Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/connect.error'
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/libops.v1.SyncManifestResponse'
   /libops.v1.AdminSiteService/UpdateSite:
     post:
       tags:
@@ -2939,6 +3641,290 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/libops.v1.UpdateOrganizationResponse'
+  /libops.v1.OrganizationSettingService/CreateOrganizationSetting:
+    post:
+      tags:
+      - libops.v1.OrganizationSettingService
+      summary: Create an organization setting
+      description: Create an organization setting
+      operationId: libops.v1.OrganizationSettingService.CreateOrganizationSetting
+      parameters:
+      - name: Connect-Protocol-Version
+        in: header
+        required: true
+        schema:
+          $ref: '#/components/schemas/connect-protocol-version'
+      - name: Connect-Timeout-Ms
+        in: header
+        schema:
+          $ref: '#/components/schemas/connect-timeout-header'
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/libops.v1.CreateOrganizationSettingRequest'
+        required: true
+      responses:
+        default:
+          description: Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/connect.error'
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/libops.v1.CreateOrganizationSettingResponse'
+  /libops.v1.OrganizationSettingService/DeleteOrganizationSetting:
+    post:
+      tags:
+      - libops.v1.OrganizationSettingService
+      summary: Delete an organization setting
+      description: Delete an organization setting
+      operationId: libops.v1.OrganizationSettingService.DeleteOrganizationSetting
+      parameters:
+      - name: Connect-Protocol-Version
+        in: header
+        required: true
+        schema:
+          $ref: '#/components/schemas/connect-protocol-version'
+      - name: Connect-Timeout-Ms
+        in: header
+        schema:
+          $ref: '#/components/schemas/connect-timeout-header'
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/libops.v1.DeleteOrganizationSettingRequest'
+        required: true
+      responses:
+        default:
+          description: Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/connect.error'
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/google.protobuf.Empty'
+  /libops.v1.OrganizationSettingService/GetOrganizationSetting:
+    get:
+      tags:
+      - libops.v1.OrganizationSettingService
+      summary: Get an organization setting
+      description: Get an organization setting
+      operationId: libops.v1.OrganizationSettingService.GetOrganizationSetting.get
+      parameters:
+      - name: Connect-Protocol-Version
+        in: header
+        required: true
+        schema:
+          $ref: '#/components/schemas/connect-protocol-version'
+      - name: Connect-Timeout-Ms
+        in: header
+        schema:
+          $ref: '#/components/schemas/connect-timeout-header'
+      - name: message
+        in: query
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/libops.v1.GetOrganizationSettingRequest'
+      - name: encoding
+        in: query
+        required: true
+        schema:
+          $ref: '#/components/schemas/encoding'
+      - name: base64
+        in: query
+        schema:
+          $ref: '#/components/schemas/base64'
+      - name: compression
+        in: query
+        schema:
+          $ref: '#/components/schemas/compression'
+      - name: connect
+        in: query
+        schema:
+          $ref: '#/components/schemas/connect'
+      responses:
+        default:
+          description: Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/connect.error'
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/libops.v1.GetOrganizationSettingResponse'
+    post:
+      tags:
+      - libops.v1.OrganizationSettingService
+      summary: Get an organization setting
+      description: Get an organization setting
+      operationId: libops.v1.OrganizationSettingService.GetOrganizationSetting
+      parameters:
+      - name: Connect-Protocol-Version
+        in: header
+        required: true
+        schema:
+          $ref: '#/components/schemas/connect-protocol-version'
+      - name: Connect-Timeout-Ms
+        in: header
+        schema:
+          $ref: '#/components/schemas/connect-timeout-header'
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/libops.v1.GetOrganizationSettingRequest'
+        required: true
+      responses:
+        default:
+          description: Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/connect.error'
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/libops.v1.GetOrganizationSettingResponse'
+  /libops.v1.OrganizationSettingService/ListOrganizationSettings:
+    get:
+      tags:
+      - libops.v1.OrganizationSettingService
+      summary: List organization settings
+      description: List organization settings
+      operationId: libops.v1.OrganizationSettingService.ListOrganizationSettings.get
+      parameters:
+      - name: Connect-Protocol-Version
+        in: header
+        required: true
+        schema:
+          $ref: '#/components/schemas/connect-protocol-version'
+      - name: Connect-Timeout-Ms
+        in: header
+        schema:
+          $ref: '#/components/schemas/connect-timeout-header'
+      - name: message
+        in: query
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/libops.v1.ListOrganizationSettingsRequest'
+      - name: encoding
+        in: query
+        required: true
+        schema:
+          $ref: '#/components/schemas/encoding'
+      - name: base64
+        in: query
+        schema:
+          $ref: '#/components/schemas/base64'
+      - name: compression
+        in: query
+        schema:
+          $ref: '#/components/schemas/compression'
+      - name: connect
+        in: query
+        schema:
+          $ref: '#/components/schemas/connect'
+      responses:
+        default:
+          description: Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/connect.error'
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/libops.v1.ListOrganizationSettingsResponse'
+    post:
+      tags:
+      - libops.v1.OrganizationSettingService
+      summary: List organization settings
+      description: List organization settings
+      operationId: libops.v1.OrganizationSettingService.ListOrganizationSettings
+      parameters:
+      - name: Connect-Protocol-Version
+        in: header
+        required: true
+        schema:
+          $ref: '#/components/schemas/connect-protocol-version'
+      - name: Connect-Timeout-Ms
+        in: header
+        schema:
+          $ref: '#/components/schemas/connect-timeout-header'
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/libops.v1.ListOrganizationSettingsRequest'
+        required: true
+      responses:
+        default:
+          description: Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/connect.error'
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/libops.v1.ListOrganizationSettingsResponse'
+  /libops.v1.OrganizationSettingService/UpdateOrganizationSetting:
+    post:
+      tags:
+      - libops.v1.OrganizationSettingService
+      summary: Update an organization setting
+      description: Update an organization setting
+      operationId: libops.v1.OrganizationSettingService.UpdateOrganizationSetting
+      parameters:
+      - name: Connect-Protocol-Version
+        in: header
+        required: true
+        schema:
+          $ref: '#/components/schemas/connect-protocol-version'
+      - name: Connect-Timeout-Ms
+        in: header
+        schema:
+          $ref: '#/components/schemas/connect-timeout-header'
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/libops.v1.UpdateOrganizationSettingRequest'
+        required: true
+      responses:
+        default:
+          description: Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/connect.error'
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/libops.v1.UpdateOrganizationSettingResponse'
   /libops.v1.ProjectFirewallService/CreateProjectFirewallRule:
     post:
       tags:
@@ -3951,6 +4937,290 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/libops.v1.UpdateProjectResponse'
+  /libops.v1.ProjectSettingService/CreateProjectSetting:
+    post:
+      tags:
+      - libops.v1.ProjectSettingService
+      summary: Create a project setting
+      description: Create a project setting
+      operationId: libops.v1.ProjectSettingService.CreateProjectSetting
+      parameters:
+      - name: Connect-Protocol-Version
+        in: header
+        required: true
+        schema:
+          $ref: '#/components/schemas/connect-protocol-version'
+      - name: Connect-Timeout-Ms
+        in: header
+        schema:
+          $ref: '#/components/schemas/connect-timeout-header'
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/libops.v1.CreateProjectSettingRequest'
+        required: true
+      responses:
+        default:
+          description: Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/connect.error'
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/libops.v1.CreateProjectSettingResponse'
+  /libops.v1.ProjectSettingService/DeleteProjectSetting:
+    post:
+      tags:
+      - libops.v1.ProjectSettingService
+      summary: Delete a project setting
+      description: Delete a project setting
+      operationId: libops.v1.ProjectSettingService.DeleteProjectSetting
+      parameters:
+      - name: Connect-Protocol-Version
+        in: header
+        required: true
+        schema:
+          $ref: '#/components/schemas/connect-protocol-version'
+      - name: Connect-Timeout-Ms
+        in: header
+        schema:
+          $ref: '#/components/schemas/connect-timeout-header'
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/libops.v1.DeleteProjectSettingRequest'
+        required: true
+      responses:
+        default:
+          description: Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/connect.error'
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/google.protobuf.Empty'
+  /libops.v1.ProjectSettingService/GetProjectSetting:
+    get:
+      tags:
+      - libops.v1.ProjectSettingService
+      summary: Get a project setting
+      description: Get a project setting
+      operationId: libops.v1.ProjectSettingService.GetProjectSetting.get
+      parameters:
+      - name: Connect-Protocol-Version
+        in: header
+        required: true
+        schema:
+          $ref: '#/components/schemas/connect-protocol-version'
+      - name: Connect-Timeout-Ms
+        in: header
+        schema:
+          $ref: '#/components/schemas/connect-timeout-header'
+      - name: message
+        in: query
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/libops.v1.GetProjectSettingRequest'
+      - name: encoding
+        in: query
+        required: true
+        schema:
+          $ref: '#/components/schemas/encoding'
+      - name: base64
+        in: query
+        schema:
+          $ref: '#/components/schemas/base64'
+      - name: compression
+        in: query
+        schema:
+          $ref: '#/components/schemas/compression'
+      - name: connect
+        in: query
+        schema:
+          $ref: '#/components/schemas/connect'
+      responses:
+        default:
+          description: Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/connect.error'
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/libops.v1.GetProjectSettingResponse'
+    post:
+      tags:
+      - libops.v1.ProjectSettingService
+      summary: Get a project setting
+      description: Get a project setting
+      operationId: libops.v1.ProjectSettingService.GetProjectSetting
+      parameters:
+      - name: Connect-Protocol-Version
+        in: header
+        required: true
+        schema:
+          $ref: '#/components/schemas/connect-protocol-version'
+      - name: Connect-Timeout-Ms
+        in: header
+        schema:
+          $ref: '#/components/schemas/connect-timeout-header'
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/libops.v1.GetProjectSettingRequest'
+        required: true
+      responses:
+        default:
+          description: Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/connect.error'
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/libops.v1.GetProjectSettingResponse'
+  /libops.v1.ProjectSettingService/ListProjectSettings:
+    get:
+      tags:
+      - libops.v1.ProjectSettingService
+      summary: List project settings
+      description: List project settings
+      operationId: libops.v1.ProjectSettingService.ListProjectSettings.get
+      parameters:
+      - name: Connect-Protocol-Version
+        in: header
+        required: true
+        schema:
+          $ref: '#/components/schemas/connect-protocol-version'
+      - name: Connect-Timeout-Ms
+        in: header
+        schema:
+          $ref: '#/components/schemas/connect-timeout-header'
+      - name: message
+        in: query
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/libops.v1.ListProjectSettingsRequest'
+      - name: encoding
+        in: query
+        required: true
+        schema:
+          $ref: '#/components/schemas/encoding'
+      - name: base64
+        in: query
+        schema:
+          $ref: '#/components/schemas/base64'
+      - name: compression
+        in: query
+        schema:
+          $ref: '#/components/schemas/compression'
+      - name: connect
+        in: query
+        schema:
+          $ref: '#/components/schemas/connect'
+      responses:
+        default:
+          description: Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/connect.error'
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/libops.v1.ListProjectSettingsResponse'
+    post:
+      tags:
+      - libops.v1.ProjectSettingService
+      summary: List project settings
+      description: List project settings
+      operationId: libops.v1.ProjectSettingService.ListProjectSettings
+      parameters:
+      - name: Connect-Protocol-Version
+        in: header
+        required: true
+        schema:
+          $ref: '#/components/schemas/connect-protocol-version'
+      - name: Connect-Timeout-Ms
+        in: header
+        schema:
+          $ref: '#/components/schemas/connect-timeout-header'
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/libops.v1.ListProjectSettingsRequest'
+        required: true
+      responses:
+        default:
+          description: Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/connect.error'
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/libops.v1.ListProjectSettingsResponse'
+  /libops.v1.ProjectSettingService/UpdateProjectSetting:
+    post:
+      tags:
+      - libops.v1.ProjectSettingService
+      summary: Update a project setting
+      description: Update a project setting
+      operationId: libops.v1.ProjectSettingService.UpdateProjectSetting
+      parameters:
+      - name: Connect-Protocol-Version
+        in: header
+        required: true
+        schema:
+          $ref: '#/components/schemas/connect-protocol-version'
+      - name: Connect-Timeout-Ms
+        in: header
+        schema:
+          $ref: '#/components/schemas/connect-timeout-header'
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/libops.v1.UpdateProjectSettingRequest'
+        required: true
+      responses:
+        default:
+          description: Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/connect.error'
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/libops.v1.UpdateProjectSettingResponse'
   /libops.v1.SiteFirewallService/CreateSiteFirewallRule:
     post:
       tags:
@@ -4999,6 +6269,290 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/libops.v1.UpdateSiteResponse'
+  /libops.v1.SiteSettingService/CreateSiteSetting:
+    post:
+      tags:
+      - libops.v1.SiteSettingService
+      summary: Create a site setting
+      description: Create a site setting
+      operationId: libops.v1.SiteSettingService.CreateSiteSetting
+      parameters:
+      - name: Connect-Protocol-Version
+        in: header
+        required: true
+        schema:
+          $ref: '#/components/schemas/connect-protocol-version'
+      - name: Connect-Timeout-Ms
+        in: header
+        schema:
+          $ref: '#/components/schemas/connect-timeout-header'
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/libops.v1.CreateSiteSettingRequest'
+        required: true
+      responses:
+        default:
+          description: Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/connect.error'
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/libops.v1.CreateSiteSettingResponse'
+  /libops.v1.SiteSettingService/DeleteSiteSetting:
+    post:
+      tags:
+      - libops.v1.SiteSettingService
+      summary: Delete a site setting
+      description: Delete a site setting
+      operationId: libops.v1.SiteSettingService.DeleteSiteSetting
+      parameters:
+      - name: Connect-Protocol-Version
+        in: header
+        required: true
+        schema:
+          $ref: '#/components/schemas/connect-protocol-version'
+      - name: Connect-Timeout-Ms
+        in: header
+        schema:
+          $ref: '#/components/schemas/connect-timeout-header'
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/libops.v1.DeleteSiteSettingRequest'
+        required: true
+      responses:
+        default:
+          description: Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/connect.error'
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/google.protobuf.Empty'
+  /libops.v1.SiteSettingService/GetSiteSetting:
+    get:
+      tags:
+      - libops.v1.SiteSettingService
+      summary: Get a site setting
+      description: Get a site setting
+      operationId: libops.v1.SiteSettingService.GetSiteSetting.get
+      parameters:
+      - name: Connect-Protocol-Version
+        in: header
+        required: true
+        schema:
+          $ref: '#/components/schemas/connect-protocol-version'
+      - name: Connect-Timeout-Ms
+        in: header
+        schema:
+          $ref: '#/components/schemas/connect-timeout-header'
+      - name: message
+        in: query
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/libops.v1.GetSiteSettingRequest'
+      - name: encoding
+        in: query
+        required: true
+        schema:
+          $ref: '#/components/schemas/encoding'
+      - name: base64
+        in: query
+        schema:
+          $ref: '#/components/schemas/base64'
+      - name: compression
+        in: query
+        schema:
+          $ref: '#/components/schemas/compression'
+      - name: connect
+        in: query
+        schema:
+          $ref: '#/components/schemas/connect'
+      responses:
+        default:
+          description: Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/connect.error'
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/libops.v1.GetSiteSettingResponse'
+    post:
+      tags:
+      - libops.v1.SiteSettingService
+      summary: Get a site setting
+      description: Get a site setting
+      operationId: libops.v1.SiteSettingService.GetSiteSetting
+      parameters:
+      - name: Connect-Protocol-Version
+        in: header
+        required: true
+        schema:
+          $ref: '#/components/schemas/connect-protocol-version'
+      - name: Connect-Timeout-Ms
+        in: header
+        schema:
+          $ref: '#/components/schemas/connect-timeout-header'
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/libops.v1.GetSiteSettingRequest'
+        required: true
+      responses:
+        default:
+          description: Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/connect.error'
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/libops.v1.GetSiteSettingResponse'
+  /libops.v1.SiteSettingService/ListSiteSettings:
+    get:
+      tags:
+      - libops.v1.SiteSettingService
+      summary: List site settings
+      description: List site settings
+      operationId: libops.v1.SiteSettingService.ListSiteSettings.get
+      parameters:
+      - name: Connect-Protocol-Version
+        in: header
+        required: true
+        schema:
+          $ref: '#/components/schemas/connect-protocol-version'
+      - name: Connect-Timeout-Ms
+        in: header
+        schema:
+          $ref: '#/components/schemas/connect-timeout-header'
+      - name: message
+        in: query
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/libops.v1.ListSiteSettingsRequest'
+      - name: encoding
+        in: query
+        required: true
+        schema:
+          $ref: '#/components/schemas/encoding'
+      - name: base64
+        in: query
+        schema:
+          $ref: '#/components/schemas/base64'
+      - name: compression
+        in: query
+        schema:
+          $ref: '#/components/schemas/compression'
+      - name: connect
+        in: query
+        schema:
+          $ref: '#/components/schemas/connect'
+      responses:
+        default:
+          description: Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/connect.error'
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/libops.v1.ListSiteSettingsResponse'
+    post:
+      tags:
+      - libops.v1.SiteSettingService
+      summary: List site settings
+      description: List site settings
+      operationId: libops.v1.SiteSettingService.ListSiteSettings
+      parameters:
+      - name: Connect-Protocol-Version
+        in: header
+        required: true
+        schema:
+          $ref: '#/components/schemas/connect-protocol-version'
+      - name: Connect-Timeout-Ms
+        in: header
+        schema:
+          $ref: '#/components/schemas/connect-timeout-header'
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/libops.v1.ListSiteSettingsRequest'
+        required: true
+      responses:
+        default:
+          description: Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/connect.error'
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/libops.v1.ListSiteSettingsResponse'
+  /libops.v1.SiteSettingService/UpdateSiteSetting:
+    post:
+      tags:
+      - libops.v1.SiteSettingService
+      summary: Update a site setting
+      description: Update a site setting
+      operationId: libops.v1.SiteSettingService.UpdateSiteSetting
+      parameters:
+      - name: Connect-Protocol-Version
+        in: header
+        required: true
+        schema:
+          $ref: '#/components/schemas/connect-protocol-version'
+      - name: Connect-Timeout-Ms
+        in: header
+        schema:
+          $ref: '#/components/schemas/connect-timeout-header'
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/libops.v1.UpdateSiteSettingRequest'
+        required: true
+      responses:
+        default:
+          description: Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/connect.error'
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/libops.v1.UpdateSiteSettingResponse'
   /libops.v1.SshKeyService/CreateSshKey:
     post:
       tags:
@@ -6036,6 +7590,34 @@ components:
           $ref: '#/components/schemas/libops.v1.OrganizationSecret'
       title: CreateOrganizationSecretResponse
       additionalProperties: false
+    libops.v1.CreateOrganizationSettingRequest:
+      type: object
+      properties:
+        organizationId:
+          type: string
+          title: organization_id
+        key:
+          type: string
+          title: key
+        value:
+          type: string
+          title: value
+        editable:
+          type: boolean
+          title: editable
+        description:
+          type: string
+          title: description
+      title: CreateOrganizationSettingRequest
+      additionalProperties: false
+    libops.v1.CreateOrganizationSettingResponse:
+      type: object
+      properties:
+        setting:
+          title: setting
+          $ref: '#/components/schemas/libops.v1.OrganizationSetting'
+      title: CreateOrganizationSettingResponse
+      additionalProperties: false
     libops.v1.CreateProjectFirewallRuleRequest:
       type: object
       properties:
@@ -6125,6 +7707,34 @@ components:
           title: secret
           $ref: '#/components/schemas/libops.v1.ProjectSecret'
       title: CreateProjectSecretResponse
+      additionalProperties: false
+    libops.v1.CreateProjectSettingRequest:
+      type: object
+      properties:
+        projectId:
+          type: string
+          title: project_id
+        key:
+          type: string
+          title: key
+        value:
+          type: string
+          title: value
+        editable:
+          type: boolean
+          title: editable
+        description:
+          type: string
+          title: description
+      title: CreateProjectSettingRequest
+      additionalProperties: false
+    libops.v1.CreateProjectSettingResponse:
+      type: object
+      properties:
+        setting:
+          title: setting
+          $ref: '#/components/schemas/libops.v1.ProjectSetting'
+      title: CreateProjectSettingResponse
       additionalProperties: false
     libops.v1.CreateSiteFirewallRuleRequest:
       type: object
@@ -6219,6 +7829,34 @@ components:
           $ref: '#/components/schemas/libops.v1.SiteSecret'
       title: CreateSiteSecretResponse
       additionalProperties: false
+    libops.v1.CreateSiteSettingRequest:
+      type: object
+      properties:
+        siteId:
+          type: string
+          title: site_id
+        key:
+          type: string
+          title: key
+        value:
+          type: string
+          title: value
+        editable:
+          type: boolean
+          title: editable
+        description:
+          type: string
+          title: description
+      title: CreateSiteSettingRequest
+      additionalProperties: false
+    libops.v1.CreateSiteSettingResponse:
+      type: object
+      properties:
+        setting:
+          title: setting
+          $ref: '#/components/schemas/libops.v1.SiteSetting'
+      title: CreateSiteSettingResponse
+      additionalProperties: false
     libops.v1.CreateSshKeyRequest:
       type: object
       properties:
@@ -6291,6 +7929,17 @@ components:
           title: secret_id
       title: DeleteOrganizationSecretRequest
       additionalProperties: false
+    libops.v1.DeleteOrganizationSettingRequest:
+      type: object
+      properties:
+        organizationId:
+          type: string
+          title: organization_id
+        settingId:
+          type: string
+          title: setting_id
+      title: DeleteOrganizationSettingRequest
+      additionalProperties: false
     libops.v1.DeleteProjectFirewallRuleRequest:
       type: object
       properties:
@@ -6335,6 +7984,17 @@ components:
           title: secret_id
       title: DeleteProjectSecretRequest
       additionalProperties: false
+    libops.v1.DeleteProjectSettingRequest:
+      type: object
+      properties:
+        projectId:
+          type: string
+          title: project_id
+        settingId:
+          type: string
+          title: setting_id
+      title: DeleteProjectSettingRequest
+      additionalProperties: false
     libops.v1.DeleteSiteFirewallRuleRequest:
       type: object
       properties:
@@ -6376,6 +8036,17 @@ components:
           title: secret_id
       title: DeleteSiteSecretRequest
       additionalProperties: false
+    libops.v1.DeleteSiteSettingRequest:
+      type: object
+      properties:
+        siteId:
+          type: string
+          title: site_id
+        settingId:
+          type: string
+          title: setting_id
+      title: DeleteSiteSettingRequest
+      additionalProperties: false
     libops.v1.DeleteSshKeyRequest:
       type: object
       properties:
@@ -6411,6 +8082,28 @@ components:
           $ref: '#/components/schemas/libops.v1.SiteStatus'
       title: DeploySiteResponse
       additionalProperties: false
+    libops.v1.FirewallRule:
+      type: object
+      properties:
+        protocol:
+          type: string
+          title: protocol
+          description: tcp, udp, icmp, etc.
+        port:
+          type: integer
+          title: port
+          format: int32
+          description: port number (0 if not applicable)
+        source:
+          type: string
+          title: source
+          description: source CIDR or IP
+        action:
+          type: string
+          title: action
+          description: accept, deny, drop, reject
+      title: FirewallRule
+      additionalProperties: false
     libops.v1.FirewallRuleType:
       type: string
       title: FirewallRuleType
@@ -6419,6 +8112,41 @@ components:
       - FIREWALL_RULE_TYPE_HTTPS_ALLOWED
       - FIREWALL_RULE_TYPE_SSH_ALLOWED
       - FIREWALL_RULE_TYPE_BLOCKED
+    libops.v1.GenerateTerraformVarsRequest:
+      type: object
+      properties:
+        organizationId:
+          type:
+          - integer
+          - string
+          title: organization_id
+          format: int64
+          nullable: true
+        projectId:
+          type:
+          - integer
+          - string
+          title: project_id
+          format: int64
+          nullable: true
+        siteId:
+          type:
+          - integer
+          - string
+          title: site_id
+          format: int64
+          nullable: true
+      title: GenerateTerraformVarsRequest
+      additionalProperties: false
+    libops.v1.GenerateTerraformVarsResponse:
+      type: object
+      properties:
+        tfvarsJson:
+          type: string
+          title: tfvars_json
+          description: JSON-encoded terraform variables
+      title: GenerateTerraformVarsResponse
+      additionalProperties: false
     libops.v1.GetAccountByEmailRequest:
       type: object
       properties:
@@ -6450,6 +8178,33 @@ components:
           title: account
           $ref: '#/components/schemas/libops.v1.Account'
       title: GetAccountResponse
+      additionalProperties: false
+    libops.v1.GetBlobRequest:
+      type: object
+      properties:
+        siteId:
+          type: string
+          title: site_id
+          description: Site public ID
+        blobType:
+          type: string
+          title: blob_type
+          description: '"ssh_keys", "secrets", "firewall"'
+      title: GetBlobRequest
+      additionalProperties: false
+    libops.v1.GetBlobResponse:
+      type: object
+      properties:
+        data:
+          type: string
+          title: data
+          format: byte
+          description: Blob content (JSON)
+        contentType:
+          type: string
+          title: content_type
+          description: '"application/json"'
+      title: GetBlobResponse
       additionalProperties: false
     libops.v1.GetOrganizationRequest:
       type: object
@@ -6485,6 +8240,25 @@ components:
           title: secret
           $ref: '#/components/schemas/libops.v1.OrganizationSecret'
       title: GetOrganizationSecretResponse
+      additionalProperties: false
+    libops.v1.GetOrganizationSettingRequest:
+      type: object
+      properties:
+        organizationId:
+          type: string
+          title: organization_id
+        settingId:
+          type: string
+          title: setting_id
+      title: GetOrganizationSettingRequest
+      additionalProperties: false
+    libops.v1.GetOrganizationSettingResponse:
+      type: object
+      properties:
+        setting:
+          title: setting
+          $ref: '#/components/schemas/libops.v1.OrganizationSetting'
+      title: GetOrganizationSettingResponse
       additionalProperties: false
     libops.v1.GetProjectRequest:
       type: object
@@ -6524,6 +8298,113 @@ components:
           $ref: '#/components/schemas/libops.v1.ProjectSecret'
       title: GetProjectSecretResponse
       additionalProperties: false
+    libops.v1.GetProjectSettingRequest:
+      type: object
+      properties:
+        projectId:
+          type: string
+          title: project_id
+        settingId:
+          type: string
+          title: setting_id
+      title: GetProjectSettingRequest
+      additionalProperties: false
+    libops.v1.GetProjectSettingResponse:
+      type: object
+      properties:
+        setting:
+          title: setting
+          $ref: '#/components/schemas/libops.v1.ProjectSetting'
+      title: GetProjectSettingResponse
+      additionalProperties: false
+    libops.v1.GetReconciliationRunRequest:
+      type: object
+      properties:
+        runId:
+          type: string
+          title: run_id
+      title: GetReconciliationRunRequest
+      additionalProperties: false
+    libops.v1.GetReconciliationRunResponse:
+      type: object
+      properties:
+        runId:
+          type: string
+          title: run_id
+        runType:
+          type: string
+          title: run_type
+          description: terraform or reconciliation
+        reconciliationType:
+          type: string
+          title: reconciliation_type
+          description: ssh_keys, secrets, firewall, general
+          nullable: true
+        modules:
+          type: array
+          items:
+            type: string
+          title: modules
+          description: For terraform runs
+        targetSiteIds:
+          type: array
+          items:
+            type:
+            - integer
+            - string
+            format: int64
+          title: target_site_ids
+          description: For reconciliation runs
+        eventIds:
+          type: array
+          items:
+            type: string
+          title: event_ids
+        organizationId:
+          type:
+          - integer
+          - string
+          title: organization_id
+          format: int64
+          nullable: true
+        projectId:
+          type:
+          - integer
+          - string
+          title: project_id
+          format: int64
+          nullable: true
+        siteId:
+          type:
+          - integer
+          - string
+          title: site_id
+          format: int64
+          nullable: true
+        status:
+          type: string
+          title: status
+      title: GetReconciliationRunResponse
+      additionalProperties: false
+    libops.v1.GetSiteFirewallRequest:
+      type: object
+      properties:
+        siteId:
+          type: string
+          title: site_id
+          description: Site public ID
+      title: GetSiteFirewallRequest
+      additionalProperties: false
+    libops.v1.GetSiteFirewallResponse:
+      type: object
+      properties:
+        rules:
+          type: array
+          items:
+            $ref: '#/components/schemas/libops.v1.FirewallRule'
+          title: rules
+      title: GetSiteFirewallResponse
+      additionalProperties: false
     libops.v1.GetSiteRequest:
       type: object
       properties:
@@ -6539,6 +8420,25 @@ components:
           title: site
           $ref: '#/components/schemas/libops.v1.common.SiteConfig'
       title: GetSiteResponse
+      additionalProperties: false
+    libops.v1.GetSiteSSHKeysRequest:
+      type: object
+      properties:
+        siteId:
+          type: string
+          title: site_id
+          description: Site public ID
+      title: GetSiteSSHKeysRequest
+      additionalProperties: false
+    libops.v1.GetSiteSSHKeysResponse:
+      type: object
+      properties:
+        keys:
+          type: array
+          items:
+            $ref: '#/components/schemas/libops.v1.SSHKey'
+          title: keys
+      title: GetSiteSSHKeysResponse
       additionalProperties: false
     libops.v1.GetSiteSecretRequest:
       type: object
@@ -6558,6 +8458,44 @@ components:
           title: secret
           $ref: '#/components/schemas/libops.v1.SiteSecret'
       title: GetSiteSecretResponse
+      additionalProperties: false
+    libops.v1.GetSiteSecretsRequest:
+      type: object
+      properties:
+        siteId:
+          type: string
+          title: site_id
+          description: Site public ID
+      title: GetSiteSecretsRequest
+      additionalProperties: false
+    libops.v1.GetSiteSecretsResponse:
+      type: object
+      properties:
+        secrets:
+          type: array
+          items:
+            $ref: '#/components/schemas/libops.v1.Secret'
+          title: secrets
+      title: GetSiteSecretsResponse
+      additionalProperties: false
+    libops.v1.GetSiteSettingRequest:
+      type: object
+      properties:
+        siteId:
+          type: string
+          title: site_id
+        settingId:
+          type: string
+          title: setting_id
+      title: GetSiteSettingRequest
+      additionalProperties: false
+    libops.v1.GetSiteSettingResponse:
+      type: object
+      properties:
+        setting:
+          title: setting
+          $ref: '#/components/schemas/libops.v1.SiteSetting'
+      title: GetSiteSettingResponse
       additionalProperties: false
     libops.v1.GetSiteStatusRequest:
       type: object
@@ -6801,6 +8739,34 @@ components:
           title: next_page_token
       title: ListOrganizationSecretsResponse
       additionalProperties: false
+    libops.v1.ListOrganizationSettingsRequest:
+      type: object
+      properties:
+        organizationId:
+          type: string
+          title: organization_id
+        pageSize:
+          type: integer
+          title: page_size
+          format: int32
+        pageToken:
+          type: string
+          title: page_token
+      title: ListOrganizationSettingsRequest
+      additionalProperties: false
+    libops.v1.ListOrganizationSettingsResponse:
+      type: object
+      properties:
+        settings:
+          type: array
+          items:
+            $ref: '#/components/schemas/libops.v1.OrganizationSetting'
+          title: settings
+        nextPageToken:
+          type: string
+          title: next_page_token
+      title: ListOrganizationSettingsResponse
+      additionalProperties: false
     libops.v1.ListOrganizationsRequest:
       type: object
       properties:
@@ -6909,6 +8875,34 @@ components:
           type: string
           title: next_page_token
       title: ListProjectSecretsResponse
+      additionalProperties: false
+    libops.v1.ListProjectSettingsRequest:
+      type: object
+      properties:
+        projectId:
+          type: string
+          title: project_id
+        pageSize:
+          type: integer
+          title: page_size
+          format: int32
+        pageToken:
+          type: string
+          title: page_token
+      title: ListProjectSettingsRequest
+      additionalProperties: false
+    libops.v1.ListProjectSettingsResponse:
+      type: object
+      properties:
+        settings:
+          type: array
+          items:
+            $ref: '#/components/schemas/libops.v1.ProjectSetting'
+          title: settings
+        nextPageToken:
+          type: string
+          title: next_page_token
+      title: ListProjectSettingsResponse
       additionalProperties: false
     libops.v1.ListProjectSitesRequest:
       type: object
@@ -7050,6 +9044,34 @@ components:
           type: string
           title: next_page_token
       title: ListSiteSecretsResponse
+      additionalProperties: false
+    libops.v1.ListSiteSettingsRequest:
+      type: object
+      properties:
+        siteId:
+          type: string
+          title: site_id
+        pageSize:
+          type: integer
+          title: page_size
+          format: int32
+        pageToken:
+          type: string
+          title: page_token
+      title: ListSiteSettingsRequest
+      additionalProperties: false
+    libops.v1.ListSiteSettingsResponse:
+      type: object
+      properties:
+        settings:
+          type: array
+          items:
+            $ref: '#/components/schemas/libops.v1.SiteSetting'
+          title: settings
+        nextPageToken:
+          type: string
+          title: next_page_token
+      title: ListSiteSettingsResponse
       additionalProperties: false
     libops.v1.ListSitesRequest:
       type: object
@@ -7220,6 +9242,38 @@ components:
           $ref: '#/components/schemas/libops.v1.common.Status'
       title: OrganizationSecret
       additionalProperties: false
+    libops.v1.OrganizationSetting:
+      type: object
+      properties:
+        settingId:
+          type: string
+          title: setting_id
+          description: UUID
+        organizationId:
+          type: string
+          title: organization_id
+          description: UUID
+        key:
+          type: string
+          title: key
+          description: e.g., "max_projects"
+        value:
+          type: string
+          title: value
+          description: Stored as string
+        editable:
+          type: boolean
+          title: editable
+          description: Can users modify this?
+        description:
+          type: string
+          title: description
+          description: Optional description
+        status:
+          title: status
+          $ref: '#/components/schemas/libops.v1.common.Status'
+      title: OrganizationSetting
+      additionalProperties: false
     libops.v1.ProjectFirewallRule:
       type: object
       properties:
@@ -7269,6 +9323,35 @@ components:
           $ref: '#/components/schemas/libops.v1.common.Status'
       title: ProjectSecret
       additionalProperties: false
+    libops.v1.ProjectSetting:
+      type: object
+      properties:
+        settingId:
+          type: string
+          title: setting_id
+          description: UUID
+        projectId:
+          type: string
+          title: project_id
+          description: UUID
+        key:
+          type: string
+          title: key
+          description: e.g., "php_op_mode", "ENV_LOG_LEVEL"
+        value:
+          type: string
+          title: value
+        editable:
+          type: boolean
+          title: editable
+        description:
+          type: string
+          title: description
+        status:
+          title: status
+          $ref: '#/components/schemas/libops.v1.common.Status'
+      title: ProjectSetting
+      additionalProperties: false
     libops.v1.Repository:
       type: object
       properties:
@@ -7302,6 +9385,54 @@ components:
           type: boolean
           title: success
       title: RevokeApiKeyResponse
+      additionalProperties: false
+    libops.v1.SSHKey:
+      type: object
+      properties:
+        publicKey:
+          type: string
+          title: public_key
+        name:
+          type: string
+          title: name
+        fingerprint:
+          type: string
+          title: fingerprint
+        githubUsername:
+          type: string
+          title: github_username
+      title: SSHKey
+      additionalProperties: false
+    libops.v1.Secret:
+      type: object
+      properties:
+        key:
+          type: string
+          title: key
+        value:
+          type: string
+          title: value
+      title: Secret
+      additionalProperties: false
+    libops.v1.SiteCheckInRequest:
+      type: object
+      properties:
+        siteId:
+          type: string
+          title: site_id
+          description: Site public ID
+      title: SiteCheckInRequest
+      additionalProperties: false
+    libops.v1.SiteCheckInResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+          title: success
+        message:
+          type: string
+          title: message
+      title: SiteCheckInResponse
       additionalProperties: false
     libops.v1.SiteFirewallRule:
       type: object
@@ -7352,6 +9483,35 @@ components:
           $ref: '#/components/schemas/libops.v1.common.Status'
       title: SiteSecret
       additionalProperties: false
+    libops.v1.SiteSetting:
+      type: object
+      properties:
+        settingId:
+          type: string
+          title: setting_id
+          description: UUID
+        siteId:
+          type: string
+          title: site_id
+          description: UUID
+        key:
+          type: string
+          title: key
+          description: e.g., "ENV_LOG_LEVEL" (overrides project)
+        value:
+          type: string
+          title: value
+        editable:
+          type: boolean
+          title: editable
+        description:
+          type: string
+          title: description
+        status:
+          title: status
+          $ref: '#/components/schemas/libops.v1.common.Status'
+      title: SiteSetting
+      additionalProperties: false
     libops.v1.SiteStatus:
       type: object
       properties:
@@ -7400,6 +9560,50 @@ components:
           description: Key fingerprint (computed)
           nullable: true
       title: SshKey
+      additionalProperties: false
+    libops.v1.StateBlobs:
+      type: object
+      properties:
+        sshKeysUrl:
+          type: string
+          title: ssh_keys_url
+          description: Signed GCS URL to ssh-keys.json
+        secretsUrl:
+          type: string
+          title: secrets_url
+          description: Signed GCS URL to secrets.json
+        firewallUrl:
+          type: string
+          title: firewall_url
+          description: Signed GCS URL to firewall.json
+      title: StateBlobs
+      additionalProperties: false
+    libops.v1.SyncManifestRequest:
+      type: object
+      properties:
+        siteId:
+          type: string
+          title: site_id
+          description: Site public ID
+        currentStateHash:
+          type: string
+          title: current_state_hash
+          description: For ETag optimization (304 Not Modified)
+          nullable: true
+      title: SyncManifestRequest
+      additionalProperties: false
+    libops.v1.SyncManifestResponse:
+      type: object
+      properties:
+        stateHash:
+          type: string
+          title: state_hash
+          description: Current state hash for this site
+        blobs:
+          title: blobs
+          description: Signed URLs to GCS blobs
+          $ref: '#/components/schemas/libops.v1.StateBlobs'
+      title: SyncManifestResponse
       additionalProperties: false
     libops.v1.UpdateAccountRequest:
       type: object
@@ -7503,6 +9707,32 @@ components:
           $ref: '#/components/schemas/libops.v1.OrganizationSecret'
       title: UpdateOrganizationSecretResponse
       additionalProperties: false
+    libops.v1.UpdateOrganizationSettingRequest:
+      type: object
+      properties:
+        organizationId:
+          type: string
+          title: organization_id
+        settingId:
+          type: string
+          title: setting_id
+        value:
+          type: string
+          title: value
+          nullable: true
+        updateMask:
+          title: update_mask
+          $ref: '#/components/schemas/google.protobuf.FieldMask'
+      title: UpdateOrganizationSettingRequest
+      additionalProperties: false
+    libops.v1.UpdateOrganizationSettingResponse:
+      type: object
+      properties:
+        setting:
+          title: setting
+          $ref: '#/components/schemas/libops.v1.OrganizationSetting'
+      title: UpdateOrganizationSettingResponse
+      additionalProperties: false
     libops.v1.UpdateProjectMemberRequest:
       type: object
       properties:
@@ -7580,6 +9810,56 @@ components:
           $ref: '#/components/schemas/libops.v1.ProjectSecret'
       title: UpdateProjectSecretResponse
       additionalProperties: false
+    libops.v1.UpdateProjectSettingRequest:
+      type: object
+      properties:
+        projectId:
+          type: string
+          title: project_id
+        settingId:
+          type: string
+          title: setting_id
+        value:
+          type: string
+          title: value
+          nullable: true
+        updateMask:
+          title: update_mask
+          $ref: '#/components/schemas/google.protobuf.FieldMask'
+      title: UpdateProjectSettingRequest
+      additionalProperties: false
+    libops.v1.UpdateProjectSettingResponse:
+      type: object
+      properties:
+        setting:
+          title: setting
+          $ref: '#/components/schemas/libops.v1.ProjectSetting'
+      title: UpdateProjectSettingResponse
+      additionalProperties: false
+    libops.v1.UpdateReconciliationStatusRequest:
+      type: object
+      properties:
+        runId:
+          type: string
+          title: run_id
+        status:
+          type: string
+          title: status
+          description: pending, triggered, running, completed, failed
+        errorMessage:
+          type: string
+          title: error_message
+          nullable: true
+      title: UpdateReconciliationStatusRequest
+      additionalProperties: false
+    libops.v1.UpdateReconciliationStatusResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+          title: success
+      title: UpdateReconciliationStatusResponse
+      additionalProperties: false
     libops.v1.UpdateSiteMemberRequest:
       type: object
       properties:
@@ -7653,6 +9933,32 @@ components:
           title: secret
           $ref: '#/components/schemas/libops.v1.SiteSecret'
       title: UpdateSiteSecretResponse
+      additionalProperties: false
+    libops.v1.UpdateSiteSettingRequest:
+      type: object
+      properties:
+        siteId:
+          type: string
+          title: site_id
+        settingId:
+          type: string
+          title: setting_id
+        value:
+          type: string
+          title: value
+          nullable: true
+        updateMask:
+          title: update_mask
+          $ref: '#/components/schemas/google.protobuf.FieldMask'
+      title: UpdateSiteSettingRequest
+      additionalProperties: false
+    libops.v1.UpdateSiteSettingResponse:
+      type: object
+      properties:
+        setting:
+          title: setting
+          $ref: '#/components/schemas/libops.v1.SiteSetting'
+      title: UpdateSiteSettingResponse
       additionalProperties: false
     libops.v1.admin.AdminFolderConfig:
       type: object
@@ -7837,6 +10143,14 @@ components:
           title: disk_size_gb
           format: int32
           description: Disk size in GB
+        os:
+          type: string
+          title: os
+          description: 'OS image (default: "cos-125-19216-104-74")'
+        diskType:
+          type: string
+          title: disk_type
+          description: 'Disk type (default: "hyperdisk-balanced")'
         promote:
           title: promote
           description: Promotion strategy How to promote code to production
@@ -7921,6 +10235,20 @@ components:
             type: string
           title: rollout_cmd
           description: Commands to run during rollout
+        overlayVolumes:
+          type: array
+          items:
+            type: string
+          title: overlay_volumes
+          description: Overlay volume paths
+        os:
+          type: string
+          title: os
+          description: 'GCP deployment configuration OS image (default: "cos-125-19216-104-74")'
+        isProduction:
+          type: boolean
+          title: is_production
+          description: Whether this is the production instance
         status:
           title: status
           description: Status (organization-visible)
@@ -8069,6 +10397,9 @@ tags:
 - name: libops.v1.AdminProjectService
   description: AdminProjectService manages admin-level project operations with full
     access
+- name: libops.v1.AdminReconciliationService
+  description: "AdminReconciliationService handles reconciliation operations\n Called\
+    \ by Cloud Run reconciliation services with GSA authentication"
 - name: libops.v1.AccountService
   description: AccountService provides limited account lookup for authenticated users
 - name: libops.v1.OrganizationService
@@ -8101,3 +10432,9 @@ tags:
   description: ProjectSecretService manages project-level secrets
 - name: libops.v1.SiteSecretService
   description: SiteSecretService manages site-level secrets
+- name: libops.v1.OrganizationSettingService
+  description: OrganizationSettingService manages organization-level settings
+- name: libops.v1.ProjectSettingService
+  description: ProjectSettingService manages project-level settings
+- name: libops.v1.SiteSettingService
+  description: SiteSettingService manages site-level settings

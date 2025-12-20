@@ -17,8 +17,9 @@ import (
 	"github.com/go-sql-driver/mysql"
 	"github.com/google/uuid"
 
+	"github.com/libops/api/db"
+	"github.com/libops/api/db/types"
 	"github.com/libops/api/internal/audit"
-	"github.com/libops/api/internal/db"
 	"github.com/libops/api/internal/vault"
 )
 
@@ -60,7 +61,7 @@ func (akm *APIKeyManager) CreateAPIKey(ctx context.Context, accountID int64, acc
 		expiresAtSQL = sql.NullTime{Time: *expiresAt, Valid: true}
 	}
 
-	var scopesJSON json.RawMessage
+	var scopesJSON types.RawJSON
 	if len(scopes) > 0 {
 		scopesBytes, err := json.Marshal(scopes)
 		if err != nil {
@@ -356,13 +357,19 @@ func splitAPIKeySecret(secretValue string) []string {
 
 // generateRandomSecret generates a cryptographically secure random secret.
 // The secret is base64url encoded (URL-safe, no padding) for easy transmission.
+// It ensures the secret does not start with an underscore to avoid parsing ambiguity.
 func generateRandomSecret(numBytes int) (string, error) {
-	bytes := make([]byte, numBytes)
-	if _, err := rand.Read(bytes); err != nil {
-		return "", fmt.Errorf("failed to generate random bytes: %w", err)
+	for {
+		bytes := make([]byte, numBytes)
+		if _, err := rand.Read(bytes); err != nil {
+			return "", fmt.Errorf("failed to generate random bytes: %w", err)
+		}
+		// Use URL-safe base64 encoding without padding
+		secret := base64.RawURLEncoding.EncodeToString(bytes)
+		if !strings.HasPrefix(secret, "_") {
+			return secret, nil
+		}
 	}
-	// Use URL-safe base64 encoding without padding
-	return base64.RawURLEncoding.EncodeToString(bytes), nil
 }
 
 // isDuplicateKeyError checks if an error is a MySQL duplicate key error (1062).

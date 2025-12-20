@@ -11,7 +11,7 @@ import (
 
 	"github.com/google/uuid"
 
-	"github.com/libops/api/internal/db"
+	"github.com/libops/api/db"
 )
 
 // Repository contains shared business logic for account operations.

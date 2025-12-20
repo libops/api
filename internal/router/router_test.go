@@ -7,8 +7,8 @@ import (
 
 	"github.com/DATA-DOG/go-sqlmock"
 
+	"github.com/libops/api/db"
 	"github.com/libops/api/internal/config"
-	"github.com/libops/api/internal/db"
 	"github.com/libops/api/internal/events"
 	"github.com/libops/api/internal/middleware"
 )
@@ -22,8 +22,7 @@ func TestNew(t *testing.T) {
 	defer func() { _ = mockDB.Close() }()
 
 	queries := db.New(mockDB)
-	ceClient := events.NewNoOpClient()
-	emitter := events.NewEmitter(ceClient, events.EventSourceLibOpsAPI, queries)
+	emitter := events.NewEmitter(queries, events.EventSourceLibOpsAPI)
 
 	deps := &Dependencies{
 		Config:         &config.Config{},
@@ -51,8 +50,7 @@ func TestHealthEndpoint(t *testing.T) {
 	defer func() { _ = mockDB.Close() }()
 
 	queries := db.New(mockDB)
-	ceClient := events.NewNoOpClient()
-	emitter := events.NewEmitter(ceClient, events.EventSourceLibOpsAPI, queries)
+	emitter := events.NewEmitter(queries, events.EventSourceLibOpsAPI)
 
 	deps := &Dependencies{
 		Config:         &config.Config{},
@@ -86,8 +84,7 @@ func TestVersionEndpoint(t *testing.T) {
 	defer func() { _ = mockDB.Close() }()
 
 	queries := db.New(mockDB)
-	ceClient := events.NewNoOpClient()
-	emitter := events.NewEmitter(ceClient, events.EventSourceLibOpsAPI, queries)
+	emitter := events.NewEmitter(queries, events.EventSourceLibOpsAPI)
 
 	deps := &Dependencies{
 		Config:         &config.Config{},
@@ -179,8 +176,7 @@ func BenchmarkHealthEndpoint(b *testing.B) {
 	defer func() { _ = mockDB.Close() }()
 
 	queries := db.New(mockDB)
-	ceClient := events.NewNoOpClient()
-	emitter := events.NewEmitter(ceClient, events.EventSourceLibOpsAPI, queries)
+	emitter := events.NewEmitter(queries, events.EventSourceLibOpsAPI)
 
 	deps := &Dependencies{
 		Config:         &config.Config{},

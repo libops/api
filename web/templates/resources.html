@@ -10,7 +10,7 @@
         <p class="text-sm text-gray-600">Manage your {{.ResourceName | lower}}</p>
     </div>
     <button onclick="openCreateModal('{{.ActivePage}}')"
-        class="px-4 py-2 bg-green-600 text-white text-sm font-medium rounded-lg hover:bg-green-700">
+        class="px-4 py-2 bg-red-900 text-white text-sm font-medium rounded-lg hover:bg-red-950">
         Create {{singularize .ResourceName}}
     </button>
 </div>
@@ -90,7 +90,7 @@
     <h3 class="text-lg font-medium text-gray-900 mb-2">No {{.ResourceName | lower}} yet</h3>
     <p class="text-sm text-gray-600 mb-4">Get started by creating your first {{singularize .ResourceName | lower}}</p>
     <button onclick="openCreateModal('{{.ActivePage}}')"
-        class="px-4 py-2 bg-green-600 text-white text-sm font-medium rounded-lg hover:bg-green-700">
+        class="px-4 py-2 bg-red-900 text-white text-sm font-medium rounded-lg hover:bg-red-950">
         Create {{singularize .ResourceName}}
     </button>
 </div>

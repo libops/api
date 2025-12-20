@@ -2,7 +2,8 @@ package onboard
 
 // Step1Request contains the organization name from step 1
 type Step1Request struct {
-	OrganizationName string `json:"organization_name"`
+	OrganizationName     string `json:"organization_name"`
+	OrganizationPublicID string `json:"organization_public_id,omitempty"`
 }
 
 // Step2Request contains machine and disk configuration from step 2
@@ -44,21 +45,22 @@ type Step7Request struct {
 
 // OnboardingSessionResponse is returned to the frontend
 type OnboardingSessionResponse struct {
-	SessionID         string  `json:"session_id"`
-	CurrentStep       int     `json:"current_step"`
-	OrgName           *string `json:"org_name,omitempty"`
-	MachineType       *string `json:"machine_type,omitempty"`
-	DiskSizeGB        *int    `json:"disk_size_gb,omitempty"`
-	ProjectName       *string `json:"project_name,omitempty"`
-	GCPCountry        *string `json:"gcp_country,omitempty"`
-	GCPRegion         *string `json:"gcp_region,omitempty"`
-	SiteName          *string `json:"site_name,omitempty"`
-	GitHubRepoURL     *string `json:"github_repo_url,omitempty"`
-	Port              *int    `json:"port,omitempty"`
-	FirewallIP        *string `json:"firewall_ip,omitempty"`
-	OrganizationID    *int64  `json:"organization_id,omitempty"`
-	StripeCheckoutID  *string `json:"stripe_checkout_session_id,omitempty"`
-	StripeCheckoutURL *string `json:"stripe_checkout_url,omitempty"`
+	SessionID            string  `json:"session_id"`
+	CurrentStep          int     `json:"current_step"`
+	OrgName              *string `json:"org_name,omitempty"`
+	OrganizationPublicID *string `json:"organization_public_id,omitempty"`
+	MachineType          *string `json:"machine_type,omitempty"`
+	DiskSizeGB           *int    `json:"disk_size_gb,omitempty"`
+	ProjectName          *string `json:"project_name,omitempty"`
+	GCPCountry           *string `json:"gcp_country,omitempty"`
+	GCPRegion            *string `json:"gcp_region,omitempty"`
+	SiteName             *string `json:"site_name,omitempty"`
+	GitHubRepoURL        *string `json:"github_repo_url,omitempty"`
+	Port                 *int    `json:"port,omitempty"`
+	FirewallIP           *string `json:"firewall_ip,omitempty"`
+	OrganizationID       *int64  `json:"organization_id,omitempty"`
+	StripeCheckoutID     *string `json:"stripe_checkout_session_id,omitempty"`
+	StripeCheckoutURL    *string `json:"stripe_checkout_url,omitempty"`
 }
 
 // ErrorResponse is a standard error response

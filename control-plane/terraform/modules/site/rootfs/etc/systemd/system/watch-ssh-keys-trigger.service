@@ -1,0 +1,17 @@
+[Unit]
+Description=SSH Keys Trigger Watcher
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+EnvironmentFile=/etc/default/reconcile-ssh-keys
+ExecStart=/usr/local/bin/watch-ssh-keys-trigger.sh
+Restart=always
+RestartSec=10
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=watch-ssh-keys-trigger
+
+[Install]
+WantedBy=multi-user.target

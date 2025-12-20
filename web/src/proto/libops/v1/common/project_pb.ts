@@ -97,6 +97,20 @@ export class ProjectConfig extends Message<ProjectConfig> {
   diskSizeGb = 0;
 
   /**
+   * OS image (default: "cos-125-19216-104-74")
+   *
+   * @generated from field: string os = 9;
+   */
+  os = "";
+
+  /**
+   * Disk type (default: "hyperdisk-balanced")
+   *
+   * @generated from field: string disk_type = 10;
+   */
+  diskType = "";
+
+  /**
    * Promotion strategy
    *
    * How to promote code to production
@@ -128,6 +142,8 @@ export class ProjectConfig extends Message<ProjectConfig> {
     { no: 6, name: "zone", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 7, name: "machine_type", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 8, name: "disk_size_gb", kind: "scalar", T: 5 /* ScalarType.INT32 */ },
+    { no: 9, name: "os", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 10, name: "disk_type", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 11, name: "promote", kind: "enum", T: proto3.getEnumType(PromoteStrategy) },
     { no: 16, name: "status", kind: "enum", T: proto3.getEnumType(Status) },
   ]);

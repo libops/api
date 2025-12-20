@@ -15,7 +15,7 @@ type Manager interface {
 
 	// Onboarding operations
 	GetMachineTypePriceID(ctx context.Context, machineType string) (string, error)
-	CreateCheckoutSession(ctx context.Context, accountEmail, sessionID, machineType string, diskSizeGB int, baseURL string) (*CheckoutSessionResult, error)
+	CreateCheckoutSession(ctx context.Context, accountEmail, sessionID, machineType string, diskSizeGB int, baseURL string, withTrial bool) (*CheckoutSessionResult, error)
 }
 
 // CheckoutSessionResult contains the checkout session ID and URL

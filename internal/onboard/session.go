@@ -5,7 +5,7 @@ import (
 	"database/sql"
 	"time"
 
-	"github.com/libops/api/internal/db"
+	"github.com/libops/api/db"
 )
 
 // SessionManager handles onboarding session operations
@@ -111,6 +111,20 @@ func (sm *SessionManager) UpdateStep1(ctx context.Context, sessionID int64, orgN
 	})
 }
 
+// getOrgPublicID safely extracts the organization public ID from the interface{} type
+func getOrgPublicID(val interface{}) string {
+	if val == nil {
+		return ""
+	}
+	if str, ok := val.(string); ok {
+		return str
+	}
+	if b, ok := val.([]byte); ok {
+		return string(b)
+	}
+	return ""
+}
+
 // ToResponse converts a database session to an API response
 func ToResponse(session *db.GetOnboardingSessionByAccountIDRow) OnboardingSessionResponse {
 	resp := OnboardingSessionResponse{
@@ -120,6 +134,14 @@ func ToResponse(session *db.GetOnboardingSessionByAccountIDRow) OnboardingSessio
 
 	if session.OrgName.Valid {
 		resp.OrgName = &session.OrgName.String
+	}
+
+	// Handle organization_public_id which could be interface{} (nil or string from CASE statement)
+	if session.OrganizationPublicID != nil {
+		orgPublicID := getOrgPublicID(session.OrganizationPublicID)
+		if orgPublicID != "" {
+			resp.OrganizationPublicID = &orgPublicID
+		}
 	}
 	if session.MachineType.Valid {
 		resp.MachineType = &session.MachineType.String

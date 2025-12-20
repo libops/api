@@ -1,5 +1,6 @@
 default_max_request_duration = "90s"
 disable_clustering           = true
+# ulimits: -1 set on the container
 disable_mlock                = true
 ui                           = true
 api_addr                     = "http://vault.libops.io"

@@ -3,7 +3,10 @@ package vault
 import (
 	"context"
 	"fmt"
+	"log/slog"
+	"math"
 	"os"
+	"time"
 
 	"github.com/hashicorp/vault/api"
 )
@@ -22,6 +25,12 @@ type Config struct {
 const (
 	jwtFilePath = "/vault/secrets/GOOGLE_ACCESS_TOKEN"
 	roleName    = "libops-api"
+
+	// Retry configuration for Vault requests
+	maxRetries     = 3
+	initialBackoff = 100 * time.Millisecond
+	maxBackoff     = 2 * time.Second
+	backoffFactor  = 2.0
 )
 
 // NewClient creates a new Vault client wrapper.
@@ -137,4 +146,101 @@ func (c *Client) GetTokenMetadata(ctx context.Context, key string) (string, erro
 	}
 
 	return value, nil
+}
+
+// retryWithBackoff executes an operation with exponential backoff retry logic.
+// It retries transient errors up to maxRetries times with exponentially increasing delays.
+func retryWithBackoff[T any](ctx context.Context, operation string, fn func() (T, error)) (T, error) {
+	var result T
+	var lastErr error
+
+	for attempt := 0; attempt <= maxRetries; attempt++ {
+		result, lastErr = fn()
+		if lastErr == nil {
+			return result, nil
+		}
+
+		// Check if we should retry
+		if !isRetryableError(lastErr) {
+			return result, lastErr
+		}
+
+		// Don't sleep after the last attempt
+		if attempt == maxRetries {
+			break
+		}
+
+		// Calculate backoff duration with exponential increase
+		backoff := time.Duration(float64(initialBackoff) * math.Pow(backoffFactor, float64(attempt)))
+		if backoff > maxBackoff {
+			backoff = maxBackoff
+		}
+
+		slog.Warn("Vault operation failed, retrying",
+			"operation", operation,
+			"attempt", attempt+1,
+			"max_attempts", maxRetries+1,
+			"backoff", backoff,
+			"error", lastErr)
+
+		select {
+		case <-ctx.Done():
+			return result, ctx.Err()
+		case <-time.After(backoff):
+			// Continue to next retry
+		}
+	}
+
+	return result, fmt.Errorf("vault operation %s failed after %d attempts: %w", operation, maxRetries+1, lastErr)
+}
+
+// isRetryableError determines if a Vault error should trigger a retry.
+// Retries transient network errors and server errors, but not auth/permission errors.
+func isRetryableError(err error) bool {
+	if err == nil {
+		return false
+	}
+
+	// Check for Vault API response errors
+	if respErr, ok := err.(*api.ResponseError); ok {
+		// Retry on 5xx server errors and 429 rate limiting
+		statusCode := respErr.StatusCode
+		return statusCode == 429 || (statusCode >= 500 && statusCode < 600)
+	}
+
+	// Retry on generic network/timeout errors
+	// The Vault Go client wraps these in various ways, so we check the error message
+	errMsg := err.Error()
+	retryablePatterns := []string{
+		"connection refused",
+		"connection reset",
+		"timeout",
+		"temporary failure",
+		"no such host",
+		"i/o timeout",
+		"tls handshake timeout",
+	}
+
+	for _, pattern := range retryablePatterns {
+		if containsString(errMsg, pattern) {
+			return true
+		}
+	}
+
+	return false
+}
+
+// containsString checks if a string contains a substring (case-insensitive)
+func containsString(s, substr string) bool {
+	return len(s) >= len(substr) && (s == substr ||
+		(len(s) > len(substr) && findSubstring(s, substr)))
+}
+
+func findSubstring(s, substr string) bool {
+	for i := 0; i <= len(s)-len(substr); i++ {
+		if s[i:i+len(substr)] == substr {
+			return true
+		}
+	}
+	return false
 }

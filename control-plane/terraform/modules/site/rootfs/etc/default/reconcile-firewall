@@ -1,0 +1,5 @@
+# Firewall Reconciliation Configuration
+LIBOPS_API_URL=https://api.libops.io
+LIBOPS_ORG_ID=
+LIBOPS_PROJECT_ID=
+LIBOPS_SITE_ID=

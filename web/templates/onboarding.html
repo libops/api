@@ -49,6 +49,9 @@
                 this.sessionData = {};
                 this.apiBase = '/api/onboarding';
                 this.pollInterval = null;
+                // Store IDs for API calls
+                this.organizationId = null;
+                this.projectId = null;
             }
 
             async init() {
@@ -63,6 +66,11 @@
                         const data = await response.json();
                         this.sessionData = data;
                         this.currentStep = data.current_step || 1;
+
+                        // Restore organization_id if available from session
+                        if (data.organization_public_id) {
+                            this.organizationId = data.organization_public_id;
+                        }
                     }
                 } catch (error) {
                     console.error('Failed to load session:', error);
@@ -362,8 +370,8 @@
                                     type="text"
                                     id="site-name"
                                     name="site_name"
-                                    placeholder="my-awesome-site"
-                                    value="${this.sessionData.site_name || ''}"
+                                    placeholder="production"
+                                    value="${this.sessionData.site_name || 'production'}"
                                     class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                                     required
                                 />
@@ -441,10 +449,10 @@
 
             renderStep7() {
                 return `
-                    <div class="max-w-md mx-auto">
-                        <h2 class="text-3xl font-bold text-gray-900 mb-3">Configure Firewall</h2>
+                    <div class="max-w-2xl mx-auto">
+                        <h2 class="text-3xl font-bold text-gray-900 mb-3">Final Configuration</h2>
                         <p class="text-gray-600 mb-8">
-                            Allow access to your deployment from your IP address.
+                            Configure firewall access and optionally add your SSH keys.
                         </p>
                         <form id="step7-form" class="space-y-6">
                             <div>
@@ -462,7 +470,36 @@
                                 </p>
                             </div>
 
-                            <button type="submit" class="w-full bg-gradient-to-r from-green-600 to-emerald-600 text-white py-3 px-6 rounded-lg hover:from-green-700 hover:to-emerald-700 font-medium transition-all shadow-md hover:shadow-lg">
+                            <div class="border-t pt-6">
+                                <label class="block text-sm font-medium text-gray-700 mb-2">SSH Public Keys (Optional)</label>
+                                <p class="text-xs text-gray-600 mb-4">
+                                    Add your SSH public key to access your site over SSH. You can add more keys later or invite teammates who can bring their own keys.
+                                </p>
+                                <div id="ssh-keys-container" class="space-y-3">
+                                    <div class="ssh-key-input">
+                                        <textarea
+                                            name="ssh_key_0"
+                                            placeholder="ssh-ed25519 AAAAC3Nza... user@laptop (optional)"
+                                            rows="2"
+                                            class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent font-mono text-sm"
+                                        ></textarea>
+                                    </div>
+                                </div>
+                                <button type="button" id="add-ssh-key" class="mt-2 text-sm text-blue-600 hover:text-blue-700 font-medium">
+                                    + Add another SSH key
+                                </button>
+                            </div>
+
+                            <div class="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                                <p class="text-sm text-blue-900">
+                                    <svg class="inline w-5 h-5 mr-2" fill="currentColor" viewBox="0 0 20 20">
+                                        <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd"/>
+                                    </svg>
+                                    Your site is being provisioned and will be ready in ~2 minutes after completion.
+                                </p>
+                            </div>
+
+                            <button type="submit" id="complete-button" class="w-full bg-gradient-to-r from-red-900 to-red-950 text-white py-3 px-6 rounded-lg hover:from-red-950 hover:to-red-950 font-medium transition-all shadow-md hover:shadow-lg">
                                 Complete Setup 🎉
                             </button>
                         </form>
@@ -476,9 +513,47 @@
                 form.addEventListener('submit', async (e) => {
                     e.preventDefault();
                     const formData = new FormData(form);
-                    await this.submitStep('/api/onboarding/step1', {
-                        organization_name: formData.get('organization_name')
-                    });
+                    const organizationName = formData.get('organization_name');
+
+                    // Call CreateOrganization API
+                    try {
+                        const response = await fetch('/libops.v1.OrganizationService/CreateOrganization', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({
+                                folder: {
+                                    organization_name: organizationName
+                                }
+                            })
+                        });
+
+                        if (!response.ok) {
+                            const error = await response.json();
+                            alert(error.message || 'Failed to create organization');
+                            return;
+                        }
+
+                        const result = await response.json();
+                        // Handle both snake_case (standard Go JSON) and camelCase (proto JSON)
+                        // Try nested organization object first, then top-level fields
+                        this.organizationId = result.organization?.organization_id ||
+                                            result.organization?.organizationId ||
+                                            result.organization_id ||
+                                            result.organizationId;
+
+                        if (!this.organizationId) {
+                            throw new Error('Failed to get organization ID from response');
+                        }
+
+                        // Update session with org name AND organization public_id
+                        await this.submitStep('/api/onboarding/step1', {
+                            organization_name: organizationName,
+                            organization_public_id: this.organizationId
+                        });
+                    } catch (error) {
+                        console.error('Failed to create organization:', error);
+                        alert('Failed to create organization. Please try again.');
+                    }
                 });
             }
 
@@ -520,9 +595,15 @@
                 form.addEventListener('submit', async (e) => {
                     e.preventDefault();
                     const formData = new FormData(form);
+                    const projectName = formData.get('project_name');
+
+                    // Just save the project name - project will be created after region selection
                     await this.submitStep('/api/onboarding/step4', {
-                        project_name: formData.get('project_name')
+                        project_name: projectName
                     });
+
+                    // Manually advance to next step
+                    this.renderStep(this.currentStep + 1);
                 });
             }
 
@@ -559,11 +640,67 @@
                 const form = document.getElementById('step5-form');
                 form.addEventListener('submit', async (e) => {
                     e.preventDefault();
-                    const formData = new FormData(form);
-                    await this.submitStep('/api/onboarding/step5', {
-                        country: formData.get('country'),
-                        region: formData.get('region')
-                    });
+                    const submitButton = form.querySelector('button[type="submit"]');
+                    submitButton.disabled = true;
+                    submitButton.textContent = 'Creating project...';
+
+                    try {
+                        const formData = new FormData(form);
+                        const country = formData.get('country');
+                        const region = formData.get('region');
+
+                        // Update session with region first
+                        await this.submitStep('/api/onboarding/step5', {
+                            country: country,
+                            region: region
+                        });
+
+                        // Get session data for project name, machine type, and disk size
+                        await this.loadSession();
+
+                        // Ensure we have organization ID from session
+                        if (!this.organizationId && this.sessionData.organization_public_id) {
+                            this.organizationId = this.sessionData.organization_public_id;
+                        }
+
+                        // Verify we have organization ID before proceeding
+                        if (!this.organizationId) {
+                            throw new Error('Organization ID not found. Please go back to step 1.');
+                        }
+
+                        // Now create the project via API (we have all required data)
+                        const response = await fetch('/libops.v1.ProjectService/CreateProject', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({
+                                organization_id: this.organizationId,
+                                project: {
+                                    project_name: this.sessionData.project_name || 'My Project',
+                                    region: region,
+                                    zone: region + '-a',
+                                    machine_type: this.sessionData.machine_type || 'e2-medium',
+                                    disk_size_gb: this.sessionData.disk_size_gb || 20,
+                                    create_branch_sites: false
+                                }
+                            })
+                        });
+
+                        if (!response.ok) {
+                            const error = await response.json();
+                            throw new Error(error.message || 'Failed to create project');
+                        }
+
+                        const result = await response.json();
+                        this.projectId = result.project.project_id || result.project.projectId;
+
+                        // Move to next step
+                        this.renderStep(6);
+                    } catch (error) {
+                        console.error('Failed to create project:', error);
+                        alert('Failed to create project: ' + error.message + '\nPlease try again.');
+                        submitButton.disabled = false;
+                        submitButton.textContent = 'Continue';
+                    }
                 });
             }
 
@@ -583,13 +720,84 @@
                 const form = document.getElementById('step6-form');
                 form.addEventListener('submit', async (e) => {
                     e.preventDefault();
-                    const formData = new FormData(form);
-                    await this.submitStep('/api/onboarding/step6', {
-                        site_name: formData.get('site_name'),
-                        port: parseInt(formData.get('port')) || 80,
-                        repo_option: formData.get('repo_option'),
-                        custom_url: formData.get('custom_url') || ''
-                    });
+                    const submitButton = form.querySelector('button[type="submit"]');
+                    submitButton.disabled = true;
+                    submitButton.textContent = 'Creating site...';
+
+                    try {
+                        const formData = new FormData(form);
+                        const siteName = formData.get('site_name');
+                        const port = parseInt(formData.get('port')) || 80;
+                        const repoOption = formData.get('repo_option');
+                        const customUrl = formData.get('custom_url') || '';
+
+                        // Update session first
+                        await this.submitStep('/api/onboarding/step6', {
+                            site_name: siteName,
+                            port: port,
+                            repo_option: repoOption,
+                            custom_url: customUrl
+                        });
+
+                        // Determine GitHub repository URL
+                        let githubRepo = '';
+                        if (repoOption === 'ojs') {
+                            githubRepo = 'https://github.com/pkp/ojs';
+                        } else if (repoOption === 'isle-site-template') {
+                            githubRepo = 'https://github.com/libops/isle-site-template';
+                        } else if (repoOption === 'custom') {
+                            githubRepo = customUrl;
+                        }
+
+                        // Ensure we have organization and project IDs
+                        if (!this.organizationId && this.sessionData.organization_public_id) {
+                            this.organizationId = this.sessionData.organization_public_id;
+                        }
+                        if (!this.organizationId) {
+                            throw new Error('Organization ID not found. Please go back to step 1.');
+                        }
+                        if (!this.projectId) {
+                            throw new Error('Project ID not found. Please go back to step 5.');
+                        }
+
+                        // Create the site via API
+                        const response = await fetch('/libops.v1.SiteService/CreateSite', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({
+                                organization_id: this.organizationId,
+                                project_id: this.projectId,
+                                site: {
+                                    site_name: siteName,
+                                    github_repository: githubRepo,
+                                    github_ref: 'heads/main',
+                                    compose_path: '/mnt/disks/data/compose',
+                                    compose_file: 'docker-compose.yml',
+                                    port: port,
+                                    application_type: 'generic',
+                                    up_cmd: ['docker compose up --remove-orphans -d'],
+                                    init_cmd: [],
+                                    rollout_cmd: ['docker compose pull', 'docker compose up --remove-orphans -d']
+                                }
+                            })
+                        });
+
+                        if (!response.ok) {
+                            const error = await response.json();
+                            throw new Error(error.message || 'Failed to create site');
+                        }
+
+                        const result = await response.json();
+                        this.siteId = result.site.site_id || result.site.siteId;
+
+                        // Move to next step
+                        this.renderStep(7);
+                    } catch (error) {
+                        console.error('Failed to create site:', error);
+                        alert('Failed to create site: ' + error.message + '\nPlease try again.');
+                        submitButton.disabled = false;
+                        submitButton.textContent = 'Continue';
+                    }
                 });
             }
 
@@ -604,17 +812,101 @@
                     console.error('Failed to fetch IP:', error);
                 }
 
+                // Handle adding SSH keys
+                let sshKeyCount = 1;
+                const addSSHKeyButton = document.getElementById('add-ssh-key');
+                addSSHKeyButton.addEventListener('click', () => {
+                    const container = document.getElementById('ssh-keys-container');
+                    const newKeyInput = document.createElement('div');
+                    newKeyInput.className = 'ssh-key-input flex gap-2';
+                    newKeyInput.innerHTML = `
+                        <textarea
+                            name="ssh_key_${sshKeyCount}"
+                            placeholder="ssh-ed25519 AAAAC3Nza... user@laptop (optional)"
+                            rows="2"
+                            class="flex-1 px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent font-mono text-sm"
+                        ></textarea>
+                        <button type="button" class="remove-ssh-key text-red-600 hover:text-red-700 px-3">✕</button>
+                    `;
+                    container.appendChild(newKeyInput);
+
+                    // Add remove handler
+                    newKeyInput.querySelector('.remove-ssh-key').addEventListener('click', () => {
+                        newKeyInput.remove();
+                    });
+
+                    sshKeyCount++;
+                });
+
                 const form = document.getElementById('step7-form');
                 form.addEventListener('submit', async (e) => {
                     e.preventDefault();
-                    const formData = new FormData(form);
-                    const response = await this.submitStep('/api/onboarding/step7', {
-                        firewall_ip: formData.get('firewall_ip')
-                    });
+                    const submitButton = document.getElementById('complete-button');
+                    submitButton.disabled = true;
+                    submitButton.textContent = 'Completing setup...';
 
-                    if (response && response.message) {
-                        // Onboarding complete, redirect to dashboard
+                    try {
+                        const formData = new FormData(form);
+                        let firewallIP = formData.get('firewall_ip');
+
+                        // Add /32 if not present (single IP CIDR notation)
+                        if (firewallIP && !firewallIP.includes('/')) {
+                            firewallIP = firewallIP + '/32';
+                        }
+
+                        // Collect SSH keys (filter out empty ones)
+                        const sshKeys = [];
+                        for (let [key, value] of formData.entries()) {
+                            if (key.startsWith('ssh_key_') && value.trim()) {
+                                sshKeys.push(value.trim());
+                            }
+                        }
+
+                        // Ensure we have organization ID
+                        if (!this.organizationId && this.sessionData.organization_public_id) {
+                            this.organizationId = this.sessionData.organization_public_id;
+                        }
+                        if (!this.organizationId) {
+                            throw new Error('Organization ID not found. Please go back to step 1.');
+                        }
+
+                        // Create firewall rule via API
+                        submitButton.textContent = 'Creating firewall rule...';
+                        const firewallResponse = await fetch('/libops.v1.FirewallService/CreateOrganizationFirewallRule', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({
+                                organization_id: this.organizationId,
+                                rule_type: 'FIREWALL_RULE_TYPE_HTTPS_ALLOWED',
+                                cidr: firewallIP,
+                                name: 'Onboarding IP'
+                            })
+                        });
+
+                        if (!firewallResponse.ok) {
+                            const error = await firewallResponse.json();
+                            throw new Error('Failed to create firewall rule: ' + (error.message || 'Unknown error'));
+                        }
+
+                        // SSH keys are skipped during onboarding - users can add them later in account settings
+                        if (sshKeys.length > 0) {
+                            console.log(`Skipping ${sshKeys.length} SSH key(s) - can be added later in account settings`);
+                        }
+
+                        // Mark onboarding as complete on the backend
+                        submitButton.textContent = 'Finalizing...';
+                        await this.submitStep('/api/onboarding/step7', {
+                            firewall_ip: firewallIP,
+                            ssh_keys: sshKeys
+                        });
+
+                        // Redirect to dashboard
                         window.location.href = '/dashboard';
+                    } catch (error) {
+                        console.error('Failed to complete onboarding:', error);
+                        alert('Failed to complete setup: ' + error.message + '\nPlease try again.');
+                        submitButton.disabled = false;
+                        submitButton.textContent = 'Complete Setup 🎉';
                     }
                 });
             }
@@ -637,7 +929,12 @@
                     }
 
                     // Move to next step
-                    if (endpoint !== '/api/onboarding/step2' && endpoint !== '/api/onboarding/step7') {
+                    // Don't auto-advance for steps that handle their own navigation
+                    if (endpoint !== '/api/onboarding/step2' &&
+                        endpoint !== '/api/onboarding/step4' &&
+                        endpoint !== '/api/onboarding/step5' &&
+                        endpoint !== '/api/onboarding/step6' &&
+                        endpoint !== '/api/onboarding/step7') {
                         this.renderStep(this.currentStep + 1);
                     }
 

@@ -8,7 +8,7 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/libops/api/internal/db"
+	"github.com/libops/api/db"
 )
 
 // EmailVerificationToken represents a pending email verification.

@@ -1465,3 +1465,1029 @@ export class AdminListAllSitesResponse extends Message<AdminListAllSitesResponse
   }
 }
 
+/**
+ * @generated from message libops.v1.GetSiteSSHKeysRequest
+ */
+export class GetSiteSSHKeysRequest extends Message<GetSiteSSHKeysRequest> {
+  /**
+   * Site public ID
+   *
+   * @generated from field: string site_id = 1;
+   */
+  siteId = "";
+
+  constructor(data?: PartialMessage<GetSiteSSHKeysRequest>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "libops.v1.GetSiteSSHKeysRequest";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "site_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): GetSiteSSHKeysRequest {
+    return new GetSiteSSHKeysRequest().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): GetSiteSSHKeysRequest {
+    return new GetSiteSSHKeysRequest().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): GetSiteSSHKeysRequest {
+    return new GetSiteSSHKeysRequest().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: GetSiteSSHKeysRequest | PlainMessage<GetSiteSSHKeysRequest> | undefined, b: GetSiteSSHKeysRequest | PlainMessage<GetSiteSSHKeysRequest> | undefined): boolean {
+    return proto3.util.equals(GetSiteSSHKeysRequest, a, b);
+  }
+}
+
+/**
+ * @generated from message libops.v1.SSHKey
+ */
+export class SSHKey extends Message<SSHKey> {
+  /**
+   * @generated from field: string public_key = 1;
+   */
+  publicKey = "";
+
+  /**
+   * @generated from field: string name = 2;
+   */
+  name = "";
+
+  /**
+   * @generated from field: string fingerprint = 3;
+   */
+  fingerprint = "";
+
+  /**
+   * @generated from field: string github_username = 4;
+   */
+  githubUsername = "";
+
+  constructor(data?: PartialMessage<SSHKey>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "libops.v1.SSHKey";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "public_key", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 2, name: "name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 3, name: "fingerprint", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 4, name: "github_username", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): SSHKey {
+    return new SSHKey().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): SSHKey {
+    return new SSHKey().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): SSHKey {
+    return new SSHKey().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: SSHKey | PlainMessage<SSHKey> | undefined, b: SSHKey | PlainMessage<SSHKey> | undefined): boolean {
+    return proto3.util.equals(SSHKey, a, b);
+  }
+}
+
+/**
+ * @generated from message libops.v1.GetSiteSSHKeysResponse
+ */
+export class GetSiteSSHKeysResponse extends Message<GetSiteSSHKeysResponse> {
+  /**
+   * @generated from field: repeated libops.v1.SSHKey keys = 1;
+   */
+  keys: SSHKey[] = [];
+
+  constructor(data?: PartialMessage<GetSiteSSHKeysResponse>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "libops.v1.GetSiteSSHKeysResponse";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "keys", kind: "message", T: SSHKey, repeated: true },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): GetSiteSSHKeysResponse {
+    return new GetSiteSSHKeysResponse().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): GetSiteSSHKeysResponse {
+    return new GetSiteSSHKeysResponse().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): GetSiteSSHKeysResponse {
+    return new GetSiteSSHKeysResponse().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: GetSiteSSHKeysResponse | PlainMessage<GetSiteSSHKeysResponse> | undefined, b: GetSiteSSHKeysResponse | PlainMessage<GetSiteSSHKeysResponse> | undefined): boolean {
+    return proto3.util.equals(GetSiteSSHKeysResponse, a, b);
+  }
+}
+
+/**
+ * @generated from message libops.v1.GetSiteSecretsRequest
+ */
+export class GetSiteSecretsRequest extends Message<GetSiteSecretsRequest> {
+  /**
+   * Site public ID
+   *
+   * @generated from field: string site_id = 1;
+   */
+  siteId = "";
+
+  constructor(data?: PartialMessage<GetSiteSecretsRequest>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "libops.v1.GetSiteSecretsRequest";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "site_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): GetSiteSecretsRequest {
+    return new GetSiteSecretsRequest().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): GetSiteSecretsRequest {
+    return new GetSiteSecretsRequest().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): GetSiteSecretsRequest {
+    return new GetSiteSecretsRequest().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: GetSiteSecretsRequest | PlainMessage<GetSiteSecretsRequest> | undefined, b: GetSiteSecretsRequest | PlainMessage<GetSiteSecretsRequest> | undefined): boolean {
+    return proto3.util.equals(GetSiteSecretsRequest, a, b);
+  }
+}
+
+/**
+ * @generated from message libops.v1.Secret
+ */
+export class Secret extends Message<Secret> {
+  /**
+   * @generated from field: string key = 1;
+   */
+  key = "";
+
+  /**
+   * @generated from field: string value = 2;
+   */
+  value = "";
+
+  constructor(data?: PartialMessage<Secret>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "libops.v1.Secret";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "key", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 2, name: "value", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): Secret {
+    return new Secret().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): Secret {
+    return new Secret().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): Secret {
+    return new Secret().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: Secret | PlainMessage<Secret> | undefined, b: Secret | PlainMessage<Secret> | undefined): boolean {
+    return proto3.util.equals(Secret, a, b);
+  }
+}
+
+/**
+ * @generated from message libops.v1.GetSiteSecretsResponse
+ */
+export class GetSiteSecretsResponse extends Message<GetSiteSecretsResponse> {
+  /**
+   * @generated from field: repeated libops.v1.Secret secrets = 1;
+   */
+  secrets: Secret[] = [];
+
+  constructor(data?: PartialMessage<GetSiteSecretsResponse>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "libops.v1.GetSiteSecretsResponse";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "secrets", kind: "message", T: Secret, repeated: true },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): GetSiteSecretsResponse {
+    return new GetSiteSecretsResponse().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): GetSiteSecretsResponse {
+    return new GetSiteSecretsResponse().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): GetSiteSecretsResponse {
+    return new GetSiteSecretsResponse().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: GetSiteSecretsResponse | PlainMessage<GetSiteSecretsResponse> | undefined, b: GetSiteSecretsResponse | PlainMessage<GetSiteSecretsResponse> | undefined): boolean {
+    return proto3.util.equals(GetSiteSecretsResponse, a, b);
+  }
+}
+
+/**
+ * @generated from message libops.v1.GetSiteFirewallRequest
+ */
+export class GetSiteFirewallRequest extends Message<GetSiteFirewallRequest> {
+  /**
+   * Site public ID
+   *
+   * @generated from field: string site_id = 1;
+   */
+  siteId = "";
+
+  constructor(data?: PartialMessage<GetSiteFirewallRequest>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "libops.v1.GetSiteFirewallRequest";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "site_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): GetSiteFirewallRequest {
+    return new GetSiteFirewallRequest().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): GetSiteFirewallRequest {
+    return new GetSiteFirewallRequest().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): GetSiteFirewallRequest {
+    return new GetSiteFirewallRequest().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: GetSiteFirewallRequest | PlainMessage<GetSiteFirewallRequest> | undefined, b: GetSiteFirewallRequest | PlainMessage<GetSiteFirewallRequest> | undefined): boolean {
+    return proto3.util.equals(GetSiteFirewallRequest, a, b);
+  }
+}
+
+/**
+ * @generated from message libops.v1.FirewallRule
+ */
+export class FirewallRule extends Message<FirewallRule> {
+  /**
+   * tcp, udp, icmp, etc.
+   *
+   * @generated from field: string protocol = 1;
+   */
+  protocol = "";
+
+  /**
+   * port number (0 if not applicable)
+   *
+   * @generated from field: int32 port = 2;
+   */
+  port = 0;
+
+  /**
+   * source CIDR or IP
+   *
+   * @generated from field: string source = 3;
+   */
+  source = "";
+
+  /**
+   * accept, deny, drop, reject
+   *
+   * @generated from field: string action = 4;
+   */
+  action = "";
+
+  constructor(data?: PartialMessage<FirewallRule>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "libops.v1.FirewallRule";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "protocol", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 2, name: "port", kind: "scalar", T: 5 /* ScalarType.INT32 */ },
+    { no: 3, name: "source", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 4, name: "action", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): FirewallRule {
+    return new FirewallRule().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): FirewallRule {
+    return new FirewallRule().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): FirewallRule {
+    return new FirewallRule().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: FirewallRule | PlainMessage<FirewallRule> | undefined, b: FirewallRule | PlainMessage<FirewallRule> | undefined): boolean {
+    return proto3.util.equals(FirewallRule, a, b);
+  }
+}
+
+/**
+ * @generated from message libops.v1.GetSiteFirewallResponse
+ */
+export class GetSiteFirewallResponse extends Message<GetSiteFirewallResponse> {
+  /**
+   * @generated from field: repeated libops.v1.FirewallRule rules = 1;
+   */
+  rules: FirewallRule[] = [];
+
+  constructor(data?: PartialMessage<GetSiteFirewallResponse>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "libops.v1.GetSiteFirewallResponse";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "rules", kind: "message", T: FirewallRule, repeated: true },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): GetSiteFirewallResponse {
+    return new GetSiteFirewallResponse().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): GetSiteFirewallResponse {
+    return new GetSiteFirewallResponse().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): GetSiteFirewallResponse {
+    return new GetSiteFirewallResponse().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: GetSiteFirewallResponse | PlainMessage<GetSiteFirewallResponse> | undefined, b: GetSiteFirewallResponse | PlainMessage<GetSiteFirewallResponse> | undefined): boolean {
+    return proto3.util.equals(GetSiteFirewallResponse, a, b);
+  }
+}
+
+/**
+ * @generated from message libops.v1.SiteCheckInRequest
+ */
+export class SiteCheckInRequest extends Message<SiteCheckInRequest> {
+  /**
+   * Site public ID
+   *
+   * @generated from field: string site_id = 1;
+   */
+  siteId = "";
+
+  constructor(data?: PartialMessage<SiteCheckInRequest>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "libops.v1.SiteCheckInRequest";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "site_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): SiteCheckInRequest {
+    return new SiteCheckInRequest().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): SiteCheckInRequest {
+    return new SiteCheckInRequest().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): SiteCheckInRequest {
+    return new SiteCheckInRequest().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: SiteCheckInRequest | PlainMessage<SiteCheckInRequest> | undefined, b: SiteCheckInRequest | PlainMessage<SiteCheckInRequest> | undefined): boolean {
+    return proto3.util.equals(SiteCheckInRequest, a, b);
+  }
+}
+
+/**
+ * @generated from message libops.v1.SiteCheckInResponse
+ */
+export class SiteCheckInResponse extends Message<SiteCheckInResponse> {
+  /**
+   * @generated from field: bool success = 1;
+   */
+  success = false;
+
+  /**
+   * @generated from field: string message = 2;
+   */
+  message = "";
+
+  constructor(data?: PartialMessage<SiteCheckInResponse>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "libops.v1.SiteCheckInResponse";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "success", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
+    { no: 2, name: "message", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): SiteCheckInResponse {
+    return new SiteCheckInResponse().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): SiteCheckInResponse {
+    return new SiteCheckInResponse().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): SiteCheckInResponse {
+    return new SiteCheckInResponse().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: SiteCheckInResponse | PlainMessage<SiteCheckInResponse> | undefined, b: SiteCheckInResponse | PlainMessage<SiteCheckInResponse> | undefined): boolean {
+    return proto3.util.equals(SiteCheckInResponse, a, b);
+  }
+}
+
+/**
+ * @generated from message libops.v1.SyncManifestRequest
+ */
+export class SyncManifestRequest extends Message<SyncManifestRequest> {
+  /**
+   * Site public ID
+   *
+   * @generated from field: string site_id = 1;
+   */
+  siteId = "";
+
+  /**
+   * For ETag optimization (304 Not Modified)
+   *
+   * @generated from field: optional string current_state_hash = 2;
+   */
+  currentStateHash?: string;
+
+  constructor(data?: PartialMessage<SyncManifestRequest>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "libops.v1.SyncManifestRequest";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "site_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 2, name: "current_state_hash", kind: "scalar", T: 9 /* ScalarType.STRING */, opt: true },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): SyncManifestRequest {
+    return new SyncManifestRequest().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): SyncManifestRequest {
+    return new SyncManifestRequest().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): SyncManifestRequest {
+    return new SyncManifestRequest().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: SyncManifestRequest | PlainMessage<SyncManifestRequest> | undefined, b: SyncManifestRequest | PlainMessage<SyncManifestRequest> | undefined): boolean {
+    return proto3.util.equals(SyncManifestRequest, a, b);
+  }
+}
+
+/**
+ * @generated from message libops.v1.SyncManifestResponse
+ */
+export class SyncManifestResponse extends Message<SyncManifestResponse> {
+  /**
+   * Current state hash for this site
+   *
+   * @generated from field: string state_hash = 1;
+   */
+  stateHash = "";
+
+  /**
+   * Signed URLs to GCS blobs
+   *
+   * @generated from field: libops.v1.StateBlobs blobs = 2;
+   */
+  blobs?: StateBlobs;
+
+  constructor(data?: PartialMessage<SyncManifestResponse>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "libops.v1.SyncManifestResponse";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "state_hash", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 2, name: "blobs", kind: "message", T: StateBlobs },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): SyncManifestResponse {
+    return new SyncManifestResponse().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): SyncManifestResponse {
+    return new SyncManifestResponse().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): SyncManifestResponse {
+    return new SyncManifestResponse().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: SyncManifestResponse | PlainMessage<SyncManifestResponse> | undefined, b: SyncManifestResponse | PlainMessage<SyncManifestResponse> | undefined): boolean {
+    return proto3.util.equals(SyncManifestResponse, a, b);
+  }
+}
+
+/**
+ * @generated from message libops.v1.StateBlobs
+ */
+export class StateBlobs extends Message<StateBlobs> {
+  /**
+   * Signed GCS URL to ssh-keys.json
+   *
+   * @generated from field: string ssh_keys_url = 1;
+   */
+  sshKeysUrl = "";
+
+  /**
+   * Signed GCS URL to secrets.json
+   *
+   * @generated from field: string secrets_url = 2;
+   */
+  secretsUrl = "";
+
+  /**
+   * Signed GCS URL to firewall.json
+   *
+   * @generated from field: string firewall_url = 3;
+   */
+  firewallUrl = "";
+
+  constructor(data?: PartialMessage<StateBlobs>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "libops.v1.StateBlobs";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "ssh_keys_url", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 2, name: "secrets_url", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 3, name: "firewall_url", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): StateBlobs {
+    return new StateBlobs().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): StateBlobs {
+    return new StateBlobs().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): StateBlobs {
+    return new StateBlobs().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: StateBlobs | PlainMessage<StateBlobs> | undefined, b: StateBlobs | PlainMessage<StateBlobs> | undefined): boolean {
+    return proto3.util.equals(StateBlobs, a, b);
+  }
+}
+
+/**
+ * @generated from message libops.v1.GetBlobRequest
+ */
+export class GetBlobRequest extends Message<GetBlobRequest> {
+  /**
+   * Site public ID
+   *
+   * @generated from field: string site_id = 1;
+   */
+  siteId = "";
+
+  /**
+   * "ssh_keys", "secrets", "firewall"
+   *
+   * @generated from field: string blob_type = 2;
+   */
+  blobType = "";
+
+  constructor(data?: PartialMessage<GetBlobRequest>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "libops.v1.GetBlobRequest";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "site_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 2, name: "blob_type", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): GetBlobRequest {
+    return new GetBlobRequest().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): GetBlobRequest {
+    return new GetBlobRequest().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): GetBlobRequest {
+    return new GetBlobRequest().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: GetBlobRequest | PlainMessage<GetBlobRequest> | undefined, b: GetBlobRequest | PlainMessage<GetBlobRequest> | undefined): boolean {
+    return proto3.util.equals(GetBlobRequest, a, b);
+  }
+}
+
+/**
+ * @generated from message libops.v1.GetBlobResponse
+ */
+export class GetBlobResponse extends Message<GetBlobResponse> {
+  /**
+   * Blob content (JSON)
+   *
+   * @generated from field: bytes data = 1;
+   */
+  data = new Uint8Array(0);
+
+  /**
+   * "application/json"
+   *
+   * @generated from field: string content_type = 2;
+   */
+  contentType = "";
+
+  constructor(data?: PartialMessage<GetBlobResponse>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "libops.v1.GetBlobResponse";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "data", kind: "scalar", T: 12 /* ScalarType.BYTES */ },
+    { no: 2, name: "content_type", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): GetBlobResponse {
+    return new GetBlobResponse().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): GetBlobResponse {
+    return new GetBlobResponse().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): GetBlobResponse {
+    return new GetBlobResponse().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: GetBlobResponse | PlainMessage<GetBlobResponse> | undefined, b: GetBlobResponse | PlainMessage<GetBlobResponse> | undefined): boolean {
+    return proto3.util.equals(GetBlobResponse, a, b);
+  }
+}
+
+/**
+ * @generated from message libops.v1.GetReconciliationRunRequest
+ */
+export class GetReconciliationRunRequest extends Message<GetReconciliationRunRequest> {
+  /**
+   * @generated from field: string run_id = 1;
+   */
+  runId = "";
+
+  constructor(data?: PartialMessage<GetReconciliationRunRequest>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "libops.v1.GetReconciliationRunRequest";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "run_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): GetReconciliationRunRequest {
+    return new GetReconciliationRunRequest().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): GetReconciliationRunRequest {
+    return new GetReconciliationRunRequest().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): GetReconciliationRunRequest {
+    return new GetReconciliationRunRequest().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: GetReconciliationRunRequest | PlainMessage<GetReconciliationRunRequest> | undefined, b: GetReconciliationRunRequest | PlainMessage<GetReconciliationRunRequest> | undefined): boolean {
+    return proto3.util.equals(GetReconciliationRunRequest, a, b);
+  }
+}
+
+/**
+ * @generated from message libops.v1.GetReconciliationRunResponse
+ */
+export class GetReconciliationRunResponse extends Message<GetReconciliationRunResponse> {
+  /**
+   * @generated from field: string run_id = 1;
+   */
+  runId = "";
+
+  /**
+   * terraform or reconciliation
+   *
+   * @generated from field: string run_type = 2;
+   */
+  runType = "";
+
+  /**
+   * ssh_keys, secrets, firewall, general
+   *
+   * @generated from field: optional string reconciliation_type = 3;
+   */
+  reconciliationType?: string;
+
+  /**
+   * For terraform runs
+   *
+   * @generated from field: repeated string modules = 4;
+   */
+  modules: string[] = [];
+
+  /**
+   * For reconciliation runs
+   *
+   * @generated from field: repeated int64 target_site_ids = 5;
+   */
+  targetSiteIds: bigint[] = [];
+
+  /**
+   * @generated from field: repeated string event_ids = 6;
+   */
+  eventIds: string[] = [];
+
+  /**
+   * @generated from field: optional int64 organization_id = 7;
+   */
+  organizationId?: bigint;
+
+  /**
+   * @generated from field: optional int64 project_id = 8;
+   */
+  projectId?: bigint;
+
+  /**
+   * @generated from field: optional int64 site_id = 9;
+   */
+  siteId?: bigint;
+
+  /**
+   * @generated from field: string status = 10;
+   */
+  status = "";
+
+  constructor(data?: PartialMessage<GetReconciliationRunResponse>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "libops.v1.GetReconciliationRunResponse";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "run_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 2, name: "run_type", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 3, name: "reconciliation_type", kind: "scalar", T: 9 /* ScalarType.STRING */, opt: true },
+    { no: 4, name: "modules", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },
+    { no: 5, name: "target_site_ids", kind: "scalar", T: 3 /* ScalarType.INT64 */, repeated: true },
+    { no: 6, name: "event_ids", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },
+    { no: 7, name: "organization_id", kind: "scalar", T: 3 /* ScalarType.INT64 */, opt: true },
+    { no: 8, name: "project_id", kind: "scalar", T: 3 /* ScalarType.INT64 */, opt: true },
+    { no: 9, name: "site_id", kind: "scalar", T: 3 /* ScalarType.INT64 */, opt: true },
+    { no: 10, name: "status", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): GetReconciliationRunResponse {
+    return new GetReconciliationRunResponse().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): GetReconciliationRunResponse {
+    return new GetReconciliationRunResponse().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): GetReconciliationRunResponse {
+    return new GetReconciliationRunResponse().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: GetReconciliationRunResponse | PlainMessage<GetReconciliationRunResponse> | undefined, b: GetReconciliationRunResponse | PlainMessage<GetReconciliationRunResponse> | undefined): boolean {
+    return proto3.util.equals(GetReconciliationRunResponse, a, b);
+  }
+}
+
+/**
+ * @generated from message libops.v1.UpdateReconciliationStatusRequest
+ */
+export class UpdateReconciliationStatusRequest extends Message<UpdateReconciliationStatusRequest> {
+  /**
+   * @generated from field: string run_id = 1;
+   */
+  runId = "";
+
+  /**
+   * pending, triggered, running, completed, failed
+   *
+   * @generated from field: string status = 2;
+   */
+  status = "";
+
+  /**
+   * @generated from field: optional string error_message = 3;
+   */
+  errorMessage?: string;
+
+  constructor(data?: PartialMessage<UpdateReconciliationStatusRequest>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "libops.v1.UpdateReconciliationStatusRequest";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "run_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 2, name: "status", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 3, name: "error_message", kind: "scalar", T: 9 /* ScalarType.STRING */, opt: true },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): UpdateReconciliationStatusRequest {
+    return new UpdateReconciliationStatusRequest().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): UpdateReconciliationStatusRequest {
+    return new UpdateReconciliationStatusRequest().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): UpdateReconciliationStatusRequest {
+    return new UpdateReconciliationStatusRequest().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: UpdateReconciliationStatusRequest | PlainMessage<UpdateReconciliationStatusRequest> | undefined, b: UpdateReconciliationStatusRequest | PlainMessage<UpdateReconciliationStatusRequest> | undefined): boolean {
+    return proto3.util.equals(UpdateReconciliationStatusRequest, a, b);
+  }
+}
+
+/**
+ * @generated from message libops.v1.UpdateReconciliationStatusResponse
+ */
+export class UpdateReconciliationStatusResponse extends Message<UpdateReconciliationStatusResponse> {
+  /**
+   * @generated from field: bool success = 1;
+   */
+  success = false;
+
+  constructor(data?: PartialMessage<UpdateReconciliationStatusResponse>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "libops.v1.UpdateReconciliationStatusResponse";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "success", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): UpdateReconciliationStatusResponse {
+    return new UpdateReconciliationStatusResponse().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): UpdateReconciliationStatusResponse {
+    return new UpdateReconciliationStatusResponse().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): UpdateReconciliationStatusResponse {
+    return new UpdateReconciliationStatusResponse().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: UpdateReconciliationStatusResponse | PlainMessage<UpdateReconciliationStatusResponse> | undefined, b: UpdateReconciliationStatusResponse | PlainMessage<UpdateReconciliationStatusResponse> | undefined): boolean {
+    return proto3.util.equals(UpdateReconciliationStatusResponse, a, b);
+  }
+}
+
+/**
+ * @generated from message libops.v1.GenerateTerraformVarsRequest
+ */
+export class GenerateTerraformVarsRequest extends Message<GenerateTerraformVarsRequest> {
+  /**
+   * @generated from field: optional int64 organization_id = 1;
+   */
+  organizationId?: bigint;
+
+  /**
+   * @generated from field: optional int64 project_id = 2;
+   */
+  projectId?: bigint;
+
+  /**
+   * @generated from field: optional int64 site_id = 3;
+   */
+  siteId?: bigint;
+
+  constructor(data?: PartialMessage<GenerateTerraformVarsRequest>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "libops.v1.GenerateTerraformVarsRequest";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "organization_id", kind: "scalar", T: 3 /* ScalarType.INT64 */, opt: true },
+    { no: 2, name: "project_id", kind: "scalar", T: 3 /* ScalarType.INT64 */, opt: true },
+    { no: 3, name: "site_id", kind: "scalar", T: 3 /* ScalarType.INT64 */, opt: true },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): GenerateTerraformVarsRequest {
+    return new GenerateTerraformVarsRequest().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): GenerateTerraformVarsRequest {
+    return new GenerateTerraformVarsRequest().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): GenerateTerraformVarsRequest {
+    return new GenerateTerraformVarsRequest().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: GenerateTerraformVarsRequest | PlainMessage<GenerateTerraformVarsRequest> | undefined, b: GenerateTerraformVarsRequest | PlainMessage<GenerateTerraformVarsRequest> | undefined): boolean {
+    return proto3.util.equals(GenerateTerraformVarsRequest, a, b);
+  }
+}
+
+/**
+ * @generated from message libops.v1.GenerateTerraformVarsResponse
+ */
+export class GenerateTerraformVarsResponse extends Message<GenerateTerraformVarsResponse> {
+  /**
+   * JSON-encoded terraform variables
+   *
+   * @generated from field: string tfvars_json = 1;
+   */
+  tfvarsJson = "";
+
+  constructor(data?: PartialMessage<GenerateTerraformVarsResponse>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "libops.v1.GenerateTerraformVarsResponse";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "tfvars_json", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): GenerateTerraformVarsResponse {
+    return new GenerateTerraformVarsResponse().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): GenerateTerraformVarsResponse {
+    return new GenerateTerraformVarsResponse().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): GenerateTerraformVarsResponse {
+    return new GenerateTerraformVarsResponse().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: GenerateTerraformVarsResponse | PlainMessage<GenerateTerraformVarsResponse> | undefined, b: GenerateTerraformVarsResponse | PlainMessage<GenerateTerraformVarsResponse> | undefined): boolean {
+    return proto3.util.equals(GenerateTerraformVarsResponse, a, b);
+  }
+}
+

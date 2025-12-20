@@ -1,4 +1,4 @@
-.PHONY: help proto proto-clean api provider install-provider test clean all
+.PHONY: help proto proto-clean sqlc api provider install-provider test clean all
 
 help: ## Show this help message
 	@echo 'Usage: make [target]'
@@ -19,7 +19,7 @@ proto: ## Generate Go code and OpenAPI spec from .proto files
 
 sqlc: ## Generate database code with sqlc
 	@echo "Generating sqlc database code..."
-	sqlc generate
+	@cd sqlc && sqlc generate
 	@echo "SQLC database code generated successfully"
 
 generate: proto sqlc ## Generate all code (proto, OpenAPI, sqlc, provider schemas)
@@ -31,11 +31,6 @@ proto-clean: ## Clean generated proto files
 	@find proto -name "*_connect.go" -type f -delete
 	@rm -f openapi/openapi.yaml
 	@echo "Cleaned generated proto files"
-
-sqlc-clean: ## Clean generated sqlc files
-	@echo "Cleaning generated sqlc files..."
-	@rm -rf internal/db/*.go
-	@echo "Cleaned generated sqlc files"
 
 proto-lint: ## Lint proto files
 	@echo "Linting proto files..."
@@ -72,6 +67,11 @@ integration-test: ## Run integration tests with Docker Compose
 	@cd ci && ./run-tests.sh --clean --build
 	@echo "Integration tests complete"
 
+integration-test-api-only: ## Run integration tests without control-plane
+	@echo "Running integration tests (API only)..."
+	@cd ci && ./run-tests.sh --clean --build
+	@echo "Integration tests complete"
+
 integration-test-bulk: generate-bulk-seed ## Run integration tests with bulk seed data
 	@echo "Running integration tests with bulk data..."
 	@cd ci && ./run-tests.sh --clean --build --bulk
@@ -88,6 +88,29 @@ integration-test-clean: ## Clean up integration test environment
 integration-test-db: ## Access integration test database
 	@docker compose -f docker-compose.yaml -f docker-compose.ci.yaml exec mariadb mysql -u libops -plibops-test-pass libops
 
+##@ Event Router Tests
+
+test-event-router: ## Run event router integration tests in Docker
+	@echo "Running event router integration tests..."
+	@docker compose -f docker-compose.yaml -f docker-compose.ci.yaml -f docker-compose.test.yaml up --abort-on-container-exit --exit-code-from event-router-test event-router-test
+	@echo "Event router tests complete"
+
+test-event-router-injector: ## Run event injection tests
+	@echo "Running event injection tests..."
+	@docker compose -f docker-compose.yaml -f docker-compose.ci.yaml -f docker-compose.test.yaml up --abort-on-container-exit --exit-code-from test-event-injector test-event-injector
+	@echo "Event injection tests complete"
+
+test-event-router-all: ## Run all event router tests (integration + injection)
+	@echo "Running all event router tests..."
+	@$(MAKE) test-event-router
+	@$(MAKE) test-event-router-injector
+	@echo "All event router tests complete"
+
+test-event-router-clean: ## Clean up event router test containers
+	@echo "Cleaning event router test containers..."
+	@docker compose -f docker-compose.yaml -f docker-compose.ci.yaml -f docker-compose.test.yaml down -v
+	@echo "Event router test containers cleaned"
+
 ##@ Cleanup
 
 clean: ## Clean all build artifacts
@@ -95,7 +118,7 @@ clean: ## Clean all build artifacts
 	@find . -name "*.pb.go" -type f -delete
 	@echo "Cleaned all build artifacts"
 
-clean-generated: proto-clean sqlc-clean ## Clean all generated code (proto + sqlc)
+clean-generated: proto-clean ## Clean all generated code (proto + sqlc)
 	@echo "All generated code cleaned"
 
 clean-all: clean clean-generated ## Clean everything including generated code

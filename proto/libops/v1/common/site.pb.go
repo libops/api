@@ -39,9 +39,13 @@ type SiteConfig struct {
 	Port            int32  `protobuf:"varint,9,opt,name=port,proto3" json:"port,omitempty"`                                              // Port the application listens on (default: 80)
 	ApplicationType string `protobuf:"bytes,10,opt,name=application_type,json=applicationType,proto3" json:"application_type,omitempty"` // Type of application (default: "generic")
 	// Docker compose commands
-	UpCmd      []string `protobuf:"bytes,12,rep,name=up_cmd,json=upCmd,proto3" json:"up_cmd,omitempty"`                // Commands to start containers
-	InitCmd    []string `protobuf:"bytes,13,rep,name=init_cmd,json=initCmd,proto3" json:"init_cmd,omitempty"`          // Commands to run on initial setup
-	RolloutCmd []string `protobuf:"bytes,14,rep,name=rollout_cmd,json=rolloutCmd,proto3" json:"rollout_cmd,omitempty"` // Commands to run during rollout
+	UpCmd          []string `protobuf:"bytes,12,rep,name=up_cmd,json=upCmd,proto3" json:"up_cmd,omitempty"`                            // Commands to start containers
+	InitCmd        []string `protobuf:"bytes,13,rep,name=init_cmd,json=initCmd,proto3" json:"init_cmd,omitempty"`                      // Commands to run on initial setup
+	RolloutCmd     []string `protobuf:"bytes,14,rep,name=rollout_cmd,json=rolloutCmd,proto3" json:"rollout_cmd,omitempty"`             // Commands to run during rollout
+	OverlayVolumes []string `protobuf:"bytes,15,rep,name=overlay_volumes,json=overlayVolumes,proto3" json:"overlay_volumes,omitempty"` // Overlay volume paths
+	// GCP deployment configuration
+	Os           string `protobuf:"bytes,16,opt,name=os,proto3" json:"os,omitempty"`                                          // OS image (default: "cos-125-19216-104-74")
+	IsProduction bool   `protobuf:"varint,17,opt,name=is_production,json=isProduction,proto3" json:"is_production,omitempty"` // Whether this is the production instance
 	// Status (organization-visible)
 	Status        Status `protobuf:"varint,11,opt,name=status,proto3,enum=libops.v1.common.Status" json:"status,omitempty"`
 	unknownFields protoimpl.UnknownFields
@@ -169,6 +173,27 @@ func (x *SiteConfig) GetRolloutCmd() []string {
 	return nil
 }
 
+func (x *SiteConfig) GetOverlayVolumes() []string {
+	if x != nil {
+		return x.OverlayVolumes
+	}
+	return nil
+}
+
+func (x *SiteConfig) GetOs() string {
+	if x != nil {
+		return x.Os
+	}
+	return ""
+}
+
+func (x *SiteConfig) GetIsProduction() bool {
+	if x != nil {
+		return x.IsProduction
+	}
+	return false
+}
+
 func (x *SiteConfig) GetStatus() Status {
 	if x != nil {
 		return x.Status
@@ -180,7 +205,7 @@ var File_libops_v1_common_site_proto protoreflect.FileDescriptor
 
 const file_libops_v1_common_site_proto_rawDesc = "" +
 	"\n" +
-	"\x1blibops/v1/common/site.proto\x12\x10libops.v1.common\x1a$gnostic/openapi/v3/annotations.proto\x1a\x1clibops/v1/common/types.proto\"\x84\x04\n" +
+	"\x1blibops/v1/common/site.proto\x12\x10libops.v1.common\x1a$gnostic/openapi/v3/annotations.proto\x1a\x1clibops/v1/common/types.proto\"\xe2\x04\n" +
 	"\n" +
 	"SiteConfig\x12#\n" +
 	"\asite_id\x18\x01 \x01(\tB\n" +
@@ -202,7 +227,10 @@ const file_libops_v1_common_site_proto_rawDesc = "" +
 	"\x06up_cmd\x18\f \x03(\tR\x05upCmd\x12\x19\n" +
 	"\binit_cmd\x18\r \x03(\tR\ainitCmd\x12\x1f\n" +
 	"\vrollout_cmd\x18\x0e \x03(\tR\n" +
-	"rolloutCmd\x120\n" +
+	"rolloutCmd\x12'\n" +
+	"\x0foverlay_volumes\x18\x0f \x03(\tR\x0eoverlayVolumes\x12\x0e\n" +
+	"\x02os\x18\x10 \x01(\tR\x02os\x12#\n" +
+	"\ris_production\x18\x11 \x01(\bR\fisProduction\x120\n" +
 	"\x06status\x18\v \x01(\x0e2\x18.libops.v1.common.StatusR\x06statusB\xb1\x01\n" +
 	"\x14com.libops.v1.commonB\tSiteProtoP\x01Z,github.com/libops/api/proto/libops/v1/common\xa2\x02\x03LVC\xaa\x02\x10Libops.V1.Common\xca\x02\x10Libops\\V1\\Common\xe2\x02\x1cLibops\\V1\\Common\\GPBMetadata\xea\x02\x12Libops::V1::Commonb\x06proto3"
 

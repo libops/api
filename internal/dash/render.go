@@ -62,6 +62,13 @@ func RenderMembers(w http.ResponseWriter, data ResourcePageData) {
 	RenderTemplate(w, "resources.html", data)
 }
 
+// RenderSettings renders the settings page
+func RenderSettings(w http.ResponseWriter, data ResourcePageData) {
+	data.ActivePage = "settings"
+	data.IsDevelopment = IsDevelopment()
+	RenderTemplate(w, "resources.html", data)
+}
+
 // RenderOrganizationDetail renders the organization detail page
 func RenderOrganizationDetail(w http.ResponseWriter, data OrganizationDetailData) {
 	data.ActivePage = "organizations"

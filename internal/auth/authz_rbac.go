@@ -106,9 +106,6 @@ func (i *RBACAuthzInterceptor) WrapStreamingHandler(next connect.StreamingHandle
 	}
 }
 
-// ContextKey for storing authorizer in context.
-type contextKey string
-
 const authorizerKey contextKey = "authorizer"
 
 // GetAuthorizer retrieves the authorizer from context

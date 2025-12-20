@@ -4,13 +4,14 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
+	"log/slog"
 
 	"connectrpc.com/connect"
 	"github.com/google/uuid"
 	"google.golang.org/protobuf/types/known/emptypb"
 
+	"github.com/libops/api/db"
 	"github.com/libops/api/internal/auth"
-	"github.com/libops/api/internal/db"
 	"github.com/libops/api/internal/service"
 	"github.com/libops/api/internal/validation"
 	libopsv1 "github.com/libops/api/proto/libops/v1"
@@ -55,6 +56,7 @@ func (s *SiteService) ListSites(
 		}
 		org, err := s.repo.GetOrganizationByPublicID(ctx, organizationPublicID)
 		if err != nil {
+			slog.Error("Failed to get organization by public ID", "error", err, "organization_id", *req.Msg.OrganizationId)
 			return nil, err
 		}
 		filterOrgID = sql.NullInt64{Int64: org.ID, Valid: true}
@@ -71,6 +73,7 @@ func (s *SiteService) ListSites(
 		}
 		project, err := s.repo.GetProjectByPublicID(ctx, projectPublicID)
 		if err != nil {
+			slog.Error("Failed to get project by public ID", "error", err, "project_id", *req.Msg.ProjectId)
 			return nil, err
 		}
 		filterProjectID = sql.NullInt64{Int64: project.ID, Valid: true}
@@ -99,6 +102,7 @@ func (s *SiteService) ListSites(
 
 	sites, err := s.repo.ListUserSites(ctx, params)
 	if err != nil {
+		slog.Error("Failed to list user sites", "error", err, "account_id", accountID)
 		return nil, err
 	}
 
@@ -113,6 +117,9 @@ func (s *SiteService) ListSites(
 			UpCmd:          service.FromJSONStringArray(site.UpCmd),
 			InitCmd:        service.FromJSONStringArray(site.InitCmd),
 			RolloutCmd:     service.FromJSONStringArray(site.RolloutCmd),
+			OverlayVolumes: service.FromJSONStringArray(site.OverlayVolumes),
+			Os:             service.FromNullString(site.Os),
+			IsProduction:   site.IsProduction.Bool,
 			Status:         DbSiteStatusToProto(site.Status),
 		})
 	}
@@ -146,16 +153,19 @@ func (s *SiteService) GetSite(
 
 	site, err := s.repo.GetSiteByPublicID(ctx, siteUUID)
 	if err != nil {
+		slog.Error("Failed to get site by public ID", "error", err, "site_id", siteID)
 		return nil, err
 	}
 
 	project, err := s.repo.GetProjectByID(ctx, site.ProjectID)
 	if err != nil {
+		slog.Error("Failed to get project by ID", "error", err, "project_id", site.ProjectID)
 		return nil, err
 	}
 
 	org, err := s.repo.GetOrganizationByID(ctx, project.OrganizationID)
 	if err != nil {
+		slog.Error("Failed to get organization by ID", "error", err, "organization_id", project.OrganizationID)
 		return nil, err
 	}
 
@@ -168,6 +178,9 @@ func (s *SiteService) GetSite(
 		UpCmd:          service.FromJSONStringArray(site.UpCmd),
 		InitCmd:        service.FromJSONStringArray(site.InitCmd),
 		RolloutCmd:     service.FromJSONStringArray(site.RolloutCmd),
+		OverlayVolumes: service.FromJSONStringArray(site.OverlayVolumes),
+		Os:             service.FromNullString(site.Os),
+		IsProduction:   site.IsProduction.Bool,
 		Status:         service.DbSiteStatusToProto(site.Status),
 	}
 
@@ -192,6 +205,8 @@ func (s *SiteService) CreateSite(
 		return nil, connect.NewError(connect.CodeInvalidArgument, fmt.Errorf("site is required"))
 	}
 
+	slog.Info("CreateSite called", "project_id", projectID, "site_name", site.SiteName)
+
 	if err := validation.SiteName(site.SiteName); err != nil {
 		return nil, connect.NewError(connect.CodeInvalidArgument, err)
 	}
@@ -210,7 +225,17 @@ func (s *SiteService) CreateSite(
 
 	project, err := s.repo.GetProjectByPublicID(ctx, projectPublicID)
 	if err != nil {
+		slog.Error("Failed to get project by public ID", "error", err, "project_id", projectID)
 		return nil, err
+	}
+
+	// Set defaults for new fields - inherit from project if not specified
+	osImage := site.Os
+	if osImage == "" {
+		osImage = service.FromNullString(project.Os)
+		if osImage == "" {
+			osImage = "cos-125-19216-104-74" // Default
+		}
 	}
 
 	// Organizations can create sites but GCP fields are set by orchestration
@@ -226,6 +251,9 @@ func (s *SiteService) CreateSite(
 		UpCmd:            service.ToJSON(site.UpCmd),
 		InitCmd:          service.ToJSON(site.InitCmd),
 		RolloutCmd:       service.ToJSON(site.RolloutCmd),
+		OverlayVolumes:   service.ToJSON(site.OverlayVolumes),
+		Os:               sql.NullString{String: osImage, Valid: true},
+		IsProduction:     sql.NullBool{Bool: site.IsProduction, Valid: true},
 		GcpExternalIp:    sql.NullString{Valid: false}, // Set by orchestration
 		GithubTeamID:     sql.NullString{Valid: false}, // Set by orchestration or admin
 		Status:           db.NullSitesStatus{SitesStatus: db.SitesStatusProvisioning, Valid: true},
@@ -235,18 +263,21 @@ func (s *SiteService) CreateSite(
 
 	err = s.repo.CreateSite(ctx, params)
 	if err != nil {
+		slog.Error("Failed to create site in DB", "error", err, "params", params)
 		return nil, err
 	}
 
 	// Fetch the newly created site to get all populated fields
 	createdSite, err := s.repo.GetSiteByProjectAndName(ctx, project.ID, site.SiteName)
 	if err != nil {
+		slog.Error("Failed to get created site", "error", err, "site_name", site.SiteName)
 		return nil, err
 	}
 
 	// Get organization public ID
 	organization, err := s.repo.GetOrganizationByID(ctx, project.OrganizationID)
 	if err != nil {
+		slog.Error("Failed to get organization by ID", "error", err, "organization_id", project.OrganizationID)
 		return nil, err
 	}
 
@@ -260,6 +291,9 @@ func (s *SiteService) CreateSite(
 			UpCmd:          service.FromJSONStringArray(createdSite.UpCmd),
 			InitCmd:        service.FromJSONStringArray(createdSite.InitCmd),
 			RolloutCmd:     service.FromJSONStringArray(createdSite.RolloutCmd),
+			OverlayVolumes: service.FromJSONStringArray(createdSite.OverlayVolumes),
+			Os:             service.FromNullString(createdSite.Os),
+			IsProduction:   createdSite.IsProduction.Bool,
 			Status:         service.DbSiteStatusToProto(createdSite.Status),
 		},
 	}), nil
@@ -295,10 +329,10 @@ func (s *SiteService) UpdateSite(
 
 	existing, err := s.repo.GetSiteByPublicID(ctx, siteUUID)
 	if err != nil {
+		slog.Error("Failed to get site by public ID for update", "error", err, "site_id", siteID)
 		return nil, err
 	}
 
-	// Apply field mask - organizations can update name and github_ref
 	name := existing.Name
 	githubRepository := existing.GithubRepository
 	githubRef := existing.GithubRef
@@ -310,6 +344,9 @@ func (s *SiteService) UpdateSite(
 	initCmd := existing.InitCmd
 	rolloutCmd := existing.RolloutCmd
 	gcpExternalIp := existing.GcpExternalIp
+	overlayVolumes := existing.OverlayVolumes
+	osImage := existing.Os
+	isProduction := existing.IsProduction
 
 	if service.ShouldUpdateField(req.Msg.UpdateMask, "site.site_name") {
 		name = site.SiteName
@@ -326,6 +363,15 @@ func (s *SiteService) UpdateSite(
 	if service.ShouldUpdateField(req.Msg.UpdateMask, "site.rollout_cmd") {
 		rolloutCmd = service.ToJSON(site.RolloutCmd)
 	}
+	if service.ShouldUpdateField(req.Msg.UpdateMask, "site.overlay_volumes") {
+		overlayVolumes = service.ToJSON(site.OverlayVolumes)
+	}
+	if service.ShouldUpdateField(req.Msg.UpdateMask, "site.os") {
+		osImage = sql.NullString{String: site.Os, Valid: true}
+	}
+	if service.ShouldUpdateField(req.Msg.UpdateMask, "site.is_production") {
+		isProduction = sql.NullBool{Bool: site.IsProduction, Valid: true}
+	}
 
 	// Preserve all GCP fields
 	params := db.UpdateSiteParams{
@@ -339,6 +385,9 @@ func (s *SiteService) UpdateSite(
 		UpCmd:            upCmd,
 		InitCmd:          initCmd,
 		RolloutCmd:       rolloutCmd,
+		OverlayVolumes:   overlayVolumes,
+		Os:               osImage,
+		IsProduction:     isProduction,
 		GcpExternalIp:    gcpExternalIp,
 		GithubTeamID:     existing.GithubTeamID,
 		Status:           existing.Status,
@@ -348,6 +397,7 @@ func (s *SiteService) UpdateSite(
 
 	err = s.repo.UpdateSite(ctx, params)
 	if err != nil {
+		slog.Error("Failed to update site in DB", "error", err, "site_id", siteID)
 		return nil, err
 	}
 
@@ -369,6 +419,7 @@ func (s *SiteService) DeleteSite(
 
 	err := s.repo.DeleteSite(ctx, siteID)
 	if err != nil {
+		slog.Error("Failed to delete site", "error", err, "site_id", siteID)
 		return nil, err
 	}
 

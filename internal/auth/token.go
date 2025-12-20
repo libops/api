@@ -13,8 +13,8 @@ import (
 	"github.com/hashicorp/vault/api/auth/userpass"
 	"golang.org/x/oauth2"
 
+	"github.com/libops/api/db"
 	"github.com/libops/api/internal/audit"
-	"github.com/libops/api/internal/db"
 	"github.com/libops/api/internal/vault"
 )
 

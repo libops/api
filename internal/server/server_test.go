@@ -79,46 +79,9 @@ func TestSetupAuth(t *testing.T) {
 
 // TestSetupEvents_Disabled tests the setupEvents function when eventing is disabled.
 func TestSetupEvents_Disabled(t *testing.T) {
-	cfg := &config.Config{
-		GCPProjectID:  "",
-		EventsTopicID: "",
-	}
-
-	ceClient, emitter, queueProcessor := setupEvents(cfg, nil)
-
-	if ceClient == nil {
-		t.Error("ceClient should not be nil")
-	}
-
+	emitter := setupEvents(nil)
 	if emitter == nil {
 		t.Error("emitter should not be nil")
-	}
-
-	if queueProcessor == nil {
-		t.Error("queueProcessor should not be nil")
-	}
-}
-
-// TestSetupEvents_WithConfig tests the setupEvents function with a valid configuration.
-func TestSetupEvents_WithConfig(t *testing.T) {
-	cfg := &config.Config{
-		GCPProjectID:  "test-project",
-		EventsTopicID: "test-topic",
-	}
-
-	// This will fail to connect to Pub/Sub, but should fall back to NoOp
-	ceClient, emitter, queueProcessor := setupEvents(cfg, nil)
-
-	if ceClient == nil {
-		t.Error("ceClient should not be nil (should fall back to NoOp)")
-	}
-
-	if emitter == nil {
-		t.Error("emitter should not be nil")
-	}
-
-	if queueProcessor == nil {
-		t.Error("queueProcessor should not be nil")
 	}
 }
 
@@ -188,20 +151,6 @@ func TestServer_Lifecycle(t *testing.T) {
 	}
 }
 
-// TestLogServerConfig ensures the logServerConfig function does not panic.
-func TestLogServerConfig(t *testing.T) {
-	cfg := &config.Config{
-		Port: "8080",
-	}
-
-	// Call with nil authConfig (should not panic)
-	logServerConfig(cfg, nil)
-
-	// Note: We can't easily test logging output without mocking slog,
-	// but we can at least verify the function doesn't panic
-}
-
-// Example of table-driven test for configuration scenarios.
 func TestServerConfiguration(t *testing.T) {
 	tests := []struct {
 		name          string
@@ -270,18 +219,5 @@ func TestServerConfiguration(t *testing.T) {
 				t.Logf("Got expected error: %v", err)
 			}
 		})
-	}
-}
-
-// BenchmarkSetupEvents benchmarks the performance of the setupEvents function.
-func BenchmarkSetupEvents(b *testing.B) {
-	cfg := &config.Config{
-		GCPProjectID:  "",
-		EventsTopicID: "",
-	}
-
-	b.ResetTimer()
-	for i := 0; i < b.N; i++ {
-		setupEvents(cfg, nil)
 	}
 }

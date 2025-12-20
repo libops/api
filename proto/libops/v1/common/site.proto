@@ -29,6 +29,11 @@ message SiteConfig {
   repeated string up_cmd = 12;      // Commands to start containers
   repeated string init_cmd = 13;    // Commands to run on initial setup
   repeated string rollout_cmd = 14; // Commands to run during rollout
+  repeated string overlay_volumes = 15; // Overlay volume paths
+
+  // GCP deployment configuration
+  string os = 16;                 // OS image (default: "cos-125-19216-104-74")
+  bool is_production = 17;        // Whether this is the production instance
 
   // Status (organization-visible)
   Status status = 11;

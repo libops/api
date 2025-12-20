@@ -1,6 +1,6 @@
 // Main entry point for the dashboard application
 
-import { initializeModal } from "@/utils/modal";
+import { initializeModal, closeModal } from "@/utils/modal";
 import { openCreateModal, openEditModal } from "@/forms/builder";
 import { deleteResource } from "@/resources/operations";
 import { copyToClipboard } from "@/utils/helpers";
@@ -17,6 +17,7 @@ function init() {
   (window as any).openEditModal = openEditModal;
   (window as any).deleteResource = deleteResource;
   (window as any).copyToClipboard = copyToClipboard;
+  (window as any).closeModal = closeModal;
 
   // API management functions
   (window as any).apiKeys = apiKeys;

@@ -10,7 +10,7 @@ import (
 
 	"github.com/google/uuid"
 
-	"github.com/libops/api/internal/db"
+	"github.com/libops/api/db"
 )
 
 // ServiceAccountManager handles creation and management of platform service accounts.

@@ -12,8 +12,8 @@ import (
 	"github.com/google/uuid"
 	"google.golang.org/protobuf/types/known/emptypb"
 
+	"github.com/libops/api/db"
 	"github.com/libops/api/internal/auth"
-	"github.com/libops/api/internal/db"
 	"github.com/libops/api/internal/service"
 	libopsv1 "github.com/libops/api/proto/libops/v1"
 	adminv1 "github.com/libops/api/proto/libops/v1/admin"
@@ -106,6 +106,9 @@ func (s *AdminSiteService) ListSites(
 				UpCmd:            service.FromJSONStringArray(site.UpCmd),
 				InitCmd:          service.FromJSONStringArray(site.InitCmd),
 				RolloutCmd:       service.FromJSONStringArray(site.RolloutCmd),
+				OverlayVolumes:   service.FromJSONStringArray(site.OverlayVolumes),
+				Os:               service.FromNullString(site.Os),
+				IsProduction:     site.IsProduction.Bool,
 				Status:           service.DbSiteStatusToProto(site.Status),
 			},
 			GcpInstanceName: nil,
@@ -168,6 +171,9 @@ func (s *AdminSiteService) GetSite(
 			UpCmd:            service.FromJSONStringArray(site.UpCmd),
 			InitCmd:          service.FromJSONStringArray(site.InitCmd),
 			RolloutCmd:       service.FromJSONStringArray(site.RolloutCmd),
+			OverlayVolumes:   service.FromJSONStringArray(site.OverlayVolumes),
+			Os:               service.FromNullString(site.Os),
+			IsProduction:     site.IsProduction.Bool,
 			Status:           service.DbSiteStatusToProto(site.Status),
 		},
 		GcpInstanceName: nil,
@@ -409,9 +415,244 @@ func (s *AdminSiteService) ListAllSites(
 	return nil, connect.NewError(connect.CodeUnimplemented, fmt.Errorf("list all sites not yet implemented"))
 }
 
+// GetSiteSSHKeys returns SSH keys for a site VM (called by VM controller with GSA auth).
+func (s *AdminSiteService) GetSiteSSHKeys(
+	ctx context.Context,
+	req *connect.Request[libopsv1.GetSiteSSHKeysRequest],
+) (*connect.Response[libopsv1.GetSiteSSHKeysResponse], error) {
+	siteID := req.Msg.SiteId
+	if siteID == "" {
+		return nil, connect.NewError(connect.CodeInvalidArgument, fmt.Errorf("site_id is required"))
+	}
+
+	sitePublicID, err := uuid.Parse(siteID)
+	if err != nil {
+		return nil, connect.NewError(connect.CodeInvalidArgument, fmt.Errorf("invalid site_id format: %w", err))
+	}
+
+	// Get site to verify it exists
+	site, err := s.repo.GetSiteByPublicID(ctx, sitePublicID)
+	if err != nil {
+		return nil, connect.NewError(connect.CodeNotFound, fmt.Errorf("site not found: %w", err))
+	}
+
+	// Query SSH keys with inheritance (site → project → org → relationships)
+	keys, err := s.repo.db.GetSiteSSHKeysForVM(ctx, db.GetSiteSSHKeysForVMParams{
+		SiteID: site.ID,
+		ID:     site.ID,
+		ID_2:   site.ID,
+		ID_3:   site.ID,
+	})
+	if err != nil {
+		slog.Error("failed to fetch site SSH keys", "site_id", siteID, "error", err)
+		return nil, connect.NewError(connect.CodeInternal, fmt.Errorf("failed to fetch SSH keys: %w", err))
+	}
+
+	// Convert to proto format
+	protoKeys := make([]*libopsv1.SSHKey, 0, len(keys))
+	for _, key := range keys {
+		protoKeys = append(protoKeys, &libopsv1.SSHKey{
+			PublicKey:      key.PublicKey,
+			Name:           service.FromNullString(key.Name),
+			Fingerprint:    service.FromNullString(key.Fingerprint),
+			GithubUsername: service.FromNullString(key.GithubUsername),
+		})
+	}
+
+	return connect.NewResponse(&libopsv1.GetSiteSSHKeysResponse{
+		Keys: protoKeys,
+	}), nil
+}
+
+// GetSiteSecrets returns secrets for a site VM (called by VM controller with GSA auth).
+func (s *AdminSiteService) GetSiteSecrets(
+	ctx context.Context,
+	req *connect.Request[libopsv1.GetSiteSecretsRequest],
+) (*connect.Response[libopsv1.GetSiteSecretsResponse], error) {
+	siteID := req.Msg.SiteId
+	if siteID == "" {
+		return nil, connect.NewError(connect.CodeInvalidArgument, fmt.Errorf("site_id is required"))
+	}
+
+	sitePublicID, err := uuid.Parse(siteID)
+	if err != nil {
+		return nil, connect.NewError(connect.CodeInvalidArgument, fmt.Errorf("invalid site_id format: %w", err))
+	}
+
+	// Get site to verify it exists
+	site, err := s.repo.GetSiteByPublicID(ctx, sitePublicID)
+	if err != nil {
+		return nil, connect.NewError(connect.CodeNotFound, fmt.Errorf("site not found: %w", err))
+	}
+
+	// Query secrets with inheritance (site → project → org)
+	secrets, err := s.repo.db.GetSiteSecretsForVM(ctx, db.GetSiteSecretsForVMParams{
+		SiteID: site.ID,
+		ID:     site.ID,
+		ID_2:   site.ID,
+	})
+	if err != nil {
+		slog.Error("failed to fetch site secrets", "site_id", siteID, "error", err)
+		return nil, connect.NewError(connect.CodeInternal, fmt.Errorf("failed to fetch secrets: %w", err))
+	}
+
+	// Convert to proto format
+	protoSecrets := make([]*libopsv1.Secret, 0, len(secrets))
+	for _, secret := range secrets {
+		protoSecrets = append(protoSecrets, &libopsv1.Secret{
+			Key:   secret.Key,
+			Value: secret.Value,
+		})
+	}
+
+	return connect.NewResponse(&libopsv1.GetSiteSecretsResponse{
+		Secrets: protoSecrets,
+	}), nil
+}
+
+// GetSiteFirewall returns firewall rules for a site VM (called by VM controller with GSA auth).
+func (s *AdminSiteService) GetSiteFirewall(
+	ctx context.Context,
+	req *connect.Request[libopsv1.GetSiteFirewallRequest],
+) (*connect.Response[libopsv1.GetSiteFirewallResponse], error) {
+	siteID := req.Msg.SiteId
+	if siteID == "" {
+		return nil, connect.NewError(connect.CodeInvalidArgument, fmt.Errorf("site_id is required"))
+	}
+
+	sitePublicID, err := uuid.Parse(siteID)
+	if err != nil {
+		return nil, connect.NewError(connect.CodeInvalidArgument, fmt.Errorf("invalid site_id format: %w", err))
+	}
+
+	// Get site to verify it exists
+	site, err := s.repo.GetSiteByPublicID(ctx, sitePublicID)
+	if err != nil {
+		return nil, connect.NewError(connect.CodeNotFound, fmt.Errorf("site not found: %w", err))
+	}
+
+	// Query firewall rules with inheritance (site → project → org)
+	rules, err := s.repo.db.GetSiteFirewallForVM(ctx, db.GetSiteFirewallForVMParams{
+		SiteID: sql.NullInt64{Int64: site.ID, Valid: true},
+		ID:     site.ID,
+		ID_2:   site.ID,
+	})
+	if err != nil {
+		slog.Error("failed to fetch site firewall rules", "site_id", siteID, "error", err)
+		return nil, connect.NewError(connect.CodeInternal, fmt.Errorf("failed to fetch firewall rules: %w", err))
+	}
+
+	// Convert to proto format
+	protoRules := make([]*libopsv1.FirewallRule, 0, len(rules))
+	for _, rule := range rules {
+		// Map database rule_type to protocol/port/action
+		var protocol string
+		var port int32
+		var action string
+
+		switch rule.RuleType {
+		case db.SiteFirewallRulesRuleTypeHttpsAllowed:
+			protocol = "tcp"
+			port = 443
+			action = "accept"
+		case db.SiteFirewallRulesRuleTypeSshAllowed:
+			protocol = "tcp"
+			port = 22
+			action = "accept"
+		case db.SiteFirewallRulesRuleTypeBlocked:
+			protocol = "all"
+			port = 0
+			action = "deny"
+		default:
+			protocol = "all"
+			port = 0
+			action = "deny"
+		}
+
+		protoRules = append(protoRules, &libopsv1.FirewallRule{
+			Protocol: protocol,
+			Port:     port,
+			Source:   rule.Cidr,
+			Action:   action,
+		})
+	}
+
+	return connect.NewResponse(&libopsv1.GetSiteFirewallResponse{
+		Rules: protoRules,
+	}), nil
+}
+
+// SiteCheckIn updates the site's check-in timestamp (called by VM controller).
+func (s *AdminSiteService) SiteCheckIn(
+	ctx context.Context,
+	req *connect.Request[libopsv1.SiteCheckInRequest],
+) (*connect.Response[libopsv1.SiteCheckInResponse], error) {
+	siteID := req.Msg.SiteId
+	if siteID == "" {
+		return nil, connect.NewError(connect.CodeInvalidArgument, fmt.Errorf("site_id is required"))
+	}
+
+	sitePublicID, err := uuid.Parse(siteID)
+	if err != nil {
+		return nil, connect.NewError(connect.CodeInvalidArgument, fmt.Errorf("invalid site_id format: %w", err))
+	}
+
+	// Get site to verify it exists
+	site, err := s.repo.GetSiteByPublicID(ctx, sitePublicID)
+	if err != nil {
+		return nil, connect.NewError(connect.CodeNotFound, fmt.Errorf("site not found: %w", err))
+	}
+
+	// Update check-in timestamp
+	err = s.repo.db.UpdateSiteCheckIn(ctx, site.ID)
+	if err != nil {
+		slog.Error("failed to update site check-in", "site_id", siteID, "error", err)
+		return nil, connect.NewError(connect.CodeInternal, fmt.Errorf("failed to update check-in: %w", err))
+	}
+
+	slog.Info("site checked in successfully", "site_id", siteID)
+
+	return connect.NewResponse(&libopsv1.SiteCheckInResponse{
+		Success: true,
+		Message: "Check-in successful",
+	}), nil
+}
+
 // SshKeysResponse is the JSON response format for SSH keys.
 type SshKeysResponse struct {
 	SshKeys []string `json:"ssh_keys"`
+}
+
+// SyncManifest returns the manifest for a site with ETag support (eventual consistency).
+// Called by site VMs every ~24h to ensure eventual consistency with control plane state.
+func (s *AdminSiteService) SyncManifest(
+	ctx context.Context,
+	req *connect.Request[libopsv1.SyncManifestRequest],
+) (*connect.Response[libopsv1.SyncManifestResponse], error) {
+	// TODO: Implement manifest sync with GCS-backed state blobs
+	// This will:
+	// 1. Get site by site_id
+	// 2. Check If-None-Match header against target_state_hash (ETag optimization)
+	// 3. Materialize current state (SSH keys, secrets, firewall) if needed
+	// 4. Store blobs in GCS under blobs/{hash}/{filename}
+	// 5. Generate signed URLs for blobs (15 min expiry)
+	// 6. Return state hash and signed URLs
+	return nil, connect.NewError(connect.CodeUnimplemented, fmt.Errorf("manifest sync not yet implemented"))
+}
+
+// GetBlob returns a blob directly (fallback for expired signed URLs).
+// Optional - VMs can fetch blobs directly from GCS using signed URLs from SyncManifest.
+func (s *AdminSiteService) GetBlob(
+	ctx context.Context,
+	req *connect.Request[libopsv1.GetBlobRequest],
+) (*connect.Response[libopsv1.GetBlobResponse], error) {
+	// TODO: Implement direct blob fetch
+	// This will:
+	// 1. Validate site_id and blob_type
+	// 2. Fetch blob from GCS
+	// 3. If not found, regenerate state and retry
+	// 4. Return blob data
+	return nil, connect.NewError(connect.CodeUnimplemented, fmt.Errorf("get blob not yet implemented"))
 }
 
 // HandleSiteSshKeys returns SSH keys for all owners and developers of a site.

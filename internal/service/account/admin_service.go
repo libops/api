@@ -12,7 +12,7 @@ import (
 	"google.golang.org/protobuf/types/known/emptypb"
 	"google.golang.org/protobuf/types/known/fieldmaskpb"
 
-	"github.com/libops/api/internal/db"
+	"github.com/libops/api/db"
 	"github.com/libops/api/internal/events"
 	"github.com/libops/api/internal/service"
 	"github.com/libops/api/internal/validation"

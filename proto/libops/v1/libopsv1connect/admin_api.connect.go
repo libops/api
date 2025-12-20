@@ -28,6 +28,9 @@ const (
 	AdminSiteServiceName = "libops.v1.AdminSiteService"
 	// AdminProjectServiceName is the fully-qualified name of the AdminProjectService service.
 	AdminProjectServiceName = "libops.v1.AdminProjectService"
+	// AdminReconciliationServiceName is the fully-qualified name of the AdminReconciliationService
+	// service.
+	AdminReconciliationServiceName = "libops.v1.AdminReconciliationService"
 )
 
 // These constants are the fully-qualified names of the RPCs defined in this package. They're
@@ -74,6 +77,24 @@ const (
 	// AdminSiteServiceListAllSitesProcedure is the fully-qualified name of the AdminSiteService's
 	// ListAllSites RPC.
 	AdminSiteServiceListAllSitesProcedure = "/libops.v1.AdminSiteService/ListAllSites"
+	// AdminSiteServiceGetSiteSSHKeysProcedure is the fully-qualified name of the AdminSiteService's
+	// GetSiteSSHKeys RPC.
+	AdminSiteServiceGetSiteSSHKeysProcedure = "/libops.v1.AdminSiteService/GetSiteSSHKeys"
+	// AdminSiteServiceGetSiteSecretsProcedure is the fully-qualified name of the AdminSiteService's
+	// GetSiteSecrets RPC.
+	AdminSiteServiceGetSiteSecretsProcedure = "/libops.v1.AdminSiteService/GetSiteSecrets"
+	// AdminSiteServiceGetSiteFirewallProcedure is the fully-qualified name of the AdminSiteService's
+	// GetSiteFirewall RPC.
+	AdminSiteServiceGetSiteFirewallProcedure = "/libops.v1.AdminSiteService/GetSiteFirewall"
+	// AdminSiteServiceSiteCheckInProcedure is the fully-qualified name of the AdminSiteService's
+	// SiteCheckIn RPC.
+	AdminSiteServiceSiteCheckInProcedure = "/libops.v1.AdminSiteService/SiteCheckIn"
+	// AdminSiteServiceSyncManifestProcedure is the fully-qualified name of the AdminSiteService's
+	// SyncManifest RPC.
+	AdminSiteServiceSyncManifestProcedure = "/libops.v1.AdminSiteService/SyncManifest"
+	// AdminSiteServiceGetBlobProcedure is the fully-qualified name of the AdminSiteService's GetBlob
+	// RPC.
+	AdminSiteServiceGetBlobProcedure = "/libops.v1.AdminSiteService/GetBlob"
 	// AdminProjectServiceGetProjectProcedure is the fully-qualified name of the AdminProjectService's
 	// GetProject RPC.
 	AdminProjectServiceGetProjectProcedure = "/libops.v1.AdminProjectService/GetProject"
@@ -92,6 +113,15 @@ const (
 	// AdminProjectServiceListAllProjectsProcedure is the fully-qualified name of the
 	// AdminProjectService's ListAllProjects RPC.
 	AdminProjectServiceListAllProjectsProcedure = "/libops.v1.AdminProjectService/ListAllProjects"
+	// AdminReconciliationServiceGetReconciliationRunProcedure is the fully-qualified name of the
+	// AdminReconciliationService's GetReconciliationRun RPC.
+	AdminReconciliationServiceGetReconciliationRunProcedure = "/libops.v1.AdminReconciliationService/GetReconciliationRun"
+	// AdminReconciliationServiceUpdateReconciliationStatusProcedure is the fully-qualified name of the
+	// AdminReconciliationService's UpdateReconciliationStatus RPC.
+	AdminReconciliationServiceUpdateReconciliationStatusProcedure = "/libops.v1.AdminReconciliationService/UpdateReconciliationStatus"
+	// AdminReconciliationServiceGenerateTerraformVarsProcedure is the fully-qualified name of the
+	// AdminReconciliationService's GenerateTerraformVars RPC.
+	AdminReconciliationServiceGenerateTerraformVarsProcedure = "/libops.v1.AdminReconciliationService/GenerateTerraformVars"
 )
 
 // AdminOrganizationServiceClient is a client for the libops.v1.AdminOrganizationService service.
@@ -327,6 +357,19 @@ type AdminSiteServiceClient interface {
 	DeleteSite(context.Context, *connect.Request[v1.AdminDeleteSiteRequest]) (*connect.Response[emptypb.Empty], error)
 	// List all sites across all organizations/projects (admin only)
 	ListAllSites(context.Context, *connect.Request[v1.AdminListAllSitesRequest]) (*connect.Response[v1.AdminListAllSitesResponse], error)
+	// Get SSH keys for a site VM (called by VM controller with GSA auth)
+	GetSiteSSHKeys(context.Context, *connect.Request[v1.GetSiteSSHKeysRequest]) (*connect.Response[v1.GetSiteSSHKeysResponse], error)
+	// Get secrets for a site VM (called by VM controller with GSA auth)
+	GetSiteSecrets(context.Context, *connect.Request[v1.GetSiteSecretsRequest]) (*connect.Response[v1.GetSiteSecretsResponse], error)
+	// Get firewall rules for a site VM (called by VM controller with GSA auth)
+	GetSiteFirewall(context.Context, *connect.Request[v1.GetSiteFirewallRequest]) (*connect.Response[v1.GetSiteFirewallResponse], error)
+	// Site VM check-in (updates checkin_at timestamp)
+	SiteCheckIn(context.Context, *connect.Request[v1.SiteCheckInRequest]) (*connect.Response[v1.SiteCheckInResponse], error)
+	// Sync site manifest - returns state hash and signed URLs to blobs (for eventual consistency)
+	// Called by site VMs every ~24h for eventual consistency
+	SyncManifest(context.Context, *connect.Request[v1.SyncManifestRequest]) (*connect.Response[v1.SyncManifestResponse], error)
+	// Get blob content via signed GCS URL (optional - VMs can fetch directly from GCS)
+	GetBlob(context.Context, *connect.Request[v1.GetBlobRequest]) (*connect.Response[v1.GetBlobResponse], error)
 }
 
 // NewAdminSiteServiceClient constructs a client for the libops.v1.AdminSiteService service. By
@@ -379,17 +422,64 @@ func NewAdminSiteServiceClient(httpClient connect.HTTPClient, baseURL string, op
 			connect.WithIdempotency(connect.IdempotencyNoSideEffects),
 			connect.WithClientOptions(opts...),
 		),
+		getSiteSSHKeys: connect.NewClient[v1.GetSiteSSHKeysRequest, v1.GetSiteSSHKeysResponse](
+			httpClient,
+			baseURL+AdminSiteServiceGetSiteSSHKeysProcedure,
+			connect.WithSchema(adminSiteServiceMethods.ByName("GetSiteSSHKeys")),
+			connect.WithIdempotency(connect.IdempotencyNoSideEffects),
+			connect.WithClientOptions(opts...),
+		),
+		getSiteSecrets: connect.NewClient[v1.GetSiteSecretsRequest, v1.GetSiteSecretsResponse](
+			httpClient,
+			baseURL+AdminSiteServiceGetSiteSecretsProcedure,
+			connect.WithSchema(adminSiteServiceMethods.ByName("GetSiteSecrets")),
+			connect.WithIdempotency(connect.IdempotencyNoSideEffects),
+			connect.WithClientOptions(opts...),
+		),
+		getSiteFirewall: connect.NewClient[v1.GetSiteFirewallRequest, v1.GetSiteFirewallResponse](
+			httpClient,
+			baseURL+AdminSiteServiceGetSiteFirewallProcedure,
+			connect.WithSchema(adminSiteServiceMethods.ByName("GetSiteFirewall")),
+			connect.WithIdempotency(connect.IdempotencyNoSideEffects),
+			connect.WithClientOptions(opts...),
+		),
+		siteCheckIn: connect.NewClient[v1.SiteCheckInRequest, v1.SiteCheckInResponse](
+			httpClient,
+			baseURL+AdminSiteServiceSiteCheckInProcedure,
+			connect.WithSchema(adminSiteServiceMethods.ByName("SiteCheckIn")),
+			connect.WithClientOptions(opts...),
+		),
+		syncManifest: connect.NewClient[v1.SyncManifestRequest, v1.SyncManifestResponse](
+			httpClient,
+			baseURL+AdminSiteServiceSyncManifestProcedure,
+			connect.WithSchema(adminSiteServiceMethods.ByName("SyncManifest")),
+			connect.WithIdempotency(connect.IdempotencyNoSideEffects),
+			connect.WithClientOptions(opts...),
+		),
+		getBlob: connect.NewClient[v1.GetBlobRequest, v1.GetBlobResponse](
+			httpClient,
+			baseURL+AdminSiteServiceGetBlobProcedure,
+			connect.WithSchema(adminSiteServiceMethods.ByName("GetBlob")),
+			connect.WithIdempotency(connect.IdempotencyNoSideEffects),
+			connect.WithClientOptions(opts...),
+		),
 	}
 }
 
 // adminSiteServiceClient implements AdminSiteServiceClient.
 type adminSiteServiceClient struct {
-	listSites    *connect.Client[v1.AdminListSitesRequest, v1.AdminListSitesResponse]
-	getSite      *connect.Client[v1.AdminGetSiteRequest, v1.AdminGetSiteResponse]
-	createSite   *connect.Client[v1.AdminCreateSiteRequest, v1.AdminCreateSiteResponse]
-	updateSite   *connect.Client[v1.AdminUpdateSiteRequest, v1.AdminUpdateSiteResponse]
-	deleteSite   *connect.Client[v1.AdminDeleteSiteRequest, emptypb.Empty]
-	listAllSites *connect.Client[v1.AdminListAllSitesRequest, v1.AdminListAllSitesResponse]
+	listSites       *connect.Client[v1.AdminListSitesRequest, v1.AdminListSitesResponse]
+	getSite         *connect.Client[v1.AdminGetSiteRequest, v1.AdminGetSiteResponse]
+	createSite      *connect.Client[v1.AdminCreateSiteRequest, v1.AdminCreateSiteResponse]
+	updateSite      *connect.Client[v1.AdminUpdateSiteRequest, v1.AdminUpdateSiteResponse]
+	deleteSite      *connect.Client[v1.AdminDeleteSiteRequest, emptypb.Empty]
+	listAllSites    *connect.Client[v1.AdminListAllSitesRequest, v1.AdminListAllSitesResponse]
+	getSiteSSHKeys  *connect.Client[v1.GetSiteSSHKeysRequest, v1.GetSiteSSHKeysResponse]
+	getSiteSecrets  *connect.Client[v1.GetSiteSecretsRequest, v1.GetSiteSecretsResponse]
+	getSiteFirewall *connect.Client[v1.GetSiteFirewallRequest, v1.GetSiteFirewallResponse]
+	siteCheckIn     *connect.Client[v1.SiteCheckInRequest, v1.SiteCheckInResponse]
+	syncManifest    *connect.Client[v1.SyncManifestRequest, v1.SyncManifestResponse]
+	getBlob         *connect.Client[v1.GetBlobRequest, v1.GetBlobResponse]
 }
 
 // ListSites calls libops.v1.AdminSiteService.ListSites.
@@ -422,6 +512,36 @@ func (c *adminSiteServiceClient) ListAllSites(ctx context.Context, req *connect.
 	return c.listAllSites.CallUnary(ctx, req)
 }
 
+// GetSiteSSHKeys calls libops.v1.AdminSiteService.GetSiteSSHKeys.
+func (c *adminSiteServiceClient) GetSiteSSHKeys(ctx context.Context, req *connect.Request[v1.GetSiteSSHKeysRequest]) (*connect.Response[v1.GetSiteSSHKeysResponse], error) {
+	return c.getSiteSSHKeys.CallUnary(ctx, req)
+}
+
+// GetSiteSecrets calls libops.v1.AdminSiteService.GetSiteSecrets.
+func (c *adminSiteServiceClient) GetSiteSecrets(ctx context.Context, req *connect.Request[v1.GetSiteSecretsRequest]) (*connect.Response[v1.GetSiteSecretsResponse], error) {
+	return c.getSiteSecrets.CallUnary(ctx, req)
+}
+
+// GetSiteFirewall calls libops.v1.AdminSiteService.GetSiteFirewall.
+func (c *adminSiteServiceClient) GetSiteFirewall(ctx context.Context, req *connect.Request[v1.GetSiteFirewallRequest]) (*connect.Response[v1.GetSiteFirewallResponse], error) {
+	return c.getSiteFirewall.CallUnary(ctx, req)
+}
+
+// SiteCheckIn calls libops.v1.AdminSiteService.SiteCheckIn.
+func (c *adminSiteServiceClient) SiteCheckIn(ctx context.Context, req *connect.Request[v1.SiteCheckInRequest]) (*connect.Response[v1.SiteCheckInResponse], error) {
+	return c.siteCheckIn.CallUnary(ctx, req)
+}
+
+// SyncManifest calls libops.v1.AdminSiteService.SyncManifest.
+func (c *adminSiteServiceClient) SyncManifest(ctx context.Context, req *connect.Request[v1.SyncManifestRequest]) (*connect.Response[v1.SyncManifestResponse], error) {
+	return c.syncManifest.CallUnary(ctx, req)
+}
+
+// GetBlob calls libops.v1.AdminSiteService.GetBlob.
+func (c *adminSiteServiceClient) GetBlob(ctx context.Context, req *connect.Request[v1.GetBlobRequest]) (*connect.Response[v1.GetBlobResponse], error) {
+	return c.getBlob.CallUnary(ctx, req)
+}
+
 // AdminSiteServiceHandler is an implementation of the libops.v1.AdminSiteService service.
 type AdminSiteServiceHandler interface {
 	// List sites (admin view)
@@ -436,6 +556,19 @@ type AdminSiteServiceHandler interface {
 	DeleteSite(context.Context, *connect.Request[v1.AdminDeleteSiteRequest]) (*connect.Response[emptypb.Empty], error)
 	// List all sites across all organizations/projects (admin only)
 	ListAllSites(context.Context, *connect.Request[v1.AdminListAllSitesRequest]) (*connect.Response[v1.AdminListAllSitesResponse], error)
+	// Get SSH keys for a site VM (called by VM controller with GSA auth)
+	GetSiteSSHKeys(context.Context, *connect.Request[v1.GetSiteSSHKeysRequest]) (*connect.Response[v1.GetSiteSSHKeysResponse], error)
+	// Get secrets for a site VM (called by VM controller with GSA auth)
+	GetSiteSecrets(context.Context, *connect.Request[v1.GetSiteSecretsRequest]) (*connect.Response[v1.GetSiteSecretsResponse], error)
+	// Get firewall rules for a site VM (called by VM controller with GSA auth)
+	GetSiteFirewall(context.Context, *connect.Request[v1.GetSiteFirewallRequest]) (*connect.Response[v1.GetSiteFirewallResponse], error)
+	// Site VM check-in (updates checkin_at timestamp)
+	SiteCheckIn(context.Context, *connect.Request[v1.SiteCheckInRequest]) (*connect.Response[v1.SiteCheckInResponse], error)
+	// Sync site manifest - returns state hash and signed URLs to blobs (for eventual consistency)
+	// Called by site VMs every ~24h for eventual consistency
+	SyncManifest(context.Context, *connect.Request[v1.SyncManifestRequest]) (*connect.Response[v1.SyncManifestResponse], error)
+	// Get blob content via signed GCS URL (optional - VMs can fetch directly from GCS)
+	GetBlob(context.Context, *connect.Request[v1.GetBlobRequest]) (*connect.Response[v1.GetBlobResponse], error)
 }
 
 // NewAdminSiteServiceHandler builds an HTTP handler from the service implementation. It returns the
@@ -484,6 +617,47 @@ func NewAdminSiteServiceHandler(svc AdminSiteServiceHandler, opts ...connect.Han
 		connect.WithIdempotency(connect.IdempotencyNoSideEffects),
 		connect.WithHandlerOptions(opts...),
 	)
+	adminSiteServiceGetSiteSSHKeysHandler := connect.NewUnaryHandler(
+		AdminSiteServiceGetSiteSSHKeysProcedure,
+		svc.GetSiteSSHKeys,
+		connect.WithSchema(adminSiteServiceMethods.ByName("GetSiteSSHKeys")),
+		connect.WithIdempotency(connect.IdempotencyNoSideEffects),
+		connect.WithHandlerOptions(opts...),
+	)
+	adminSiteServiceGetSiteSecretsHandler := connect.NewUnaryHandler(
+		AdminSiteServiceGetSiteSecretsProcedure,
+		svc.GetSiteSecrets,
+		connect.WithSchema(adminSiteServiceMethods.ByName("GetSiteSecrets")),
+		connect.WithIdempotency(connect.IdempotencyNoSideEffects),
+		connect.WithHandlerOptions(opts...),
+	)
+	adminSiteServiceGetSiteFirewallHandler := connect.NewUnaryHandler(
+		AdminSiteServiceGetSiteFirewallProcedure,
+		svc.GetSiteFirewall,
+		connect.WithSchema(adminSiteServiceMethods.ByName("GetSiteFirewall")),
+		connect.WithIdempotency(connect.IdempotencyNoSideEffects),
+		connect.WithHandlerOptions(opts...),
+	)
+	adminSiteServiceSiteCheckInHandler := connect.NewUnaryHandler(
+		AdminSiteServiceSiteCheckInProcedure,
+		svc.SiteCheckIn,
+		connect.WithSchema(adminSiteServiceMethods.ByName("SiteCheckIn")),
+		connect.WithHandlerOptions(opts...),
+	)
+	adminSiteServiceSyncManifestHandler := connect.NewUnaryHandler(
+		AdminSiteServiceSyncManifestProcedure,
+		svc.SyncManifest,
+		connect.WithSchema(adminSiteServiceMethods.ByName("SyncManifest")),
+		connect.WithIdempotency(connect.IdempotencyNoSideEffects),
+		connect.WithHandlerOptions(opts...),
+	)
+	adminSiteServiceGetBlobHandler := connect.NewUnaryHandler(
+		AdminSiteServiceGetBlobProcedure,
+		svc.GetBlob,
+		connect.WithSchema(adminSiteServiceMethods.ByName("GetBlob")),
+		connect.WithIdempotency(connect.IdempotencyNoSideEffects),
+		connect.WithHandlerOptions(opts...),
+	)
 	return "/libops.v1.AdminSiteService/", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		switch r.URL.Path {
 		case AdminSiteServiceListSitesProcedure:
@@ -498,6 +672,18 @@ func NewAdminSiteServiceHandler(svc AdminSiteServiceHandler, opts ...connect.Han
 			adminSiteServiceDeleteSiteHandler.ServeHTTP(w, r)
 		case AdminSiteServiceListAllSitesProcedure:
 			adminSiteServiceListAllSitesHandler.ServeHTTP(w, r)
+		case AdminSiteServiceGetSiteSSHKeysProcedure:
+			adminSiteServiceGetSiteSSHKeysHandler.ServeHTTP(w, r)
+		case AdminSiteServiceGetSiteSecretsProcedure:
+			adminSiteServiceGetSiteSecretsHandler.ServeHTTP(w, r)
+		case AdminSiteServiceGetSiteFirewallProcedure:
+			adminSiteServiceGetSiteFirewallHandler.ServeHTTP(w, r)
+		case AdminSiteServiceSiteCheckInProcedure:
+			adminSiteServiceSiteCheckInHandler.ServeHTTP(w, r)
+		case AdminSiteServiceSyncManifestProcedure:
+			adminSiteServiceSyncManifestHandler.ServeHTTP(w, r)
+		case AdminSiteServiceGetBlobProcedure:
+			adminSiteServiceGetBlobHandler.ServeHTTP(w, r)
 		default:
 			http.NotFound(w, r)
 		}
@@ -529,6 +715,30 @@ func (UnimplementedAdminSiteServiceHandler) DeleteSite(context.Context, *connect
 
 func (UnimplementedAdminSiteServiceHandler) ListAllSites(context.Context, *connect.Request[v1.AdminListAllSitesRequest]) (*connect.Response[v1.AdminListAllSitesResponse], error) {
 	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("libops.v1.AdminSiteService.ListAllSites is not implemented"))
+}
+
+func (UnimplementedAdminSiteServiceHandler) GetSiteSSHKeys(context.Context, *connect.Request[v1.GetSiteSSHKeysRequest]) (*connect.Response[v1.GetSiteSSHKeysResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("libops.v1.AdminSiteService.GetSiteSSHKeys is not implemented"))
+}
+
+func (UnimplementedAdminSiteServiceHandler) GetSiteSecrets(context.Context, *connect.Request[v1.GetSiteSecretsRequest]) (*connect.Response[v1.GetSiteSecretsResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("libops.v1.AdminSiteService.GetSiteSecrets is not implemented"))
+}
+
+func (UnimplementedAdminSiteServiceHandler) GetSiteFirewall(context.Context, *connect.Request[v1.GetSiteFirewallRequest]) (*connect.Response[v1.GetSiteFirewallResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("libops.v1.AdminSiteService.GetSiteFirewall is not implemented"))
+}
+
+func (UnimplementedAdminSiteServiceHandler) SiteCheckIn(context.Context, *connect.Request[v1.SiteCheckInRequest]) (*connect.Response[v1.SiteCheckInResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("libops.v1.AdminSiteService.SiteCheckIn is not implemented"))
+}
+
+func (UnimplementedAdminSiteServiceHandler) SyncManifest(context.Context, *connect.Request[v1.SyncManifestRequest]) (*connect.Response[v1.SyncManifestResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("libops.v1.AdminSiteService.SyncManifest is not implemented"))
+}
+
+func (UnimplementedAdminSiteServiceHandler) GetBlob(context.Context, *connect.Request[v1.GetBlobRequest]) (*connect.Response[v1.GetBlobResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("libops.v1.AdminSiteService.GetBlob is not implemented"))
 }
 
 // AdminProjectServiceClient is a client for the libops.v1.AdminProjectService service.
@@ -747,4 +957,138 @@ func (UnimplementedAdminProjectServiceHandler) ListProjects(context.Context, *co
 
 func (UnimplementedAdminProjectServiceHandler) ListAllProjects(context.Context, *connect.Request[v1.AdminListAllProjectsRequest]) (*connect.Response[v1.AdminListAllProjectsResponse], error) {
 	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("libops.v1.AdminProjectService.ListAllProjects is not implemented"))
+}
+
+// AdminReconciliationServiceClient is a client for the libops.v1.AdminReconciliationService
+// service.
+type AdminReconciliationServiceClient interface {
+	// Get reconciliation run details from control-plane database
+	GetReconciliationRun(context.Context, *connect.Request[v1.GetReconciliationRunRequest]) (*connect.Response[v1.GetReconciliationRunResponse], error)
+	// Update reconciliation run status
+	UpdateReconciliationStatus(context.Context, *connect.Request[v1.UpdateReconciliationStatusRequest]) (*connect.Response[v1.UpdateReconciliationStatusResponse], error)
+	// Generate terraform variables JSON from database state
+	GenerateTerraformVars(context.Context, *connect.Request[v1.GenerateTerraformVarsRequest]) (*connect.Response[v1.GenerateTerraformVarsResponse], error)
+}
+
+// NewAdminReconciliationServiceClient constructs a client for the
+// libops.v1.AdminReconciliationService service. By default, it uses the Connect protocol with the
+// binary Protobuf Codec, asks for gzipped responses, and sends uncompressed requests. To use the
+// gRPC or gRPC-Web protocols, supply the connect.WithGRPC() or connect.WithGRPCWeb() options.
+//
+// The URL supplied here should be the base URL for the Connect or gRPC server (for example,
+// http://api.acme.com or https://acme.com/grpc).
+func NewAdminReconciliationServiceClient(httpClient connect.HTTPClient, baseURL string, opts ...connect.ClientOption) AdminReconciliationServiceClient {
+	baseURL = strings.TrimRight(baseURL, "/")
+	adminReconciliationServiceMethods := v1.File_libops_v1_admin_api_proto.Services().ByName("AdminReconciliationService").Methods()
+	return &adminReconciliationServiceClient{
+		getReconciliationRun: connect.NewClient[v1.GetReconciliationRunRequest, v1.GetReconciliationRunResponse](
+			httpClient,
+			baseURL+AdminReconciliationServiceGetReconciliationRunProcedure,
+			connect.WithSchema(adminReconciliationServiceMethods.ByName("GetReconciliationRun")),
+			connect.WithIdempotency(connect.IdempotencyNoSideEffects),
+			connect.WithClientOptions(opts...),
+		),
+		updateReconciliationStatus: connect.NewClient[v1.UpdateReconciliationStatusRequest, v1.UpdateReconciliationStatusResponse](
+			httpClient,
+			baseURL+AdminReconciliationServiceUpdateReconciliationStatusProcedure,
+			connect.WithSchema(adminReconciliationServiceMethods.ByName("UpdateReconciliationStatus")),
+			connect.WithClientOptions(opts...),
+		),
+		generateTerraformVars: connect.NewClient[v1.GenerateTerraformVarsRequest, v1.GenerateTerraformVarsResponse](
+			httpClient,
+			baseURL+AdminReconciliationServiceGenerateTerraformVarsProcedure,
+			connect.WithSchema(adminReconciliationServiceMethods.ByName("GenerateTerraformVars")),
+			connect.WithIdempotency(connect.IdempotencyNoSideEffects),
+			connect.WithClientOptions(opts...),
+		),
+	}
+}
+
+// adminReconciliationServiceClient implements AdminReconciliationServiceClient.
+type adminReconciliationServiceClient struct {
+	getReconciliationRun       *connect.Client[v1.GetReconciliationRunRequest, v1.GetReconciliationRunResponse]
+	updateReconciliationStatus *connect.Client[v1.UpdateReconciliationStatusRequest, v1.UpdateReconciliationStatusResponse]
+	generateTerraformVars      *connect.Client[v1.GenerateTerraformVarsRequest, v1.GenerateTerraformVarsResponse]
+}
+
+// GetReconciliationRun calls libops.v1.AdminReconciliationService.GetReconciliationRun.
+func (c *adminReconciliationServiceClient) GetReconciliationRun(ctx context.Context, req *connect.Request[v1.GetReconciliationRunRequest]) (*connect.Response[v1.GetReconciliationRunResponse], error) {
+	return c.getReconciliationRun.CallUnary(ctx, req)
+}
+
+// UpdateReconciliationStatus calls libops.v1.AdminReconciliationService.UpdateReconciliationStatus.
+func (c *adminReconciliationServiceClient) UpdateReconciliationStatus(ctx context.Context, req *connect.Request[v1.UpdateReconciliationStatusRequest]) (*connect.Response[v1.UpdateReconciliationStatusResponse], error) {
+	return c.updateReconciliationStatus.CallUnary(ctx, req)
+}
+
+// GenerateTerraformVars calls libops.v1.AdminReconciliationService.GenerateTerraformVars.
+func (c *adminReconciliationServiceClient) GenerateTerraformVars(ctx context.Context, req *connect.Request[v1.GenerateTerraformVarsRequest]) (*connect.Response[v1.GenerateTerraformVarsResponse], error) {
+	return c.generateTerraformVars.CallUnary(ctx, req)
+}
+
+// AdminReconciliationServiceHandler is an implementation of the
+// libops.v1.AdminReconciliationService service.
+type AdminReconciliationServiceHandler interface {
+	// Get reconciliation run details from control-plane database
+	GetReconciliationRun(context.Context, *connect.Request[v1.GetReconciliationRunRequest]) (*connect.Response[v1.GetReconciliationRunResponse], error)
+	// Update reconciliation run status
+	UpdateReconciliationStatus(context.Context, *connect.Request[v1.UpdateReconciliationStatusRequest]) (*connect.Response[v1.UpdateReconciliationStatusResponse], error)
+	// Generate terraform variables JSON from database state
+	GenerateTerraformVars(context.Context, *connect.Request[v1.GenerateTerraformVarsRequest]) (*connect.Response[v1.GenerateTerraformVarsResponse], error)
+}
+
+// NewAdminReconciliationServiceHandler builds an HTTP handler from the service implementation. It
+// returns the path on which to mount the handler and the handler itself.
+//
+// By default, handlers support the Connect, gRPC, and gRPC-Web protocols with the binary Protobuf
+// and JSON codecs. They also support gzip compression.
+func NewAdminReconciliationServiceHandler(svc AdminReconciliationServiceHandler, opts ...connect.HandlerOption) (string, http.Handler) {
+	adminReconciliationServiceMethods := v1.File_libops_v1_admin_api_proto.Services().ByName("AdminReconciliationService").Methods()
+	adminReconciliationServiceGetReconciliationRunHandler := connect.NewUnaryHandler(
+		AdminReconciliationServiceGetReconciliationRunProcedure,
+		svc.GetReconciliationRun,
+		connect.WithSchema(adminReconciliationServiceMethods.ByName("GetReconciliationRun")),
+		connect.WithIdempotency(connect.IdempotencyNoSideEffects),
+		connect.WithHandlerOptions(opts...),
+	)
+	adminReconciliationServiceUpdateReconciliationStatusHandler := connect.NewUnaryHandler(
+		AdminReconciliationServiceUpdateReconciliationStatusProcedure,
+		svc.UpdateReconciliationStatus,
+		connect.WithSchema(adminReconciliationServiceMethods.ByName("UpdateReconciliationStatus")),
+		connect.WithHandlerOptions(opts...),
+	)
+	adminReconciliationServiceGenerateTerraformVarsHandler := connect.NewUnaryHandler(
+		AdminReconciliationServiceGenerateTerraformVarsProcedure,
+		svc.GenerateTerraformVars,
+		connect.WithSchema(adminReconciliationServiceMethods.ByName("GenerateTerraformVars")),
+		connect.WithIdempotency(connect.IdempotencyNoSideEffects),
+		connect.WithHandlerOptions(opts...),
+	)
+	return "/libops.v1.AdminReconciliationService/", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		switch r.URL.Path {
+		case AdminReconciliationServiceGetReconciliationRunProcedure:
+			adminReconciliationServiceGetReconciliationRunHandler.ServeHTTP(w, r)
+		case AdminReconciliationServiceUpdateReconciliationStatusProcedure:
+			adminReconciliationServiceUpdateReconciliationStatusHandler.ServeHTTP(w, r)
+		case AdminReconciliationServiceGenerateTerraformVarsProcedure:
+			adminReconciliationServiceGenerateTerraformVarsHandler.ServeHTTP(w, r)
+		default:
+			http.NotFound(w, r)
+		}
+	})
+}
+
+// UnimplementedAdminReconciliationServiceHandler returns CodeUnimplemented from all methods.
+type UnimplementedAdminReconciliationServiceHandler struct{}
+
+func (UnimplementedAdminReconciliationServiceHandler) GetReconciliationRun(context.Context, *connect.Request[v1.GetReconciliationRunRequest]) (*connect.Response[v1.GetReconciliationRunResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("libops.v1.AdminReconciliationService.GetReconciliationRun is not implemented"))
+}
+
+func (UnimplementedAdminReconciliationServiceHandler) UpdateReconciliationStatus(context.Context, *connect.Request[v1.UpdateReconciliationStatusRequest]) (*connect.Response[v1.UpdateReconciliationStatusResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("libops.v1.AdminReconciliationService.UpdateReconciliationStatus is not implemented"))
+}
+
+func (UnimplementedAdminReconciliationServiceHandler) GenerateTerraformVars(context.Context, *connect.Request[v1.GenerateTerraformVarsRequest]) (*connect.Response[v1.GenerateTerraformVarsResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("libops.v1.AdminReconciliationService.GenerateTerraformVars is not implemented"))
 }

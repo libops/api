@@ -1,0 +1,373 @@
+syntax = "proto3";
+
+package libops.v1;
+
+import "google/protobuf/empty.proto";
+import "google/protobuf/field_mask.proto";
+import "libops/v1/options/audit.proto";
+import "libops/v1/options/scope.proto";
+import "libops/v1/common/types.proto";
+
+option go_package = "github.com/libops/platform/proto/libops/v1;libopsv1";
+
+// ==============================================================================
+// SERVICES
+// ==============================================================================
+
+// OrganizationSettingService manages organization-level settings
+service OrganizationSettingService {
+  // Create an organization setting
+  rpc CreateOrganizationSetting(CreateOrganizationSettingRequest) returns (CreateOrganizationSettingResponse) {
+    option (libops.v1.options.required_scope) = {
+      resource: RESOURCE_TYPE_ORGANIZATION
+      level: ACCESS_LEVEL_WRITE
+      allow_parent_access: true
+      oauth_scopes: "manage_settings"
+      parent_resource_id_field: "organization_id"
+      parent_resource: RESOURCE_TYPE_ORGANIZATION};
+  }
+
+  // Get an organization setting
+  rpc GetOrganizationSetting(GetOrganizationSettingRequest) returns (GetOrganizationSettingResponse) {
+    option idempotency_level = NO_SIDE_EFFECTS;
+    option (libops.v1.options.required_scope) = {
+      resource: RESOURCE_TYPE_ORGANIZATION
+      level: ACCESS_LEVEL_READ
+      allow_parent_access: true
+      oauth_scopes: "read_settings"
+      resource_id_field: "organization_id"};
+  }
+
+  // List organization settings
+  rpc ListOrganizationSettings(ListOrganizationSettingsRequest) returns (ListOrganizationSettingsResponse) {
+    option idempotency_level = NO_SIDE_EFFECTS;
+    option (libops.v1.options.required_scope) = {
+      resource: RESOURCE_TYPE_ORGANIZATION
+      level: ACCESS_LEVEL_READ
+      allow_parent_access: true
+      oauth_scopes: "read_settings"
+      resource_id_field: "organization_id"};
+  }
+
+  // Update an organization setting
+  rpc UpdateOrganizationSetting(UpdateOrganizationSettingRequest) returns (UpdateOrganizationSettingResponse) {
+    option (libops.v1.options.required_scope) = {
+      resource: RESOURCE_TYPE_ORGANIZATION
+      level: ACCESS_LEVEL_WRITE
+      allow_parent_access: true
+      oauth_scopes: "manage_settings"
+      resource_id_field: "organization_id"};
+  }
+
+  // Delete an organization setting
+  rpc DeleteOrganizationSetting(DeleteOrganizationSettingRequest) returns (google.protobuf.Empty) {
+    option (libops.v1.options.required_scope) = {
+      resource: RESOURCE_TYPE_ORGANIZATION
+      level: ACCESS_LEVEL_WRITE
+      allow_parent_access: true
+      oauth_scopes: "manage_settings"
+      resource_id_field: "organization_id"};
+  }
+}
+
+// ProjectSettingService manages project-level settings
+service ProjectSettingService {
+  // Create a project setting
+  rpc CreateProjectSetting(CreateProjectSettingRequest) returns (CreateProjectSettingResponse) {
+    option (libops.v1.options.required_scope) = {
+      resource: RESOURCE_TYPE_PROJECT
+      level: ACCESS_LEVEL_WRITE
+      allow_parent_access: true
+      oauth_scopes: "manage_settings"
+      parent_resource_id_field: "project_id"
+      parent_resource: RESOURCE_TYPE_PROJECT};
+  }
+
+  // Get a project setting
+  rpc GetProjectSetting(GetProjectSettingRequest) returns (GetProjectSettingResponse) {
+    option idempotency_level = NO_SIDE_EFFECTS;
+    option (libops.v1.options.required_scope) = {
+      resource: RESOURCE_TYPE_PROJECT
+      level: ACCESS_LEVEL_READ
+      allow_parent_access: true
+      oauth_scopes: "read_settings"
+      resource_id_field: "project_id"};
+  }
+
+  // List project settings
+  rpc ListProjectSettings(ListProjectSettingsRequest) returns (ListProjectSettingsResponse) {
+    option idempotency_level = NO_SIDE_EFFECTS;
+    option (libops.v1.options.required_scope) = {
+      resource: RESOURCE_TYPE_PROJECT
+      level: ACCESS_LEVEL_READ
+      allow_parent_access: true
+      oauth_scopes: "read_settings"
+      resource_id_field: "project_id"};
+  }
+
+  // Update a project setting
+  rpc UpdateProjectSetting(UpdateProjectSettingRequest) returns (UpdateProjectSettingResponse) {
+    option (libops.v1.options.required_scope) = {
+      resource: RESOURCE_TYPE_PROJECT
+      level: ACCESS_LEVEL_WRITE
+      allow_parent_access: true
+      oauth_scopes: "manage_settings"
+      resource_id_field: "project_id"};
+  }
+
+  // Delete a project setting
+  rpc DeleteProjectSetting(DeleteProjectSettingRequest) returns (google.protobuf.Empty) {
+    option (libops.v1.options.required_scope) = {
+      resource: RESOURCE_TYPE_PROJECT
+      level: ACCESS_LEVEL_WRITE
+      allow_parent_access: true
+      oauth_scopes: "manage_settings"
+      resource_id_field: "project_id"};
+  }
+}
+
+// SiteSettingService manages site-level settings
+service SiteSettingService {
+  // Create a site setting
+  rpc CreateSiteSetting(CreateSiteSettingRequest) returns (CreateSiteSettingResponse) {
+    option (libops.v1.options.required_scope) = {
+      resource: RESOURCE_TYPE_SITE
+      level: ACCESS_LEVEL_WRITE
+      allow_parent_access: true
+      oauth_scopes: "manage_settings"
+      parent_resource_id_field: "site_id"
+      parent_resource: RESOURCE_TYPE_SITE};
+  }
+
+  // Get a site setting
+  rpc GetSiteSetting(GetSiteSettingRequest) returns (GetSiteSettingResponse) {
+    option idempotency_level = NO_SIDE_EFFECTS;
+    option (libops.v1.options.required_scope) = {
+      resource: RESOURCE_TYPE_SITE
+      level: ACCESS_LEVEL_READ
+      allow_parent_access: true
+      oauth_scopes: "read_settings"
+      resource_id_field: "site_id"};
+  }
+
+  // List site settings
+  rpc ListSiteSettings(ListSiteSettingsRequest) returns (ListSiteSettingsResponse) {
+    option idempotency_level = NO_SIDE_EFFECTS;
+    option (libops.v1.options.required_scope) = {
+      resource: RESOURCE_TYPE_SITE
+      level: ACCESS_LEVEL_READ
+      allow_parent_access: true
+      oauth_scopes: "read_settings"
+      resource_id_field: "site_id"};
+  }
+
+  // Update a site setting
+  rpc UpdateSiteSetting(UpdateSiteSettingRequest) returns (UpdateSiteSettingResponse) {
+    option (libops.v1.options.required_scope) = {
+      resource: RESOURCE_TYPE_SITE
+      level: ACCESS_LEVEL_WRITE
+      allow_parent_access: true
+      oauth_scopes: "manage_settings"
+      resource_id_field: "site_id"};
+  }
+
+  // Delete a site setting
+  rpc DeleteSiteSetting(DeleteSiteSettingRequest) returns (google.protobuf.Empty) {
+    option (libops.v1.options.required_scope) = {
+      resource: RESOURCE_TYPE_SITE
+      level: ACCESS_LEVEL_WRITE
+      allow_parent_access: true
+      oauth_scopes: "manage_settings"
+      resource_id_field: "site_id"};
+  }
+}
+
+// ==============================================================================
+// MESSAGES
+// ==============================================================================
+
+message OrganizationSetting {
+  string setting_id = 1;        // UUID
+  string organization_id = 2;   // UUID
+  string key = 3;               // e.g., "max_projects"
+  string value = 4;             // Stored as string
+  bool editable = 5;            // Can users modify this?
+  string description = 6;       // Optional description
+  common.Status status = 7;
+}
+
+message ProjectSetting {
+  string setting_id = 1;        // UUID
+  string project_id = 2;        // UUID
+  string key = 3;               // e.g., "php_op_mode", "ENV_LOG_LEVEL"
+  string value = 4;
+  bool editable = 5;
+  string description = 6;
+  common.Status status = 7;
+}
+
+message SiteSetting {
+  string setting_id = 1;        // UUID
+  string site_id = 2;           // UUID
+  string key = 3;               // e.g., "ENV_LOG_LEVEL" (overrides project)
+  string value = 4;
+  bool editable = 5;
+  string description = 6;
+  common.Status status = 7;
+}
+
+// ==============================================================================
+// ORGANIZATION SETTING MESSAGES
+// ==============================================================================
+
+message CreateOrganizationSettingRequest {
+  string organization_id = 1;
+  string key = 2;
+  string value = 3;
+  bool editable = 4;
+  string description = 5;
+}
+
+message CreateOrganizationSettingResponse {
+  OrganizationSetting setting = 1;
+}
+
+message GetOrganizationSettingRequest {
+  string organization_id = 1;
+  string setting_id = 2;
+}
+
+message GetOrganizationSettingResponse {
+  OrganizationSetting setting = 1;
+}
+
+message ListOrganizationSettingsRequest {
+  string organization_id = 1;
+  int32 page_size = 2;
+  string page_token = 3;
+}
+
+message ListOrganizationSettingsResponse {
+  repeated OrganizationSetting settings = 1;
+  string next_page_token = 2;
+}
+
+message UpdateOrganizationSettingRequest {
+  string organization_id = 1;
+  string setting_id = 2;
+  optional string value = 3;
+  google.protobuf.FieldMask update_mask = 4;
+}
+
+message UpdateOrganizationSettingResponse {
+  OrganizationSetting setting = 1;
+}
+
+message DeleteOrganizationSettingRequest {
+  string organization_id = 1;
+  string setting_id = 2;
+}
+
+// ==============================================================================
+// PROJECT SETTING MESSAGES
+// ==============================================================================
+
+message CreateProjectSettingRequest {
+  string project_id = 1;
+  string key = 2;
+  string value = 3;
+  bool editable = 4;
+  string description = 5;
+}
+
+message CreateProjectSettingResponse {
+  ProjectSetting setting = 1;
+}
+
+message GetProjectSettingRequest {
+  string project_id = 1;
+  string setting_id = 2;
+}
+
+message GetProjectSettingResponse {
+  ProjectSetting setting = 1;
+}
+
+message ListProjectSettingsRequest {
+  string project_id = 1;
+  int32 page_size = 2;
+  string page_token = 3;
+}
+
+message ListProjectSettingsResponse {
+  repeated ProjectSetting settings = 1;
+  string next_page_token = 2;
+}
+
+message UpdateProjectSettingRequest {
+  string project_id = 1;
+  string setting_id = 2;
+  optional string value = 3;
+  google.protobuf.FieldMask update_mask = 4;
+}
+
+message UpdateProjectSettingResponse {
+  ProjectSetting setting = 1;
+}
+
+message DeleteProjectSettingRequest {
+  string project_id = 1;
+  string setting_id = 2;
+}
+
+// ==============================================================================
+// SITE SETTING MESSAGES
+// ==============================================================================
+
+message CreateSiteSettingRequest {
+  string site_id = 1;
+  string key = 2;
+  string value = 3;
+  bool editable = 4;
+  string description = 5;
+}
+
+message CreateSiteSettingResponse {
+  SiteSetting setting = 1;
+}
+
+message GetSiteSettingRequest {
+  string site_id = 1;
+  string setting_id = 2;
+}
+
+message GetSiteSettingResponse {
+  SiteSetting setting = 1;
+}
+
+message ListSiteSettingsRequest {
+  string site_id = 1;
+  int32 page_size = 2;
+  string page_token = 3;
+}
+
+message ListSiteSettingsResponse {
+  repeated SiteSetting settings = 1;
+  string next_page_token = 2;
+}
+
+message UpdateSiteSettingRequest {
+  string site_id = 1;
+  string setting_id = 2;
+  optional string value = 3;
+  google.protobuf.FieldMask update_mask = 4;
+}
+
+message UpdateSiteSettingResponse {
+  SiteSetting setting = 1;
+}
+
+message DeleteSiteSettingRequest {
+  string site_id = 1;
+  string setting_id = 2;
+}

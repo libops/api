@@ -15,18 +15,20 @@ import (
 	"golang.org/x/net/http2/h2c"
 	"golang.org/x/time/rate"
 
+	"github.com/libops/api/db"
 	"github.com/libops/api/internal/audit"
 	"github.com/libops/api/internal/auth"
 	"github.com/libops/api/internal/billing"
 	"github.com/libops/api/internal/config"
 	"github.com/libops/api/internal/dash"
-	"github.com/libops/api/internal/db"
 	"github.com/libops/api/internal/events"
 	"github.com/libops/api/internal/middleware"
 	"github.com/libops/api/internal/onboard"
+	"github.com/libops/api/internal/reconciler"
 	"github.com/libops/api/internal/service/account"
 	"github.com/libops/api/internal/service/organization"
 	"github.com/libops/api/internal/service/project"
+	"github.com/libops/api/internal/service/reconciliation"
 	"github.com/libops/api/internal/service/site"
 	"github.com/libops/api/proto/libops/v1/libopsv1connect"
 )
@@ -44,6 +46,7 @@ type Dependencies struct {
 	UserpassClient    *auth.UserpassClient
 	SessionManager    *auth.SessionManager
 	AllowedOrigins    []string
+	ConnectionManager *reconciler.ConnectionManager
 }
 
 // New creates a new HTTP handler with all routes configured.
@@ -60,20 +63,23 @@ func New(deps *Dependencies) http.Handler {
 
 	organizationService := organization.NewOrganizationService(deps.Queries, deps.Config)
 	adminOrganizationService := organization.NewAdminOrganizationService(deps.Queries)
-	memberService := organization.NewMemberService(deps.Queries)
+	memberService := organization.NewMemberService(deps.Queries, deps.ConnectionManager)
 	firewallService := organization.NewFirewallService(deps.Queries)
 	sshKeyService := organization.NewSshKeyService(deps.Queries)
 
 	projectService := project.NewProjectServiceWithConfig(deps.Queries, deps.Config.DisableBilling)
 	adminProjectService := project.NewAdminProjectServiceWithConfig(deps.Queries, deps.Config.DisableBilling)
-	projectMemberService := project.NewProjectMemberService(deps.Queries)
+	projectMemberService := project.NewProjectMemberService(deps.Queries, deps.ConnectionManager)
 	projectFirewallService := project.NewProjectFirewallService(deps.Queries)
 
 	siteService := site.NewSiteService(deps.Queries)
 	adminSiteService := site.NewAdminSiteService(deps.Queries)
-	siteMemberService := site.NewSiteMemberService(deps.Queries)
+	siteMemberService := site.NewSiteMemberService(deps.Queries, deps.ConnectionManager)
 	siteFirewallService := site.NewSiteFirewallService(deps.Queries)
 	siteOpsService := site.NewSiteOperationsService(deps.Queries)
+
+	// TODO: Use separate control-plane querier when available
+	adminReconciliationService := reconciliation.NewAdminReconciliationService(deps.Queries, deps.Queries)
 
 	var interceptors []connect.Interceptor
 
@@ -89,8 +95,16 @@ func New(deps *Dependencies) http.Handler {
 	organizationSecretService := organization.NewOrganizationSecretService(deps.Queries, auditLogger)
 	projectSecretService := project.NewProjectSecretService(deps.Queries, auditLogger)
 	siteSecretService := site.NewSiteSecretService(deps.Queries, auditLogger)
+
+	organizationSettingService := organization.NewOrganizationSettingService(deps.Queries)
+	projectSettingService := project.NewProjectSettingService(deps.Queries)
+	siteSettingService := site.NewSiteSettingService(deps.Queries)
+
 	auditInterceptor := audit.NewAuditInterceptor(auditLogger, auth.ExtractAccountIDFromContext)
 	interceptors = append(interceptors, auditInterceptor)
+
+	eventInterceptor := events.NewEventInterceptor(deps.Emitter)
+	interceptors = append(interceptors, eventInterceptor)
 
 	accountLookupRateLimiter := NewRateLimiter(10, 20)
 
@@ -127,14 +141,23 @@ func New(deps *Dependencies) http.Handler {
 		organizationSecretService,
 		projectSecretService,
 		siteSecretService,
+		organizationSettingService,
+		projectSettingService,
+		siteSettingService,
 	)
 
 	registerReflection(mux)
 
 	registerUtilityRoutes(mux)
 
+	// Register WebSocket endpoint for VM agents
+	if deps.ConnectionManager != nil {
+		mux.HandleFunc("/v1/agent/connect", deps.ConnectionManager.HandleConnect)
+		slog.Info("registered websocket endpoint for VM agents")
+	}
+
 	// Register controller routes for SSH keys endpoints (GSA-authenticated)
-	registerControllerRoutes(mux, deps.Queries, adminSiteService, adminProjectService)
+	registerControllerRoutes(mux, deps.Queries, adminSiteService, adminProjectService, adminReconciliationService, handlerOptions)
 
 	// Register onboarding routes and middleware
 	onboardHandler := onboard.NewHandlerWithConfig(deps.Queries, deps.Config, deps.Config.StripeSecretKey, deps.Config.StripeWebhookSecret, deps.Config.DashBaseUrl, deps.Config.DisableBilling)
@@ -225,6 +248,9 @@ func registerConnectServices(
 	organizationSecretService *organization.OrganizationSecretService,
 	projectSecretService *project.ProjectSecretService,
 	siteSecretService *site.SiteSecretService,
+	organizationSettingService *organization.OrganizationSettingService,
+	projectSettingService *project.ProjectSettingService,
+	siteSettingService *site.SiteSettingService,
 ) {
 	mux.Handle(libopsv1connect.NewOrganizationServiceHandler(organizationService, opts...))
 	mux.Handle(libopsv1connect.NewProjectServiceHandler(projectService, opts...))
@@ -251,6 +277,10 @@ func registerConnectServices(
 	mux.Handle(libopsv1connect.NewOrganizationSecretServiceHandler(organizationSecretService, opts...))
 	mux.Handle(libopsv1connect.NewProjectSecretServiceHandler(projectSecretService, opts...))
 	mux.Handle(libopsv1connect.NewSiteSecretServiceHandler(siteSecretService, opts...))
+
+	mux.Handle(libopsv1connect.NewOrganizationSettingServiceHandler(organizationSettingService, opts...))
+	mux.Handle(libopsv1connect.NewProjectSettingServiceHandler(projectSettingService, opts...))
+	mux.Handle(libopsv1connect.NewSiteSettingServiceHandler(siteSettingService, opts...))
 }
 
 // registerReflection adds gRPC reflection endpoints.
@@ -314,6 +344,7 @@ func registerDashboardRoutes(mux *http.ServeMux, dashHandler *dash.Handler, onbo
 	mux.Handle("/secrets", onboardMW.RequireOnboardingComplete(http.HandlerFunc(dashHandler.HandleSecrets)))
 	mux.Handle("/firewall", onboardMW.RequireOnboardingComplete(http.HandlerFunc(dashHandler.HandleFirewall)))
 	mux.Handle("/members", onboardMW.RequireOnboardingComplete(http.HandlerFunc(dashHandler.HandleMembers)))
+	mux.Handle("/settings", onboardMW.RequireOnboardingComplete(http.HandlerFunc(dashHandler.HandleSettings)))
 
 	// Detail pages for individual resources (require onboarding completion)
 	mux.Handle("GET /organizations/{id}", onboardMW.RequireOnboardingComplete(http.HandlerFunc(dashHandler.HandleOrganizationDetail)))
@@ -369,12 +400,28 @@ func registerUserpassRoutes(mux *http.ServeMux, userpassClient *auth.UserpassCli
 }
 
 // registerControllerRoutes adds controller reconciliation endpoints.
-func registerControllerRoutes(mux *http.ServeMux, queries db.Querier, adminSiteService *site.AdminSiteService, adminProjectService *project.AdminProjectService) {
-	gsaAuth := auth.NewGSAMiddleware(queries)
+func registerControllerRoutes(mux *http.ServeMux, queries db.Querier, adminSiteService *site.AdminSiteService, adminProjectService *project.AdminProjectService, adminReconciliationService *reconciliation.AdminReconciliationService, opts []connect.HandlerOption) {
+	// Site VM GSA middleware (for VM → API calls)
+	siteGSAAuth := auth.NewGSAMiddleware(queries)
 
-	// SSH keys endpoints - protected by GSA authentication
-	mux.Handle("GET /v1/projects/{projectId}/ssh-keys", gsaAuth.Middleware(http.HandlerFunc(adminProjectService.HandleProjectSshKeys)))
-	mux.Handle("GET /v1/sites/{siteId}/ssh-keys", gsaAuth.Middleware(http.HandlerFunc(adminSiteService.HandleSiteSshKeys)))
+	// Reconciliation service GSA middleware (for reconciliation service → API calls)
+	_ = auth.NewReconciliationGSAMiddleware(queries) // TODO: Apply to reconciliation endpoints
+
+	// Legacy SSH keys endpoints - protected by site GSA authentication
+	mux.Handle("GET /v1/projects/{projectId}/ssh-keys", siteGSAAuth.Middleware(http.HandlerFunc(adminProjectService.HandleProjectSshKeys)))
+	mux.Handle("GET /v1/sites/{siteId}/ssh-keys", siteGSAAuth.Middleware(http.HandlerFunc(adminSiteService.HandleSiteSshKeys)))
+
+	// Register admin reconciliation service endpoints
+	// TODO: Apply reconciliation GSA middleware to these endpoints
+	mux.Handle(libopsv1connect.NewAdminReconciliationServiceHandler(adminReconciliationService, opts...))
+
+	// Note: New admin API endpoints (GetSiteSSHKeys, GetSiteSecrets, GetSiteFirewall, SiteCheckIn,
+	// GetReconciliationRun, UpdateReconciliationStatus, GenerateTerraformVars) are registered
+	// via Connect RPC and will use the appropriate GSA middleware
+	// based on the calling service (site VM or reconciliation service).
+	//
+	// TODO: Apply GSA middleware to specific Connect RPC paths if needed, or implement
+	// GSA validation as a Connect interceptor instead of HTTP middleware.
 }
 
 // HTTP Handlers

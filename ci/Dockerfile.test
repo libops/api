@@ -21,5 +21,7 @@ RUN apk add --no-cache ca-certificates wget
 WORKDIR /app
 
 COPY --from=builder /test-runner /app/test-runner
+COPY ci/test-runner/entrypoint.sh /app/entrypoint.sh
+RUN chmod +x /app/entrypoint.sh
 
-ENTRYPOINT ["/app/test-runner"]
+ENTRYPOINT ["/app/entrypoint.sh"]

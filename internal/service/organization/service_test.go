@@ -10,9 +10,9 @@ import (
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
 
+	"github.com/libops/api/db"
 	"github.com/libops/api/internal/auth"
 	"github.com/libops/api/internal/config"
-	"github.com/libops/api/internal/db"
 	"github.com/libops/api/internal/testutils"
 	libopsv1 "github.com/libops/api/proto/libops/v1"
 	commonv1 "github.com/libops/api/proto/libops/v1/common"

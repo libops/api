@@ -7,7 +7,7 @@ import (
 
 	"github.com/google/uuid"
 
-	"github.com/libops/api/internal/db"
+	"github.com/libops/api/db"
 	"github.com/libops/api/internal/gcp"
 )
 

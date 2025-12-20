@@ -10,8 +10,8 @@ import (
 	"github.com/google/uuid"
 	"google.golang.org/protobuf/types/known/emptypb"
 
+	"github.com/libops/api/db"
 	"github.com/libops/api/internal/auth"
-	"github.com/libops/api/internal/db"
 	"github.com/libops/api/internal/service"
 	"github.com/libops/api/internal/validation"
 	libopsv1 "github.com/libops/api/proto/libops/v1"

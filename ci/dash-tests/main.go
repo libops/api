@@ -816,7 +816,7 @@ func (tr *TestRunner) testOnboardingFlow() {
 		// Step 7: Firewall IP
 		err = chromedp.Run(tr.ctx,
 			chromedp.WaitVisible(`#firewall-ip`, chromedp.ByID),
-			chromedp.SendKeys(`#firewall-ip`, "0.0.0.0/0", chromedp.ByID),
+			chromedp.SetValue(`#firewall-ip`, "0.0.0.0/0", chromedp.ByID),
 			chromedp.Click(`#step7-form button[type="submit"]`, chromedp.ByQuery),
 			chromedp.Sleep(5*time.Second), // Give it time to complete onboarding
 		)
@@ -913,4 +913,3 @@ func (tr *TestRunner) verifyOnboardingResources(orgName, projectName, siteName s
 
 	return nil
 }
-

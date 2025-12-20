@@ -5,12 +5,14 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
+	"log/slog"
 
 	"connectrpc.com/connect"
 	"github.com/google/uuid"
 	"google.golang.org/protobuf/types/known/emptypb"
 
-	"github.com/libops/api/internal/db"
+	"github.com/libops/api/db"
+	"github.com/libops/api/internal/reconciler"
 	"github.com/libops/api/internal/service"
 	"github.com/libops/api/internal/validation"
 	libopsv1 "github.com/libops/api/proto/libops/v1"
@@ -19,16 +21,18 @@ import (
 
 // MemberService implements the LibOps MemberService API.
 type MemberService struct {
-	db db.Querier
+	db          db.Querier
+	connManager *reconciler.ConnectionManager
 }
 
 // Compile-time check.
 var _ libopsv1connect.MemberServiceHandler = (*MemberService)(nil)
 
 // NewMemberService creates a new MemberService instance with DI.
-func NewMemberService(querier db.Querier) *MemberService {
+func NewMemberService(querier db.Querier, connManager *reconciler.ConnectionManager) *MemberService {
 	return &MemberService{
-		db: querier,
+		db:          querier,
+		connManager: connManager,
 	}
 }
 
@@ -152,14 +156,19 @@ func (s *MemberService) CreateOrganizationMember(
 		return nil, connect.NewError(connect.CodeInternal, fmt.Errorf("database error: %w", err))
 	}
 
-	// Note: Status is intentionally not set here (defaults to 'unspecified')
-	// The member should only be set to 'active' after SSH keys and resources
-	// are properly configured. This is different from onboarding where the owner
-	// is immediately set to 'active'.
+	// Determine initial status based on role
+	// Owner/developer roles require reconciliation (SSH keys, secrets, firewall)
+	// so they start in 'provisioning' state and will be set to 'active' after reconciliation
+	status := db.OrganizationMembersStatusActive
+	if role == "owner" || role == "developer" {
+		status = db.OrganizationMembersStatusProvisioning
+	}
+
 	params := db.CreateOrganizationMemberParams{
 		OrganizationID: organization.ID,
 		AccountID:      account.ID,
 		Role:           db.OrganizationMembersRole(role),
+		Status:         db.NullOrganizationMembersStatus{OrganizationMembersStatus: status, Valid: true},
 		CreatedBy:      sql.NullInt64{Valid: false},
 		UpdatedBy:      sql.NullInt64{Valid: false},
 	}
@@ -169,11 +178,55 @@ func (s *MemberService) CreateOrganizationMember(
 		return nil, connect.NewError(connect.CodeInternal, fmt.Errorf("database error: %w", err))
 	}
 
+	// Trigger reconciliation via WebSocket if owner/developer role
+	if s.connManager != nil && (role == "owner" || role == "developer") {
+		// Get all projects in this organization
+		projects, err := s.db.ListOrganizationProjects(ctx, db.ListOrganizationProjectsParams{
+			OrganizationID: organization.ID,
+			Limit:          1000, // Max projects per org
+			Offset:         0,
+		})
+		if err != nil {
+			slog.Warn("failed to get organization projects for reconciliation",
+				"organization_id", organizationID,
+				"error", err)
+		} else {
+			// Get all sites across all projects
+			for _, project := range projects {
+				sites, err := s.db.ListProjectSites(ctx, db.ListProjectSitesParams{
+					ProjectID: project.ID,
+					Limit:     1000, // Max sites per project
+					Offset:    0,
+				})
+				if err != nil {
+					slog.Warn("failed to get project sites for reconciliation",
+						"project_id", project.PublicID,
+						"error", err)
+					continue
+				}
+
+				// Trigger SSH key reconciliation for each connected site
+				for _, site := range sites {
+					if err := s.connManager.TriggerReconciliation(site.ID, "ssh_keys"); err != nil {
+						slog.Debug("site not connected, skipping reconciliation",
+							"site_id", site.PublicID,
+							"error", err)
+					} else {
+						slog.Info("triggered ssh_keys reconciliation for org member addition",
+							"site_id", site.PublicID,
+							"organization_id", organizationID)
+					}
+				}
+			}
+		}
+	}
+
 	member := &libopsv1.MemberDetail{
 		AccountId:      accountID,
 		Email:          account.Email,
 		Name:           service.FromNullString(account.Name),
 		Role:           role,
+		Status:         service.DbStatusToProto(string(status)),
 		GithubUsername: service.FromNullStringPtr(account.GithubUsername),
 	}
 
@@ -312,6 +365,18 @@ func (s *MemberService) DeleteOrganizationMember(
 		return nil, connect.NewError(connect.CodeInternal, fmt.Errorf("database error: %w", err))
 	}
 
+	// Get member role before deletion for reconciliation check
+	existingMember, err := s.db.GetOrganizationMember(ctx, db.GetOrganizationMemberParams{
+		OrganizationID: organization.ID,
+		AccountID:      account.ID,
+	})
+	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return nil, connect.NewError(connect.CodeNotFound, fmt.Errorf("member not found"))
+		}
+		return nil, connect.NewError(connect.CodeInternal, fmt.Errorf("database error: %w", err))
+	}
+
 	params := db.DeleteOrganizationMemberParams{
 		OrganizationID: organization.ID,
 		AccountID:      account.ID,
@@ -320,6 +385,39 @@ func (s *MemberService) DeleteOrganizationMember(
 	err = s.db.DeleteOrganizationMember(ctx, params)
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInternal, fmt.Errorf("database error: %w", err))
+	}
+
+	// Trigger reconciliation via WebSocket if owner/developer role was removed
+	memberRole := string(existingMember.Role)
+	if s.connManager != nil && (memberRole == "owner" || memberRole == "developer") {
+		// Get all projects in this organization
+		projects, err := s.db.ListOrganizationProjects(ctx, db.ListOrganizationProjectsParams{
+			OrganizationID: organization.ID,
+			Limit:          1000,
+			Offset:         0,
+		})
+		if err == nil {
+			// Get all sites across all projects
+			for _, project := range projects {
+				sites, err := s.db.ListProjectSites(ctx, db.ListProjectSitesParams{
+					ProjectID: project.ID,
+					Limit:     1000,
+					Offset:    0,
+				})
+				if err != nil {
+					continue
+				}
+
+				// Trigger SSH key reconciliation for each connected site
+				for _, site := range sites {
+					if err := s.connManager.TriggerReconciliation(site.ID, "ssh_keys"); err == nil {
+						slog.Info("triggered ssh_keys reconciliation for org member removal",
+							"site_id", site.PublicID,
+							"organization_id", organizationID)
+					}
+				}
+			}
+		}
 	}
 
 	return connect.NewResponse(&emptypb.Empty{}), nil

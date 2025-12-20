@@ -18,7 +18,7 @@
             <h2 class="text-base font-semibold text-gray-900">LibOps</h2>
             <div class="flex items-center space-x-3 mt-1 text-xs text-gray-600">
                 <span class="flex items-center">
-                    <span class="w-2 h-2 bg-green-500 rounded-full mr-1.5"></span>
+                    <span class="w-2 h-2 bg-red-900 rounded-full mr-1.5"></span>
                     Live
                 </span>
                 <span>Last updated <strong>just now</strong></span>
@@ -41,8 +41,28 @@
 
 <!-- Activity Section -->
 <div>
-    <h2 class="text-lg font-semibold text-gray-900 mb-4">Activity</h2>
-    <p class="text-sm text-gray-600 mb-4">Recent changes made to your infrastructure</p>
+    <div class="flex items-center justify-between mb-4">
+        <div>
+            <h2 class="text-lg font-semibold text-gray-900">Activity</h2>
+            <p class="text-sm text-gray-600 mt-1">Recent changes made to your infrastructure</p>
+        </div>
+        {{if .Organizations}}
+        <div class="flex space-x-3">
+            <a href="/projects" class="px-4 py-2 bg-red-900 text-white text-sm font-medium rounded-lg hover:bg-red-950 inline-flex items-center">
+                <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
+                </svg>
+                New Project
+            </a>
+            <button onclick="confirmNewOrganization()" class="px-3 py-2 border border-gray-300 text-gray-700 text-sm font-medium rounded-lg hover:bg-gray-50 inline-flex items-center">
+                <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
+                </svg>
+                New Organization
+            </button>
+        </div>
+        {{end}}
+    </div>
 
     {{if .Organizations}}
     <div class="bg-white rounded-lg border border-gray-200 overflow-hidden">
@@ -96,10 +116,23 @@
         </div>
         <h3 class="text-lg font-medium text-gray-900 mb-2">No organizations yet</h3>
         <p class="text-sm text-gray-600 mb-4">Get started by creating your first organization</p>
-        <button class="px-4 py-2 bg-green-600 text-white text-sm font-medium rounded-lg hover:bg-green-700">
+        <a href="/onboarding" class="px-4 py-2 bg-red-900 text-white text-sm font-medium rounded-lg hover:bg-red-950 inline-block">
             Create Organization
-        </button>
+        </a>
     </div>
     {{end}}
 </div>
+
+<script>
+function confirmNewOrganization() {
+    const confirmed = confirm(
+        'You can create up to 3 organizations total.\n\n' +
+        'To add more projects, use "New Project" instead.\n\n' +
+        'Continue creating a new organization?'
+    );
+    if (confirmed) {
+        window.location.href = '/onboarding';
+    }
+}
+</script>
 {{end}}

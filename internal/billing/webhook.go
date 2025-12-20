@@ -10,7 +10,7 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/libops/api/internal/db"
+	"github.com/libops/api/db"
 	"github.com/stripe/stripe-go/v84"
 	"github.com/stripe/stripe-go/v84/subscriptionitem"
 	"github.com/stripe/stripe-go/v84/webhook"
@@ -152,6 +152,7 @@ func (sm *StripeManager) handleCheckoutSessionCompleted(ctx context.Context, ses
 
 	err = sm.db.UpdateOnboardingSession(ctx, db.UpdateOnboardingSessionParams{
 		OrgName:                 onboardSession.OrgName,
+		OrgUuid:                 org.PublicID, // Preserve organization_public_id from the org record
 		MachineType:             onboardSession.MachineType,
 		MachinePriceID:          machinePriceID, // Store machine item ID here (reusing this field)
 		DiskSizeGb:              onboardSession.DiskSizeGb,

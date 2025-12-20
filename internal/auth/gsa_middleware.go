@@ -6,7 +6,7 @@ import (
 	"log/slog"
 	"net/http"
 
-	"github.com/libops/api/internal/db"
+	"github.com/libops/api/db"
 )
 
 // GSAMiddleware validates that the request is from a valid site GSA.

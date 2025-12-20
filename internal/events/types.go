@@ -28,25 +28,41 @@ const (
 	EventTypeSiteDeleted = "io.libops.site.deleted.v1"
 
 	// SSH Key events.
-	EventTypeSshKeyCreated = "io.libops.sshkey.created.v1"
-	EventTypeSshKeyUpdated = "io.libops.sshkey.updated.v1"
-	EventTypeSshKeyDeleted = "io.libops.sshkey.deleted.v1"
+	EventTypeSshKeyCreated = "io.libops.ssh_key.created.v1"
+	EventTypeSshKeyDeleted = "io.libops.ssh_key.deleted.v1"
 
-	// Member events.
-	EventTypeMemberAdded   = "io.libops.member.added.v1"
-	EventTypeMemberUpdated = "io.libops.member.updated.v1"
-	EventTypeMemberRemoved = "io.libops.member.removed.v1"
+	// Organization Child Events
+	EventTypeOrganizationMemberAdded         = "io.libops.organization.member.added.v1"
+	EventTypeOrganizationMemberUpdated       = "io.libops.organization.member.updated.v1"
+	EventTypeOrganizationMemberRemoved       = "io.libops.organization.member.removed.v1"
+	EventTypeOrganizationFirewallRuleAdded   = "io.libops.organization.firewall_rule.added.v1"
+	EventTypeOrganizationFirewallRuleRemoved = "io.libops.organization.firewall_rule.removed.v1"
+	EventTypeOrganizationSecretCreated       = "io.libops.organization.secret.created.v1"
+	EventTypeOrganizationSecretUpdated       = "io.libops.organization.secret.updated.v1"
+	EventTypeOrganizationSecretDeleted       = "io.libops.organization.secret.deleted.v1"
+
+	// Project Child Events
+	EventTypeProjectMemberAdded         = "io.libops.project.member.added.v1"
+	EventTypeProjectMemberUpdated       = "io.libops.project.member.updated.v1"
+	EventTypeProjectMemberRemoved       = "io.libops.project.member.removed.v1"
+	EventTypeProjectFirewallRuleAdded   = "io.libops.project.firewall_rule.added.v1"
+	EventTypeProjectFirewallRuleRemoved = "io.libops.project.firewall_rule.removed.v1"
+	EventTypeProjectSecretCreated       = "io.libops.project.secret.created.v1"
+	EventTypeProjectSecretUpdated       = "io.libops.project.secret.updated.v1"
+	EventTypeProjectSecretDeleted       = "io.libops.project.secret.deleted.v1"
+
+	// Site Child Events
+	EventTypeSiteMemberAdded         = "io.libops.site.member.added.v1"
+	EventTypeSiteMemberUpdated       = "io.libops.site.member.updated.v1"
+	EventTypeSiteMemberRemoved       = "io.libops.site.member.removed.v1"
+	EventTypeSiteFirewallRuleAdded   = "io.libops.site.firewall_rule.added.v1"
+	EventTypeSiteFirewallRuleRemoved = "io.libops.site.firewall_rule.removed.v1"
+	EventTypeSiteSecretCreated       = "io.libops.site.secret.created.v1"
+	EventTypeSiteSecretUpdated       = "io.libops.site.secret.updated.v1"
+	EventTypeSiteSecretDeleted       = "io.libops.site.secret.deleted.v1"
 
 	// Relationship events.
 	EventTypeRelationshipCreated  = "io.libops.relationship.created.v1"
 	EventTypeRelationshipApproved = "io.libops.relationship.approved.v1"
 	EventTypeRelationshipRejected = "io.libops.relationship.rejected.v1"
-
-	// Firewall rule events.
-	EventTypeFirewallRuleAdded   = "io.libops.firewall.added.v1"
-	EventTypeFirewallRuleRemoved = "io.libops.firewall.removed.v1"
-
-	// Developer events.
-	EventTypeDeveloperAdded   = "io.libops.developer.added.v1"
-	EventTypeDeveloperRemoved = "io.libops.developer.removed.v1"
 )

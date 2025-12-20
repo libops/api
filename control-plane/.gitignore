@@ -1,0 +1,52 @@
+# Binaries
+subscriber
+reconciliation-service
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+
+# Test binary
+*.test
+
+# Output of the go coverage tool
+*.out
+
+# Go workspace file
+go.work
+
+# Environment variables
+.env
+.env.local
+.env.*.local
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Terraform
+**/.terraform/*
+*.tfstate
+*.tfstate.*
+*.tfvars
+*.tfvars.json
+tfplan
+.terraform.lock.hcl
+
+# Logs
+*.log
+
+# Temporary files
+tmp/
+temp/
+libops
+cmd/tf-runner/tf-runner
+cmd/reconcile/reconcile

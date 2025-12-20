@@ -5,12 +5,13 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
+	"log/slog"
 
 	"connectrpc.com/connect"
 	"github.com/go-sql-driver/mysql"
 	"github.com/google/uuid"
 
-	"github.com/libops/api/internal/db"
+	"github.com/libops/api/db"
 	"github.com/libops/api/internal/service"
 	commonv1 "github.com/libops/api/proto/libops/v1/common"
 )
@@ -150,6 +151,40 @@ func (r *Repository) CreateOrganizationWithOwner(
 		}
 		if _, err := r.CreateRelationship(ctx, relationshipParams); err != nil {
 			return 0, fmt.Errorf("failed to create relationship: %w", err)
+		}
+	}
+
+	// Create default organization settings
+	defaultSettings := []struct {
+		key         string
+		value       string
+		editable    bool
+		description string
+	}{
+		{
+			key:         "max_projects",
+			value:       "10",
+			editable:    false,
+			description: "Maximum number of projects allowed in this organization",
+		},
+	}
+
+	for _, setting := range defaultSettings {
+		settingPublicID := uuid.New().String()
+		err := r.db.CreateOrganizationSetting(ctx, db.CreateOrganizationSettingParams{
+			PublicID:       settingPublicID,
+			OrganizationID: createdOrg.ID,
+			SettingKey:     setting.key,
+			SettingValue:   setting.value,
+			Editable:       sql.NullBool{Bool: setting.editable, Valid: true},
+			Description:    sql.NullString{String: setting.description, Valid: true},
+			Status:         db.NullOrganizationSettingsStatus{OrganizationSettingsStatus: db.OrganizationSettingsStatusActive, Valid: true},
+			CreatedBy:      sql.NullInt64{Int64: accountID, Valid: true},
+			UpdatedBy:      sql.NullInt64{Int64: accountID, Valid: true},
+		})
+		if err != nil {
+			// Log but don't fail org creation if setting creation fails
+			slog.Warn("Failed to create default organization setting", "setting", setting.key, "error", err)
 		}
 	}
 

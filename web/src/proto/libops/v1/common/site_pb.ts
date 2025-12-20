@@ -108,6 +108,29 @@ export class SiteConfig extends Message<SiteConfig> {
   rolloutCmd: string[] = [];
 
   /**
+   * Overlay volume paths
+   *
+   * @generated from field: repeated string overlay_volumes = 15;
+   */
+  overlayVolumes: string[] = [];
+
+  /**
+   * GCP deployment configuration
+   *
+   * OS image (default: "cos-125-19216-104-74")
+   *
+   * @generated from field: string os = 16;
+   */
+  os = "";
+
+  /**
+   * Whether this is the production instance
+   *
+   * @generated from field: bool is_production = 17;
+   */
+  isProduction = false;
+
+  /**
    * Status (organization-visible)
    *
    * @generated from field: libops.v1.common.Status status = 11;
@@ -135,6 +158,9 @@ export class SiteConfig extends Message<SiteConfig> {
     { no: 12, name: "up_cmd", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },
     { no: 13, name: "init_cmd", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },
     { no: 14, name: "rollout_cmd", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },
+    { no: 15, name: "overlay_volumes", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },
+    { no: 16, name: "os", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 17, name: "is_production", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
     { no: 11, name: "status", kind: "enum", T: proto3.getEnumType(Status) },
   ]);
 

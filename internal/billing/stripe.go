@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"log/slog"
 
-	"github.com/libops/api/internal/db"
+	"github.com/libops/api/db"
 	"github.com/stripe/stripe-go/v84"
 	"github.com/stripe/stripe-go/v84/checkout/session"
 	"github.com/stripe/stripe-go/v84/subscriptionitem"
@@ -200,7 +200,8 @@ func (sm *StripeManager) RemoveProjectFromSubscription(ctx context.Context, mach
 
 // CreateCheckoutSession creates a Stripe checkout session for the onboarding flow
 // It queries the database for machine pricing and storage configuration
-func (sm *StripeManager) CreateCheckoutSession(ctx context.Context, accountEmail, sessionID, machineType string, diskSizeGB int, baseURL string) (*CheckoutSessionResult, error) {
+// If withTrial is true, a 7-day trial is added to the subscription
+func (sm *StripeManager) CreateCheckoutSession(ctx context.Context, accountEmail, sessionID, machineType string, diskSizeGB int, baseURL string, withTrial bool) (*CheckoutSessionResult, error) {
 	// Validate machine type and get price ID from database
 	if err := sm.ValidateMachineType(ctx, machineType); err != nil {
 		return nil, fmt.Errorf("invalid machine type: %w", err)
@@ -246,9 +247,13 @@ func (sm *StripeManager) CreateCheckoutSession(ctx context.Context, accountEmail
 		CancelURL:         stripe.String(fmt.Sprintf("%s/onboarding/stripe/cancel", baseURL)),
 		CustomerEmail:     stripe.String(accountEmail),
 		ClientReferenceID: stripe.String(sessionID),
-		SubscriptionData: &stripe.CheckoutSessionSubscriptionDataParams{
+	}
+
+	// Only add trial if requested (first-time onboarding)
+	if withTrial {
+		params.SubscriptionData = &stripe.CheckoutSessionSubscriptionDataParams{
 			TrialPeriodDays: stripe.Int64(TrialPeriodDays),
-		},
+		}
 	}
 
 	s, err := session.New(params)

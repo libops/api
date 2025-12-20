@@ -69,6 +69,7 @@ type OrganizationDetailData struct {
 	Members       []Member
 	FirewallRules []ResourceItem
 	Secrets       []ResourceItem
+	Settings      []Setting
 	AuditLog      []AuditLogEntry
 	IsDevelopment bool
 }
@@ -83,21 +84,25 @@ type ProjectDetailData struct {
 	Members       []Member
 	FirewallRules []ResourceItem
 	Secrets       []ResourceItem
+	Settings      []Setting
 	AuditLog      []AuditLogEntry
 	IsDevelopment bool
 }
 
 // SiteDetailData holds data for the site detail page
 type SiteDetailData struct {
-	Email         string
-	Name          string
-	ActivePage    string
-	Site          ResourceItem
-	Members       []Member
-	FirewallRules []ResourceItem
-	Secrets       []ResourceItem
-	AuditLog      []AuditLogEntry
-	IsDevelopment bool
+	Email          string
+	Name           string
+	ActivePage     string
+	Site           ResourceItem
+	OrganizationID string
+	ProjectID      string
+	Members        []Member
+	FirewallRules  []ResourceItem
+	Secrets        []ResourceItem
+	Settings       []Setting
+	AuditLog       []AuditLogEntry
+	IsDevelopment  bool
 }
 
 // Member represents a member with their role
@@ -115,6 +120,19 @@ type Member struct {
 type ResourcePermissions struct {
 	CanEdit   bool
 	CanDelete bool
+}
+
+// Setting represents a configuration setting
+type Setting struct {
+	ID          string
+	Key         string
+	Value       string
+	Description string
+	Editable    bool
+	ParentName  string
+	ParentID    string
+	ParentType  string // "organization", "project", or "site"
+	Permissions ResourcePermissions
 }
 
 // AuditLogEntry represents an audit log entry

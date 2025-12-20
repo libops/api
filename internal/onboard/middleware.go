@@ -4,8 +4,8 @@ import (
 	"log/slog"
 	"net/http"
 
+	"github.com/libops/api/db"
 	"github.com/libops/api/internal/auth"
-	"github.com/libops/api/internal/db"
 )
 
 // Middleware provides middleware functions for onboarding

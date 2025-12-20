@@ -22,6 +22,8 @@ message ProjectConfig {
   string zone = 6;                // GCP zone (e.g., "us-central1-f")
   string machine_type = 7;        // GCP machine type (e.g., "e2-standard-2")
   int32 disk_size_gb = 8;         // Disk size in GB
+  string os = 9;                  // OS image (default: "cos-125-19216-104-74")
+  string disk_type = 10;          // Disk type (default: "hyperdisk-balanced")
 
   // Promotion strategy
   PromoteStrategy promote = 11;   // How to promote code to production

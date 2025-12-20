@@ -82,6 +82,36 @@ service AdminSiteService {
     option idempotency_level = NO_SIDE_EFFECTS;
     option (libops.v1.options.required_scope) = { resource: RESOURCE_TYPE_SYSTEM, level: ACCESS_LEVEL_ADMIN, oauth_scopes: "admin:system" };
   }
+
+  // Get SSH keys for a site VM (called by VM controller with GSA auth)
+  rpc GetSiteSSHKeys(GetSiteSSHKeysRequest) returns (GetSiteSSHKeysResponse) {
+    option idempotency_level = NO_SIDE_EFFECTS;
+  }
+
+  // Get secrets for a site VM (called by VM controller with GSA auth)
+  rpc GetSiteSecrets(GetSiteSecretsRequest) returns (GetSiteSecretsResponse) {
+    option idempotency_level = NO_SIDE_EFFECTS;
+  }
+
+  // Get firewall rules for a site VM (called by VM controller with GSA auth)
+  rpc GetSiteFirewall(GetSiteFirewallRequest) returns (GetSiteFirewallResponse) {
+    option idempotency_level = NO_SIDE_EFFECTS;
+  }
+
+  // Site VM check-in (updates checkin_at timestamp)
+  rpc SiteCheckIn(SiteCheckInRequest) returns (SiteCheckInResponse) {
+  }
+
+  // Sync site manifest - returns state hash and signed URLs to blobs (for eventual consistency)
+  // Called by site VMs every ~24h for eventual consistency
+  rpc SyncManifest(SyncManifestRequest) returns (SyncManifestResponse) {
+    option idempotency_level = NO_SIDE_EFFECTS;
+  }
+
+  // Get blob content via signed GCS URL (optional - VMs can fetch directly from GCS)
+  rpc GetBlob(GetBlobRequest) returns (GetBlobResponse) {
+    option idempotency_level = NO_SIDE_EFFECTS;
+  }
 }
 
 // AdminProjectService manages admin-level project operations with full access
@@ -117,6 +147,24 @@ service AdminProjectService {
   rpc ListAllProjects(AdminListAllProjectsRequest) returns (AdminListAllProjectsResponse) {
     option idempotency_level = NO_SIDE_EFFECTS;
     option (libops.v1.options.required_scope) = { resource: RESOURCE_TYPE_SYSTEM, level: ACCESS_LEVEL_ADMIN, oauth_scopes: "admin:system" };
+  }
+}
+
+// AdminReconciliationService handles reconciliation operations
+// Called by Cloud Run reconciliation services with GSA authentication
+service AdminReconciliationService {
+  // Get reconciliation run details from control-plane database
+  rpc GetReconciliationRun(GetReconciliationRunRequest) returns (GetReconciliationRunResponse) {
+    option idempotency_level = NO_SIDE_EFFECTS;
+  }
+
+  // Update reconciliation run status
+  rpc UpdateReconciliationStatus(UpdateReconciliationStatusRequest) returns (UpdateReconciliationStatusResponse) {
+  }
+
+  // Generate terraform variables JSON from database state
+  rpc GenerateTerraformVars(GenerateTerraformVarsRequest) returns (GenerateTerraformVarsResponse) {
+    option idempotency_level = NO_SIDE_EFFECTS;
   }
 }
 
@@ -360,4 +408,155 @@ message AdminListAllSitesRequest {
 message AdminListAllSitesResponse {
   repeated libops.v1.admin.AdminSiteConfig sites = 1;
   string next_page_token = 2;
+}
+
+// ==============================================================================
+// REQUEST/RESPONSE - GetSiteSSHKeys (VM Controller)
+// ==============================================================================
+
+message GetSiteSSHKeysRequest {
+  string site_id = 1;  // Site public ID
+}
+
+message SSHKey {
+  string public_key = 1;
+  string name = 2;
+  string fingerprint = 3;
+  string github_username = 4;
+}
+
+message GetSiteSSHKeysResponse {
+  repeated SSHKey keys = 1;
+}
+
+// ==============================================================================
+// REQUEST/RESPONSE - GetSiteSecrets (VM Controller)
+// ==============================================================================
+
+message GetSiteSecretsRequest {
+  string site_id = 1;  // Site public ID
+}
+
+message Secret {
+  string key = 1;
+  string value = 2;
+}
+
+message GetSiteSecretsResponse {
+  repeated Secret secrets = 1;
+}
+
+// ==============================================================================
+// REQUEST/RESPONSE - GetSiteFirewall (VM Controller)
+// ==============================================================================
+
+message GetSiteFirewallRequest {
+  string site_id = 1;  // Site public ID
+}
+
+message FirewallRule {
+  string protocol = 1;  // tcp, udp, icmp, etc.
+  int32 port = 2;       // port number (0 if not applicable)
+  string source = 3;    // source CIDR or IP
+  string action = 4;    // accept, deny, drop, reject
+}
+
+message GetSiteFirewallResponse {
+  repeated FirewallRule rules = 1;
+}
+
+// ==============================================================================
+// REQUEST/RESPONSE - SiteCheckIn (VM Controller)
+// ==============================================================================
+
+message SiteCheckInRequest {
+  string site_id = 1;  // Site public ID
+}
+
+message SiteCheckInResponse {
+  bool success = 1;
+  string message = 2;
+}
+
+// ==============================================================================
+// REQUEST/RESPONSE - SyncManifest (VM Controller - Eventual Consistency)
+// ==============================================================================
+
+message SyncManifestRequest {
+  string site_id = 1;  // Site public ID
+  optional string current_state_hash = 2;  // For ETag optimization (304 Not Modified)
+}
+
+message SyncManifestResponse {
+  string state_hash = 1;  // Current state hash for this site
+  StateBlobs blobs = 2;   // Signed URLs to GCS blobs
+}
+
+message StateBlobs {
+  string ssh_keys_url = 1;   // Signed GCS URL to ssh-keys.json
+  string secrets_url = 2;    // Signed GCS URL to secrets.json
+  string firewall_url = 3;   // Signed GCS URL to firewall.json
+}
+
+// ==============================================================================
+// REQUEST/RESPONSE - GetBlob (VM Controller - Optional Direct Fetch)
+// ==============================================================================
+
+message GetBlobRequest {
+  string site_id = 1;    // Site public ID
+  string blob_type = 2;  // "ssh_keys", "secrets", "firewall"
+}
+
+message GetBlobResponse {
+  bytes data = 1;          // Blob content (JSON)
+  string content_type = 2; // "application/json"
+}
+
+// ==============================================================================
+// REQUEST/RESPONSE - GetReconciliationRun (Reconciliation Service)
+// ==============================================================================
+
+message GetReconciliationRunRequest {
+  string run_id = 1;
+}
+
+message GetReconciliationRunResponse {
+  string run_id = 1;
+  string run_type = 2;  // terraform or reconciliation
+  optional string reconciliation_type = 3;  // ssh_keys, secrets, firewall, general
+  repeated string modules = 4;  // For terraform runs
+  repeated int64 target_site_ids = 5;  // For reconciliation runs
+  repeated string event_ids = 6;
+  optional int64 organization_id = 7;
+  optional int64 project_id = 8;
+  optional int64 site_id = 9;
+  string status = 10;
+}
+
+// ==============================================================================
+// REQUEST/RESPONSE - UpdateReconciliationStatus (Reconciliation Service)
+// ==============================================================================
+
+message UpdateReconciliationStatusRequest {
+  string run_id = 1;
+  string status = 2;  // pending, triggered, running, completed, failed
+  optional string error_message = 3;
+}
+
+message UpdateReconciliationStatusResponse {
+  bool success = 1;
+}
+
+// ==============================================================================
+// REQUEST/RESPONSE - GenerateTerraformVars (Reconciliation Service)
+// ==============================================================================
+
+message GenerateTerraformVarsRequest {
+  optional int64 organization_id = 1;
+  optional int64 project_id = 2;
+  optional int64 site_id = 3;
+}
+
+message GenerateTerraformVarsResponse {
+  string tfvars_json = 1;  // JSON-encoded terraform variables
 }

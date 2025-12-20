@@ -4,15 +4,16 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
+	"log/slog"
 
 	"connectrpc.com/connect"
 	"github.com/google/uuid"
 	"google.golang.org/protobuf/types/known/emptypb"
 	"google.golang.org/protobuf/types/known/fieldmaskpb"
 
+	"github.com/libops/api/db"
 	"github.com/libops/api/internal/auth"
 	"github.com/libops/api/internal/config"
-	"github.com/libops/api/internal/db"
 	"github.com/libops/api/internal/service"
 	"github.com/libops/api/internal/validation"
 	libopsv1 "github.com/libops/api/proto/libops/v1"
@@ -56,6 +57,7 @@ func (s *OrganizationService) GetOrganization(
 	// Membership check is handled automatically by scope interceptor via proto annotation
 	organization, err := s.repo.GetOrganizationByPublicID(ctx, publicID)
 	if err != nil {
+		slog.Error("Failed to get organization by public ID", "error", err, "organization_id", organizationID)
 		return nil, err
 	}
 
@@ -91,6 +93,12 @@ func (s *OrganizationService) CreateOrganization(
 	}
 
 	accountID := userInfo.AccountID
+
+	// Validate organization limit
+	if err := s.repo.ValidateOrganizationLimit(ctx, accountID); err != nil {
+		return nil, err
+	}
+
 	newID := uuid.New().String()
 
 	// Use the shared repository method that creates org, adds owner, and creates relationship
@@ -105,6 +113,7 @@ func (s *OrganizationService) CreateOrganization(
 		s.config.RootOrganizationID,
 	)
 	if err != nil {
+		slog.Error("Failed to create organization", "error", err, "organization_name", folder.OrganizationName, "account_id", accountID)
 		return nil, err
 	}
 
@@ -142,6 +151,7 @@ func (s *OrganizationService) UpdateOrganization(
 
 	existing, err := s.repo.GetOrganizationByPublicID(ctx, publicID)
 	if err != nil {
+		slog.Error("Failed to get organization by public ID for update", "error", err, "organization_id", organizationID)
 		return nil, err
 	}
 
@@ -165,6 +175,7 @@ func (s *OrganizationService) UpdateOrganization(
 
 	err = s.repo.UpdateOrganization(ctx, params)
 	if err != nil {
+		slog.Error("Failed to update organization in DB", "error", err, "organization_id", organizationID)
 		return nil, err
 	}
 
@@ -190,6 +201,7 @@ func (s *OrganizationService) DeleteOrganization(
 
 	err = s.repo.DeleteOrganization(ctx, publicID)
 	if err != nil {
+		slog.Error("Failed to delete organization", "error", err, "organization_id", organizationID)
 		return nil, err
 	}
 
@@ -217,6 +229,7 @@ func (s *OrganizationService) ListOrganizations(
 		Offset:    pagination.Offset,
 	})
 	if err != nil {
+		slog.Error("Failed to list organizations", "error", err, "account_id", userInfo.AccountID)
 		return nil, err
 	}
 
@@ -254,6 +267,7 @@ func (s *OrganizationService) ListOrganizationProjects(
 
 	organization, err := s.repo.GetOrganizationByPublicID(ctx, publicID)
 	if err != nil {
+		slog.Error("Failed to get organization by public ID for project listing", "error", err, "organization_id", organizationID)
 		return nil, err
 	}
 
@@ -268,6 +282,7 @@ func (s *OrganizationService) ListOrganizationProjects(
 		Offset:         pagination.Offset,
 	})
 	if err != nil {
+		slog.Error("Failed to list organization projects", "error", err, "organization_id", organization.ID)
 		return nil, err
 	}
 

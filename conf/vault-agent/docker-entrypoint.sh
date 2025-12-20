@@ -28,8 +28,8 @@ generate_jwt() {
   CLAIM=$(cat <<EOF
 {
   "iss": "$CLIENT_EMAIL",
+  "scope": "https://www.googleapis.com/auth/cloud-platform",
   "aud": "https://oauth2.googleapis.com/token",
-  "target_audience": "https://vault.libops.io",
   "exp": $EXP,
   "iat": $NOW
 }
@@ -39,14 +39,28 @@ EOF
   SIGNATURE_INPUT="$HEADER.$CLAIM_BASE64"
   SIGNATURE=$(echo -n "$SIGNATURE_INPUT" | openssl dgst -sha256 -sign <(echo "$PRIVATE_KEY") | openssl base64 -e | tr -d '=' | tr '/+' '_-' | tr -d '\n')
   JWT="$HEADER.$CLAIM_BASE64.$SIGNATURE"
-  TOKEN=$(curl -s -X POST https://oauth2.googleapis.com/token \
+
+  # Get both access_token (for GCP APIs like Pub/Sub) and id_token (for Vault auth)
+  # Note: We need to request target_audience to get an id_token
+  VAULT_ADDR=${VAULT_ADDR:-http://vault:8200}
+  RESPONSE=$(curl -s -X POST https://oauth2.googleapis.com/token \
     -H "Content-Type: application/x-www-form-urlencoded" \
-    -d "grant_type=urn:ietf:params:oauth:grant-type:jwt-bearer&assertion=$JWT" \
-    | jq -er '.id_token')
-  if [ "$TOKEN" != "" ] && [  "$TOKEN" != "null" ]; then
-    echo "$TOKEN" > "$JWT_SINK_FILE"
+    -d "grant_type=urn:ietf:params:oauth:grant-type:jwt-bearer&assertion=$JWT")
+
+  # For Vault JWT auth, we need an id_token, not an access_token
+  # Request an id_token with Vault's configured audience
+  ID_TOKEN_RESPONSE=$(curl -s -X POST https://iamcredentials.googleapis.com/v1/projects/-/serviceAccounts/"$CLIENT_EMAIL":generateIdToken \
+    -H "Authorization: Bearer $(echo "$RESPONSE" | jq -r '.access_token')" \
+    -H "Content-Type: application/json" \
+    -d "{\"audience\":\"https://vault.libops.io\",\"includeEmail\":true}")
+
+  ID_TOKEN=$(echo "$ID_TOKEN_RESPONSE" | jq -er '.token')
+  if [ "$ID_TOKEN" != "" ] && [ "$ID_TOKEN" != "null" ]; then
+    echo "$ID_TOKEN" > "$JWT_SINK_FILE"
     return 0
   fi
+
+  echo "Failed to get id_token from GCP: $ID_TOKEN_RESPONSE" >&2
   return 1
 }
 

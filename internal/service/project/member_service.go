@@ -5,12 +5,14 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
+	"log/slog"
 
 	"connectrpc.com/connect"
 	"github.com/google/uuid"
 	"google.golang.org/protobuf/types/known/emptypb"
 
-	"github.com/libops/api/internal/db"
+	"github.com/libops/api/db"
+	"github.com/libops/api/internal/reconciler"
 	"github.com/libops/api/internal/service"
 	"github.com/libops/api/internal/validation"
 	libopsv1 "github.com/libops/api/proto/libops/v1"
@@ -19,16 +21,18 @@ import (
 
 // ProjectMemberService implements the LibOps ProjectMemberService API.
 type ProjectMemberService struct {
-	db db.Querier
+	db          db.Querier
+	connManager *reconciler.ConnectionManager
 }
 
 // Compile-time check.
 var _ libopsv1connect.ProjectMemberServiceHandler = (*ProjectMemberService)(nil)
 
 // NewProjectMemberService creates a new ProjectMemberService instance.
-func NewProjectMemberService(querier db.Querier) *ProjectMemberService {
+func NewProjectMemberService(querier db.Querier, connManager *reconciler.ConnectionManager) *ProjectMemberService {
 	return &ProjectMemberService{
-		db: querier,
+		db:          querier,
+		connManager: connManager,
 	}
 }
 
@@ -115,10 +119,19 @@ func (s *ProjectMemberService) CreateProjectMember(
 		return nil, connect.NewError(connect.CodeInternal, fmt.Errorf("database error: %w", err))
 	}
 
+	// Determine initial status based on role
+	// Owner/developer roles require reconciliation (SSH keys, secrets, firewall)
+	status := db.ProjectMembersStatusActive
+	if req.Msg.Role == "owner" || req.Msg.Role == "developer" {
+		status = db.ProjectMembersStatusProvisioning
+	}
+
 	params := db.CreateProjectMemberParams{
 		ProjectID: project.ID,
 		AccountID: account.ID,
 		Role:      db.ProjectMembersRole(req.Msg.Role),
+		CreatedBy: sql.NullInt64{Valid: false},
+		UpdatedBy: sql.NullInt64{Valid: false},
 	}
 
 	err = s.db.CreateProjectMember(ctx, params)
@@ -126,11 +139,40 @@ func (s *ProjectMemberService) CreateProjectMember(
 		return nil, connect.NewError(connect.CodeInternal, fmt.Errorf("database error: %w", err))
 	}
 
+	// Trigger reconciliation via WebSocket if owner/developer role
+	if s.connManager != nil && (req.Msg.Role == "owner" || req.Msg.Role == "developer") {
+		// Get all sites in this project
+		sites, err := s.db.ListProjectSites(ctx, db.ListProjectSitesParams{
+			ProjectID: project.ID,
+			Limit:     1000, // Max sites per project
+			Offset:    0,
+		})
+		if err != nil {
+			slog.Warn("failed to get project sites for reconciliation",
+				"project_id", projectID,
+				"error", err)
+		} else {
+			// Trigger SSH key reconciliation for each connected site
+			for _, site := range sites {
+				if err := s.connManager.TriggerReconciliation(site.ID, "ssh_keys"); err != nil {
+					slog.Debug("site not connected, skipping reconciliation",
+						"site_id", site.PublicID,
+						"error", err)
+				} else {
+					slog.Info("triggered ssh_keys reconciliation for project member addition",
+						"site_id", site.PublicID,
+						"project_id", projectID)
+				}
+			}
+		}
+	}
+
 	member := &libopsv1.MemberDetail{
 		AccountId:      accountID,
 		Email:          account.Email,
 		Name:           service.FromNullString(account.Name),
 		Role:           req.Msg.Role,
+		Status:         service.DbStatusToProto(string(status)),
 		GithubUsername: service.FromNullStringPtr(account.GithubUsername),
 	}
 
@@ -235,6 +277,18 @@ func (s *ProjectMemberService) DeleteProjectMember(
 		return nil, connect.NewError(connect.CodeInternal, fmt.Errorf("database error: %w", err))
 	}
 
+	// Get member role before deletion for reconciliation check
+	existingMember, err := s.db.GetProjectMember(ctx, db.GetProjectMemberParams{
+		ProjectID: project.ID,
+		AccountID: account.ID,
+	})
+	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return nil, connect.NewError(connect.CodeNotFound, fmt.Errorf("member not found"))
+		}
+		return nil, connect.NewError(connect.CodeInternal, fmt.Errorf("database error: %w", err))
+	}
+
 	params := db.DeleteProjectMemberParams{
 		ProjectID: project.ID,
 		AccountID: account.ID,
@@ -243,6 +297,27 @@ func (s *ProjectMemberService) DeleteProjectMember(
 	err = s.db.DeleteProjectMember(ctx, params)
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInternal, fmt.Errorf("database error: %w", err))
+	}
+
+	// Trigger reconciliation via WebSocket if owner/developer role was removed
+	memberRole := string(existingMember.Role)
+	if s.connManager != nil && (memberRole == "owner" || memberRole == "developer") {
+		// Get all sites in this project
+		sites, err := s.db.ListProjectSites(ctx, db.ListProjectSitesParams{
+			ProjectID: project.ID,
+			Limit:     1000,
+			Offset:    0,
+		})
+		if err == nil {
+			// Trigger SSH key reconciliation for each connected site
+			for _, site := range sites {
+				if err := s.connManager.TriggerReconciliation(site.ID, "ssh_keys"); err == nil {
+					slog.Info("triggered ssh_keys reconciliation for project member removal",
+						"site_id", site.PublicID,
+						"project_id", projectID)
+				}
+			}
+		}
 	}
 
 	return connect.NewResponse(&emptypb.Empty{}), nil

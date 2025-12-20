@@ -3,245 +3,245 @@
 
 -- Account: System Administrator
 INSERT INTO accounts (id, public_id, email, name, auth_method, verified, vault_entity_id, onboarding_completed, created_at)
-VALUES (1, UNHEX(REPLACE('01052d4d-93be-51a3-9684-c357297533cd', '-', '')), 'admin@libops.io', 'System Administrator', 'userpass', TRUE, 'entity-admin@libops.io', TRUE, NOW());
+VALUES (1, UUID_TO_BIN('01052d4d-93be-51a3-9684-c357297533cd'), 'admin@libops.io', 'System Administrator', 'userpass', TRUE, 'entity-admin@libops.io', TRUE, NOW());
 
 INSERT INTO api_keys (public_id, account_id, name, description, scopes, active, created_by, created_at)
-VALUES (UNHEX(REPLACE('075913e7-9328-5264-b684-6ae0163b8096', '-', '')), 1, 'System Administrator Full', 'Full access', '[]', TRUE, 1, NOW());
+VALUES (UUID_TO_BIN('075913e7-9328-5264-b684-6ae0163b8096'), 1, 'System Administrator Full', 'Full access', '[]', TRUE, 1, NOW());
 INSERT INTO api_keys (public_id, account_id, name, description, scopes, active, created_by, created_at)
-VALUES (UNHEX(REPLACE('d76a9ff9-334c-548d-8ba9-4063ddb96cf9', '-', '')), 1, 'Admin Limited', 'Limited scope', '["read:organization"]', TRUE, 1, NOW());
+VALUES (UUID_TO_BIN('d76a9ff9-334c-548d-8ba9-4063ddb96cf9'), 1, 'Admin Limited', 'Limited scope', '["read:organization"]', TRUE, 1, NOW());
 INSERT INTO ssh_keys (public_id, account_id, public_key, name, fingerprint, created_at)
-VALUES (UNHEX(REPLACE('482087cf-b3ac-589f-8685-bb96dd5fc5bd', '-', '')), 1, 'ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABgQC7xKqvqL8YqF9zHjZ8sK7YxJ5wL8qN2vR9sT3uV4wX5yZ6aB7cD8eF9gH0iJ1kL2mN3oP4qR5sT6uV7wX8yZ9aB0cD1eF2gH3iJ4kL5mN6oP7qR8sT9uV0wX1yZ2aB3cD4eF5gH6iJ7kL8mN9oP0qR1sT2uV3wX4yZ5aB6cD7eF8gH9iJ0kL1mN2oP3qR4sT5uV6wX7yZ8aB9cD0eF1gH2iJ3kL4mN5oP6qR7sT8uV9wX0yZ1aB2cD3eF4gH5iJ6kL7mN8oP9qR0sT1uV2wX3yZ4aB5cD6eF7gH8iJ9kL0mN1oP2qR3sT4uV5wX6yZ7aB8cD9eF0gH1iJ2kL3mN4oP5qR6sT7uV8wX9yZ0aB1cD2eF3gH4iJ5kL6mN7oP8qR9sT0uV1wX2yZ3aB4cD5eF6gH7iJ8kL9mN0oP1qR2sT3uV4wX5yZ6aB7cD8eF9gH0iJ1kL2mN3oP4qR5sT6uV7wX8yZ9aB0cD1eF2gH3iJ4kL5mN6oP7qR8sT9uV0wX1yZ2aB3cD4eF5gH6iJ7kL8== admin@libops.io', 'Admin LibOps Workstation', 'SHA256:1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef', NOW());
+VALUES (UUID_TO_BIN('482087cf-b3ac-589f-8685-bb96dd5fc5bd'), 1, 'ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABgQC7xKqvqL8YqF9zHjZ8sK7YxJ5wL8qN2vR9sT3uV4wX5yZ6aB7cD8eF9gH0iJ1kL2mN3oP4qR5sT6uV7wX8yZ9aB0cD1eF2gH3iJ4kL5mN6oP7qR8sT9uV0wX1yZ2aB3cD4eF5gH6iJ7kL8mN9oP0qR1sT2uV3wX4yZ5aB6cD7eF8gH9iJ0kL1mN2oP3qR4sT5uV6wX7yZ8aB9cD0eF1gH2iJ3kL4mN5oP6qR7sT8uV9wX0yZ1aB2cD3eF4gH5iJ6kL7mN8oP9qR0sT1uV2wX3yZ4aB5cD6eF7gH8iJ9kL0mN1oP2qR3sT4uV5wX6yZ7aB8cD9eF0gH1iJ2kL3mN4oP5qR6sT7uV8wX9yZ0aB1cD2eF3gH4iJ5kL6mN7oP8qR9sT0uV1wX2yZ3aB4cD5eF6gH7iJ8kL9mN0oP1qR2sT3uV4wX5yZ6aB7cD8eF9gH0iJ1kL2mN3oP4qR5sT6uV7wX8yZ9aB0cD1eF2gH3iJ4kL5mN6oP7qR8sT9uV0wX1yZ2aB3cD4eF5gH6iJ7kL8== admin@libops.io', 'Admin LibOps Workstation', 'SHA256:1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef', NOW());
 
 -- Account: Lloyd Braun
 INSERT INTO accounts (id, public_id, email, name, auth_method, verified, vault_entity_id, onboarding_completed, created_at)
-VALUES (2, UNHEX(REPLACE('c9282761-b220-5f00-8536-dfbd26ef8acd', '-', '')), 'lloyd.braun@vandelay.com', 'Lloyd Braun', 'userpass', TRUE, 'entity-lloyd.braun@vandelay.com', FALSE, NOW());
+VALUES (2, UUID_TO_BIN('c9282761-b220-5f00-8536-dfbd26ef8acd'), 'lloyd.braun@vandelay.com', 'Lloyd Braun', 'userpass', TRUE, 'entity-lloyd.braun@vandelay.com', FALSE, NOW());
 
 INSERT INTO api_keys (public_id, account_id, name, description, scopes, active, created_by, created_at)
-VALUES (UNHEX(REPLACE('04c9eb20-c2b1-5c0d-9e94-e3beec747400', '-', '')), 2, 'Lloyd Braun Full', 'Full access', '[]', TRUE, 2, NOW());
+VALUES (UUID_TO_BIN('04c9eb20-c2b1-5c0d-9e94-e3beec747400'), 2, 'Lloyd Braun Full', 'Full access', '[]', TRUE, 2, NOW());
 
 -- Account: Art Vandelay
 INSERT INTO accounts (id, public_id, email, name, auth_method, verified, vault_entity_id, onboarding_completed, created_at)
-VALUES (3, UNHEX(REPLACE('fdf35d32-bbb3-5ea3-abf2-410da575e169', '-', '')), 'art.vandelay@vandelay.com', 'Art Vandelay', 'userpass', TRUE, 'entity-art.vandelay@vandelay.com', TRUE, NOW());
+VALUES (3, UUID_TO_BIN('fdf35d32-bbb3-5ea3-abf2-410da575e169'), 'art.vandelay@vandelay.com', 'Art Vandelay', 'userpass', TRUE, 'entity-art.vandelay@vandelay.com', TRUE, NOW());
 
 INSERT INTO api_keys (public_id, account_id, name, description, scopes, active, created_by, created_at)
-VALUES (UNHEX(REPLACE('0f05b4b9-f40c-5ca8-9f39-04de42ae87e4', '-', '')), 3, 'Art Vandelay Full', 'Full access', '[]', TRUE, 3, NOW());
+VALUES (UUID_TO_BIN('0f05b4b9-f40c-5ca8-9f39-04de42ae87e4'), 3, 'Art Vandelay Full', 'Full access', '[]', TRUE, 3, NOW());
 INSERT INTO api_keys (public_id, account_id, name, description, scopes, active, created_by, created_at)
-VALUES (UNHEX(REPLACE('c1981101-4bbf-5f90-b38b-901c06fdaad6', '-', '')), 3, 'Art Limited', 'Limited scope', '["read:project"]', TRUE, 3, NOW());
+VALUES (UUID_TO_BIN('c1981101-4bbf-5f90-b38b-901c06fdaad6'), 3, 'Art Limited', 'Limited scope', '["read:project"]', TRUE, 3, NOW());
 
 -- Account: Jerry Seinfeld
 INSERT INTO accounts (id, public_id, email, name, auth_method, verified, vault_entity_id, onboarding_completed, created_at)
-VALUES (4, UNHEX(REPLACE('964b5eb0-2037-5263-883c-e939c6916d7d', '-', '')), 'jerry.seinfeld@vandelay.com', 'Jerry Seinfeld', 'userpass', TRUE, 'entity-jerry.seinfeld@vandelay.com', TRUE, NOW());
+VALUES (4, UUID_TO_BIN('964b5eb0-2037-5263-883c-e939c6916d7d'), 'jerry.seinfeld@vandelay.com', 'Jerry Seinfeld', 'userpass', TRUE, 'entity-jerry.seinfeld@vandelay.com', TRUE, NOW());
 
 INSERT INTO api_keys (public_id, account_id, name, description, scopes, active, created_by, created_at)
-VALUES (UNHEX(REPLACE('726186be-6ad8-5257-a1bd-2e4689db11d0', '-', '')), 4, 'Jerry Seinfeld Full', 'Full access', '[]', TRUE, 4, NOW());
+VALUES (UUID_TO_BIN('726186be-6ad8-5257-a1bd-2e4689db11d0'), 4, 'Jerry Seinfeld Full', 'Full access', '[]', TRUE, 4, NOW());
 
 -- Account: Elaine Benes
 INSERT INTO accounts (id, public_id, email, name, auth_method, verified, vault_entity_id, onboarding_completed, created_at)
-VALUES (5, UNHEX(REPLACE('863fb60a-8084-50fe-82ae-efa113231bef', '-', '')), 'elaine.benes@vandelay.com', 'Elaine Benes', 'userpass', TRUE, 'entity-elaine.benes@vandelay.com', TRUE, NOW());
+VALUES (5, UUID_TO_BIN('863fb60a-8084-50fe-82ae-efa113231bef'), 'elaine.benes@vandelay.com', 'Elaine Benes', 'userpass', TRUE, 'entity-elaine.benes@vandelay.com', TRUE, NOW());
 
 INSERT INTO api_keys (public_id, account_id, name, description, scopes, active, created_by, created_at)
-VALUES (UNHEX(REPLACE('b3f360ca-7995-5db2-b88b-3e178cd7ae8a', '-', '')), 5, 'Elaine Benes Full', 'Full access', '[]', TRUE, 5, NOW());
+VALUES (UUID_TO_BIN('b3f360ca-7995-5db2-b88b-3e178cd7ae8a'), 5, 'Elaine Benes Full', 'Full access', '[]', TRUE, 5, NOW());
 
 -- Account: George Costanza
 INSERT INTO accounts (id, public_id, email, name, auth_method, verified, vault_entity_id, onboarding_completed, created_at)
-VALUES (6, UNHEX(REPLACE('d0bfd257-4572-5036-b5aa-038743be4715', '-', '')), 'george.costanza@vandelay.com', 'George Costanza', 'userpass', TRUE, 'entity-george.costanza@vandelay.com', TRUE, NOW());
+VALUES (6, UUID_TO_BIN('d0bfd257-4572-5036-b5aa-038743be4715'), 'george.costanza@vandelay.com', 'George Costanza', 'userpass', TRUE, 'entity-george.costanza@vandelay.com', TRUE, NOW());
 
 INSERT INTO api_keys (public_id, account_id, name, description, scopes, active, created_by, created_at)
-VALUES (UNHEX(REPLACE('0c9522b7-2197-5d87-b010-ac1bc506f79a', '-', '')), 6, 'George Costanza Full', 'Full access', '[]', TRUE, 6, NOW());
+VALUES (UUID_TO_BIN('0c9522b7-2197-5d87-b010-ac1bc506f79a'), 6, 'George Costanza Full', 'Full access', '[]', TRUE, 6, NOW());
 
 -- Account: Cosmo Kramer
 INSERT INTO accounts (id, public_id, email, name, auth_method, verified, vault_entity_id, onboarding_completed, created_at)
-VALUES (7, UNHEX(REPLACE('516e3bb4-bfbe-5dda-9cc9-d0e00ce7b6f2', '-', '')), 'cosmo.kramer@vandelay.com', 'Cosmo Kramer', 'userpass', TRUE, 'entity-cosmo.kramer@vandelay.com', TRUE, NOW());
+VALUES (7, UUID_TO_BIN('516e3bb4-bfbe-5dda-9cc9-d0e00ce7b6f2'), 'cosmo.kramer@vandelay.com', 'Cosmo Kramer', 'userpass', TRUE, 'entity-cosmo.kramer@vandelay.com', TRUE, NOW());
 
 INSERT INTO api_keys (public_id, account_id, name, description, scopes, active, created_by, created_at)
-VALUES (UNHEX(REPLACE('94581ae6-23e3-5869-8770-db7cb74e5391', '-', '')), 7, 'Cosmo Kramer Full', 'Full access', '[]', TRUE, 7, NOW());
+VALUES (UUID_TO_BIN('94581ae6-23e3-5869-8770-db7cb74e5391'), 7, 'Cosmo Kramer Full', 'Full access', '[]', TRUE, 7, NOW());
 
 -- Account: H.E. Pennypacker
 INSERT INTO accounts (id, public_id, email, name, auth_method, verified, vault_entity_id, onboarding_completed, created_at)
-VALUES (8, UNHEX(REPLACE('42b6846e-501f-5153-9aca-210d8d84f946', '-', '')), 'h.e.pennypacker@pennypacker.com', 'H.E. Pennypacker', 'userpass', TRUE, 'entity-h.e.pennypacker@pennypacker.com', TRUE, NOW());
+VALUES (8, UUID_TO_BIN('42b6846e-501f-5153-9aca-210d8d84f946'), 'h.e.pennypacker@pennypacker.com', 'H.E. Pennypacker', 'userpass', TRUE, 'entity-h.e.pennypacker@pennypacker.com', TRUE, NOW());
 
 INSERT INTO api_keys (public_id, account_id, name, description, scopes, active, created_by, created_at)
-VALUES (UNHEX(REPLACE('58c99883-c314-5c6e-bfa8-e072502e43bd', '-', '')), 8, 'H.E. Pennypacker Full', 'Full access', '[]', TRUE, 8, NOW());
+VALUES (UUID_TO_BIN('58c99883-c314-5c6e-bfa8-e072502e43bd'), 8, 'H.E. Pennypacker Full', 'Full access', '[]', TRUE, 8, NOW());
 
 -- Account: Newman
 INSERT INTO accounts (id, public_id, email, name, auth_method, verified, vault_entity_id, onboarding_completed, created_at)
-VALUES (9, UNHEX(REPLACE('e60f6db8-521a-5fc3-aacc-ceb3f50b6f7b', '-', '')), 'newman@pennypacker.com', 'Newman', 'userpass', TRUE, 'entity-newman@pennypacker.com', TRUE, NOW());
+VALUES (9, UUID_TO_BIN('e60f6db8-521a-5fc3-aacc-ceb3f50b6f7b'), 'newman@pennypacker.com', 'Newman', 'userpass', TRUE, 'entity-newman@pennypacker.com', TRUE, NOW());
 
 INSERT INTO api_keys (public_id, account_id, name, description, scopes, active, created_by, created_at)
-VALUES (UNHEX(REPLACE('3ccc3cc2-e5c0-530b-8f0a-6fb24cd8566b', '-', '')), 9, 'Newman Full', 'Full access', '[]', TRUE, 9, NOW());
+VALUES (UUID_TO_BIN('3ccc3cc2-e5c0-530b-8f0a-6fb24cd8566b'), 9, 'Newman Full', 'Full access', '[]', TRUE, 9, NOW());
 
 -- Account: Bob Sacamano
 INSERT INTO accounts (id, public_id, email, name, auth_method, verified, vault_entity_id, onboarding_completed, created_at)
-VALUES (10, UNHEX(REPLACE('94656683-e366-58b8-a391-32e0c54ca37e', '-', '')), 'bob.sacamano@vandelay.com', 'Bob Sacamano', 'userpass', TRUE, 'entity-bob.sacamano@vandelay.com', TRUE, NOW());
+VALUES (10, UUID_TO_BIN('94656683-e366-58b8-a391-32e0c54ca37e'), 'bob.sacamano@vandelay.com', 'Bob Sacamano', 'userpass', TRUE, 'entity-bob.sacamano@vandelay.com', TRUE, NOW());
 
 INSERT INTO api_keys (public_id, account_id, name, description, scopes, active, created_by, created_at)
-VALUES (UNHEX(REPLACE('63cd920a-7090-5e0e-b46d-840a933e2c70', '-', '')), 10, 'Bob Sacamano Full', 'Full access', '[]', TRUE, 10, NOW());
+VALUES (UUID_TO_BIN('63cd920a-7090-5e0e-b46d-840a933e2c70'), 10, 'Bob Sacamano Full', 'Full access', '[]', TRUE, 10, NOW());
 INSERT INTO api_keys (public_id, account_id, name, description, scopes, active, created_by, created_at)
-VALUES (UNHEX(REPLACE('7dd4d68f-85f4-5dbe-bed0-83e639a8fab2', '-', '')), 10, 'Bob Limited', 'Limited scope', '["delete:project"]', TRUE, 10, NOW());
+VALUES (UUID_TO_BIN('7dd4d68f-85f4-5dbe-bed0-83e639a8fab2'), 10, 'Bob Limited', 'Limited scope', '["delete:project"]', TRUE, 10, NOW());
 
 -- Account: Joe Davola
 INSERT INTO accounts (id, public_id, email, name, auth_method, verified, vault_entity_id, onboarding_completed, created_at)
-VALUES (11, UNHEX(REPLACE('0f439d32-e065-5a20-a08e-22dd6793948a', '-', '')), 'joe.davola@vandelay.com', 'Joe Davola', 'userpass', TRUE, 'entity-joe.davola@vandelay.com', TRUE, NOW());
+VALUES (11, UUID_TO_BIN('0f439d32-e065-5a20-a08e-22dd6793948a'), 'joe.davola@vandelay.com', 'Joe Davola', 'userpass', TRUE, 'entity-joe.davola@vandelay.com', TRUE, NOW());
 
 INSERT INTO api_keys (public_id, account_id, name, description, scopes, active, created_by, created_at)
-VALUES (UNHEX(REPLACE('890e0976-5b43-5ff8-a673-921a920e7c2a', '-', '')), 11, 'Joe Davola Full', 'Full access', '[]', TRUE, 11, NOW());
+VALUES (UUID_TO_BIN('890e0976-5b43-5ff8-a673-921a920e7c2a'), 11, 'Joe Davola Full', 'Full access', '[]', TRUE, 11, NOW());
 
 -- Account: Soup Nazi
 INSERT INTO accounts (id, public_id, email, name, auth_method, verified, vault_entity_id, onboarding_completed, created_at)
-VALUES (12, UNHEX(REPLACE('ff2098bd-1a33-5db9-8069-37f2bf5bdba7', '-', '')), 'soup.nazi@vandelay.com', 'Soup Nazi', 'userpass', TRUE, 'entity-soup.nazi@vandelay.com', TRUE, NOW());
+VALUES (12, UUID_TO_BIN('ff2098bd-1a33-5db9-8069-37f2bf5bdba7'), 'soup.nazi@vandelay.com', 'Soup Nazi', 'userpass', TRUE, 'entity-soup.nazi@vandelay.com', TRUE, NOW());
 
 INSERT INTO api_keys (public_id, account_id, name, description, scopes, active, created_by, created_at)
-VALUES (UNHEX(REPLACE('43527224-d0f8-5344-803f-ec80f80ed0a0', '-', '')), 12, 'Soup Nazi Full', 'Full access', '[]', TRUE, 12, NOW());
+VALUES (UUID_TO_BIN('43527224-d0f8-5344-803f-ec80f80ed0a0'), 12, 'Soup Nazi Full', 'Full access', '[]', TRUE, 12, NOW());
 INSERT INTO api_keys (public_id, account_id, name, description, scopes, active, created_by, created_at)
-VALUES (UNHEX(REPLACE('b6b4b341-e1e5-5242-a33d-684e4da7ad07', '-', '')), 12, 'Soup Nazi Limited', 'Limited scope', '["read:site"]', TRUE, 12, NOW());
+VALUES (UUID_TO_BIN('b6b4b341-e1e5-5242-a33d-684e4da7ad07'), 12, 'Soup Nazi Limited', 'Limited scope', '["read:site"]', TRUE, 12, NOW());
 
 -- Account: Babu Bhatt
 INSERT INTO accounts (id, public_id, email, name, auth_method, verified, vault_entity_id, onboarding_completed, created_at)
-VALUES (13, UNHEX(REPLACE('a551424b-91ed-5636-a53b-cdb50660d4c9', '-', '')), 'babu.bhatt@vandelay.com', 'Babu Bhatt', 'userpass', TRUE, 'entity-babu.bhatt@vandelay.com', TRUE, NOW());
+VALUES (13, UUID_TO_BIN('a551424b-91ed-5636-a53b-cdb50660d4c9'), 'babu.bhatt@vandelay.com', 'Babu Bhatt', 'userpass', TRUE, 'entity-babu.bhatt@vandelay.com', TRUE, NOW());
 
 INSERT INTO api_keys (public_id, account_id, name, description, scopes, active, created_by, created_at)
-VALUES (UNHEX(REPLACE('2032b348-86ae-5805-b08c-3c2cf065ef82', '-', '')), 13, 'Babu Bhatt Full', 'Full access', '[]', TRUE, 13, NOW());
+VALUES (UUID_TO_BIN('2032b348-86ae-5805-b08c-3c2cf065ef82'), 13, 'Babu Bhatt Full', 'Full access', '[]', TRUE, 13, NOW());
 
 -- Account: Jackie Chiles
 INSERT INTO accounts (id, public_id, email, name, auth_method, verified, vault_entity_id, onboarding_completed, created_at)
-VALUES (14, UNHEX(REPLACE('af54b89e-5533-585a-b3b7-0003b7e6dcc2', '-', '')), 'jackie.chiles@pennypacker.com', 'Jackie Chiles', 'userpass', TRUE, 'entity-jackie.chiles@pennypacker.com', TRUE, NOW());
+VALUES (14, UUID_TO_BIN('af54b89e-5533-585a-b3b7-0003b7e6dcc2'), 'jackie.chiles@pennypacker.com', 'Jackie Chiles', 'userpass', TRUE, 'entity-jackie.chiles@pennypacker.com', TRUE, NOW());
 
 INSERT INTO api_keys (public_id, account_id, name, description, scopes, active, created_by, created_at)
-VALUES (UNHEX(REPLACE('578e1fcf-b497-5bff-bbf4-436835457f73', '-', '')), 14, 'Jackie Chiles Full', 'Full access', '[]', TRUE, 14, NOW());
+VALUES (UUID_TO_BIN('578e1fcf-b497-5bff-bbf4-436835457f73'), 14, 'Jackie Chiles Full', 'Full access', '[]', TRUE, 14, NOW());
 
 -- Account: J. Peterman
 INSERT INTO accounts (id, public_id, email, name, auth_method, verified, vault_entity_id, onboarding_completed, created_at)
-VALUES (15, UNHEX(REPLACE('dfe2b1a8-8000-5b67-88ad-881b036fa4f9', '-', '')), 'j.peterman@pennypacker.com', 'J. Peterman', 'userpass', TRUE, 'entity-j.peterman@pennypacker.com', TRUE, NOW());
+VALUES (15, UUID_TO_BIN('dfe2b1a8-8000-5b67-88ad-881b036fa4f9'), 'j.peterman@pennypacker.com', 'J. Peterman', 'userpass', TRUE, 'entity-j.peterman@pennypacker.com', TRUE, NOW());
 
 INSERT INTO api_keys (public_id, account_id, name, description, scopes, active, created_by, created_at)
-VALUES (UNHEX(REPLACE('2c3cfb5b-c994-54c9-9cb9-92321bd353cb', '-', '')), 15, 'J. Peterman Full', 'Full access', '[]', TRUE, 15, NOW());
+VALUES (UUID_TO_BIN('2c3cfb5b-c994-54c9-9cb9-92321bd353cb'), 15, 'J. Peterman Full', 'Full access', '[]', TRUE, 15, NOW());
 
 -- Account: David Puddy
 INSERT INTO accounts (id, public_id, email, name, auth_method, verified, vault_entity_id, onboarding_completed, created_at)
-VALUES (16, UNHEX(REPLACE('22f49023-8dfe-57c7-95db-dd0f8cae04a7', '-', '')), 'david.puddy@vandelay.com', 'David Puddy', 'userpass', TRUE, 'entity-david.puddy@vandelay.com', TRUE, NOW());
+VALUES (16, UUID_TO_BIN('22f49023-8dfe-57c7-95db-dd0f8cae04a7'), 'david.puddy@vandelay.com', 'David Puddy', 'userpass', TRUE, 'entity-david.puddy@vandelay.com', TRUE, NOW());
 
 INSERT INTO api_keys (public_id, account_id, name, description, scopes, active, created_by, created_at)
-VALUES (UNHEX(REPLACE('eb181a1b-7dc9-53c2-9981-ba91a3ebf24a', '-', '')), 16, 'David Puddy Full', 'Full access', '[]', TRUE, 16, NOW());
+VALUES (UUID_TO_BIN('eb181a1b-7dc9-53c2-9981-ba91a3ebf24a'), 16, 'David Puddy Full', 'Full access', '[]', TRUE, 16, NOW());
 
 -- Account: Uncle Leo
 INSERT INTO accounts (id, public_id, email, name, auth_method, verified, vault_entity_id, onboarding_completed, created_at)
-VALUES (17, UNHEX(REPLACE('351fcf8b-d637-596c-be1e-8bdd90dbc4eb', '-', '')), 'uncle.leo@vandelay.com', 'Uncle Leo', 'userpass', TRUE, 'entity-uncle.leo@vandelay.com', TRUE, NOW());
+VALUES (17, UUID_TO_BIN('351fcf8b-d637-596c-be1e-8bdd90dbc4eb'), 'uncle.leo@vandelay.com', 'Uncle Leo', 'userpass', TRUE, 'entity-uncle.leo@vandelay.com', TRUE, NOW());
 
 INSERT INTO api_keys (public_id, account_id, name, description, scopes, active, created_by, created_at)
-VALUES (UNHEX(REPLACE('ce22e781-d2ad-5d7a-bccc-7dd122e791c8', '-', '')), 17, 'Uncle Leo Full', 'Full access', '[]', TRUE, 17, NOW());
+VALUES (UUID_TO_BIN('ce22e781-d2ad-5d7a-bccc-7dd122e791c8'), 17, 'Uncle Leo Full', 'Full access', '[]', TRUE, 17, NOW());
 
 -- Account: No Access User
 INSERT INTO accounts (id, public_id, email, name, auth_method, verified, vault_entity_id, onboarding_completed, created_at)
-VALUES (18, UNHEX(REPLACE('e543554b-5af0-5d97-ac8f-09608bcfa7b8', '-', '')), 'noaccess@test.com', 'No Access User', 'userpass', TRUE, 'entity-noaccess@test.com', TRUE, NOW());
+VALUES (18, UUID_TO_BIN('e543554b-5af0-5d97-ac8f-09608bcfa7b8'), 'noaccess@test.com', 'No Access User', 'userpass', TRUE, 'entity-noaccess@test.com', TRUE, NOW());
 
 INSERT INTO api_keys (public_id, account_id, name, description, scopes, active, created_by, created_at)
-VALUES (UNHEX(REPLACE('567df9dc-244e-561e-93c1-3082534eeec7', '-', '')), 18, 'No Access User Full', 'Full access', '[]', TRUE, 18, NOW());
+VALUES (UUID_TO_BIN('567df9dc-244e-561e-93c1-3082534eeec7'), 18, 'No Access User Full', 'Full access', '[]', TRUE, 18, NOW());
 
 -- Organization: LibOps Platform
 INSERT INTO organizations (id, public_id, name, gcp_org_id, gcp_billing_account, gcp_parent, location, region, gcp_folder_id, status, gcp_project_id, gcp_project_number, created_by, created_at)
-VALUES (1, UNHEX(REPLACE('d32cb00d-de6f-5706-adbc-2f90ea1607cb', '-', '')), 'LibOps Platform', '11000', 'BILL-1', 'organizations/11000', 'us', 'us-central1', 'folders/21000', 'active', 'org-1-proj', '31000', 1, NOW());
+VALUES (1, UUID_TO_BIN('d32cb00d-de6f-5706-adbc-2f90ea1607cb'), 'LibOps Platform', '11000', 'BILL-1', 'organizations/11000', 'us', 'us-central1', 'folders/21000', 'active', 'org-1-proj', '31000', 1, NOW());
 
 INSERT INTO organization_members (public_id, organization_id, account_id, role, status, created_by, created_at)
-VALUES (UNHEX(REPLACE('bcd5aa40-55f9-5ece-bd91-f075bdbb2131', '-', '')), 1, 1, 'owner', 'active', 1, NOW());
+VALUES (UUID_TO_BIN('bcd5aa40-55f9-5ece-bd91-f075bdbb2131'), 1, 1, 'owner', 'active', 1, NOW());
 INSERT INTO organization_secrets (public_id, organization_id, name, vault_path, status, created_at, updated_at, created_by)
-VALUES (UNHEX(REPLACE('67b93940-6f5a-5b34-9f63-294604bc04b9', '-', '')), 1, 'LIBOPS_MASTER_KEY', 'secret-organization/1/LIBOPS_MASTER_KEY', 'active', UNIX_TIMESTAMP(), UNIX_TIMESTAMP(), 1);
+VALUES (UUID_TO_BIN('67b93940-6f5a-5b34-9f63-294604bc04b9'), 1, 'LIBOPS_MASTER_KEY', 'secret-organization/1/LIBOPS_MASTER_KEY', 'active', UNIX_TIMESTAMP(), UNIX_TIMESTAMP(), 1);
 INSERT INTO organization_secrets (public_id, organization_id, name, vault_path, status, created_at, updated_at, created_by)
-VALUES (UNHEX(REPLACE('f033d2e1-85de-5511-99be-d272502dbf0f', '-', '')), 1, 'LIBOPS_API_TOKEN', 'secret-organization/1/LIBOPS_API_TOKEN', 'active', UNIX_TIMESTAMP(), UNIX_TIMESTAMP(), 1);
+VALUES (UUID_TO_BIN('f033d2e1-85de-5511-99be-d272502dbf0f'), 1, 'LIBOPS_API_TOKEN', 'secret-organization/1/LIBOPS_API_TOKEN', 'active', UNIX_TIMESTAMP(), UNIX_TIMESTAMP(), 1);
 INSERT INTO organization_firewall_rules (public_id, organization_id, name, cidr, rule_type, status, created_at, updated_at, created_by)
-VALUES (UNHEX(REPLACE('326a90f4-a32a-567a-9989-6bea1bce2f97', '-', '')), 1, 'LibOps HQ Office', '10.0.0.0/8', 'https_allowed', 'active', NOW(), NOW(), 1);
+VALUES (UUID_TO_BIN('326a90f4-a32a-567a-9989-6bea1bce2f97'), 1, 'LibOps HQ Office', '10.0.0.0/8', 'https_allowed', 'active', NOW(), NOW(), 1);
 INSERT INTO organization_firewall_rules (public_id, organization_id, name, cidr, rule_type, status, created_at, updated_at, created_by)
-VALUES (UNHEX(REPLACE('2f745e16-2f4b-568f-9884-d3a52d0e2fe6', '-', '')), 1, 'LibOps VPN', '172.16.0.0/12', 'https_allowed', 'active', NOW(), NOW(), 1);
+VALUES (UUID_TO_BIN('2f745e16-2f4b-568f-9884-d3a52d0e2fe6'), 1, 'LibOps VPN', '172.16.0.0/12', 'https_allowed', 'active', NOW(), NOW(), 1);
 
 -- Organization: Vandelay Industries
 INSERT INTO organizations (id, public_id, name, gcp_org_id, gcp_billing_account, gcp_parent, location, region, gcp_folder_id, status, gcp_project_id, gcp_project_number, created_by, created_at)
-VALUES (2, UNHEX(REPLACE('e409a621-ebbc-5e5e-9be2-705558a2f489', '-', '')), 'Vandelay Industries', '12000', 'BILL-2', 'organizations/12000', 'us', 'us-east1', 'folders/22000', 'active', 'org-2-proj', '32000', 3, NOW());
+VALUES (2, UUID_TO_BIN('e409a621-ebbc-5e5e-9be2-705558a2f489'), 'Vandelay Industries', '12000', 'BILL-2', 'organizations/12000', 'us', 'us-east1', 'folders/22000', 'active', 'org-2-proj', '32000', 3, NOW());
 
 INSERT INTO relationships (id, public_id, source_organization_id, target_organization_id, relationship_type, status)
-VALUES (2, UNHEX(REPLACE('0556c616-3689-5bdc-ba92-3449ac889d7d', '-', '')), 1, 2, 'access', 'approved');
+VALUES (2, UUID_TO_BIN('0556c616-3689-5bdc-ba92-3449ac889d7d'), 1, 2, 'access', 'approved');
 
 INSERT INTO organization_members (public_id, organization_id, account_id, role, status, created_by, created_at)
-VALUES (UNHEX(REPLACE('059675b6-6bee-57c4-b568-43d6873944c1', '-', '')), 2, 3, 'owner', 'active', 3, NOW());
+VALUES (UUID_TO_BIN('059675b6-6bee-57c4-b568-43d6873944c1'), 2, 3, 'owner', 'active', 3, NOW());
 INSERT INTO organization_members (public_id, organization_id, account_id, role, status, created_by, created_at)
-VALUES (UNHEX(REPLACE('0ebc49f4-7a18-5ff6-9443-614e689aa6da', '-', '')), 2, 4, 'developer', 'active', 3, NOW());
+VALUES (UUID_TO_BIN('0ebc49f4-7a18-5ff6-9443-614e689aa6da'), 2, 4, 'developer', 'active', 3, NOW());
 INSERT INTO organization_members (public_id, organization_id, account_id, role, status, created_by, created_at)
-VALUES (UNHEX(REPLACE('92100992-a75b-5055-b322-627b7443e236', '-', '')), 2, 5, 'developer', 'active', 3, NOW());
+VALUES (UUID_TO_BIN('92100992-a75b-5055-b322-627b7443e236'), 2, 5, 'developer', 'active', 3, NOW());
 INSERT INTO organization_members (public_id, organization_id, account_id, role, status, created_by, created_at)
-VALUES (UNHEX(REPLACE('9b647589-6670-5c91-9470-c83a353e1074', '-', '')), 2, 6, 'developer', 'active', 3, NOW());
+VALUES (UUID_TO_BIN('9b647589-6670-5c91-9470-c83a353e1074'), 2, 6, 'developer', 'active', 3, NOW());
 INSERT INTO organization_members (public_id, organization_id, account_id, role, status, created_by, created_at)
-VALUES (UNHEX(REPLACE('87616879-0a42-5cc5-b737-cab24853e448', '-', '')), 2, 7, 'read', 'active', 3, NOW());
+VALUES (UUID_TO_BIN('87616879-0a42-5cc5-b737-cab24853e448'), 2, 7, 'read', 'active', 3, NOW());
 INSERT INTO organization_secrets (public_id, organization_id, name, vault_path, status, created_at, updated_at, created_by)
-VALUES (UNHEX(REPLACE('dc7ba4d9-7cc1-52fb-b2c2-1848e38f070e', '-', '')), 2, 'VANDELAY_IMPORT_KEY', 'secret-organization/2/VANDELAY_IMPORT_KEY', 'active', UNIX_TIMESTAMP(), UNIX_TIMESTAMP(), 3);
+VALUES (UUID_TO_BIN('dc7ba4d9-7cc1-52fb-b2c2-1848e38f070e'), 2, 'VANDELAY_IMPORT_KEY', 'secret-organization/2/VANDELAY_IMPORT_KEY', 'active', UNIX_TIMESTAMP(), UNIX_TIMESTAMP(), 3);
 INSERT INTO organization_secrets (public_id, organization_id, name, vault_path, status, created_at, updated_at, created_by)
-VALUES (UNHEX(REPLACE('58c68ca0-eb92-5ef4-b863-3800fe3de65e', '-', '')), 2, 'VANDELAY_EXPORT_KEY', 'secret-organization/2/VANDELAY_EXPORT_KEY', 'active', UNIX_TIMESTAMP(), UNIX_TIMESTAMP(), 3);
+VALUES (UUID_TO_BIN('58c68ca0-eb92-5ef4-b863-3800fe3de65e'), 2, 'VANDELAY_EXPORT_KEY', 'secret-organization/2/VANDELAY_EXPORT_KEY', 'active', UNIX_TIMESTAMP(), UNIX_TIMESTAMP(), 3);
 INSERT INTO organization_firewall_rules (public_id, organization_id, name, cidr, rule_type, status, created_at, updated_at, created_by)
-VALUES (UNHEX(REPLACE('b85eb2dd-3047-539b-9e4b-64d27f402955', '-', '')), 2, 'Vandelay Office NYC', '192.168.1.0/24', 'https_allowed', 'active', NOW(), NOW(), 3);
+VALUES (UUID_TO_BIN('b85eb2dd-3047-539b-9e4b-64d27f402955'), 2, 'Vandelay Office NYC', '192.168.1.0/24', 'https_allowed', 'active', NOW(), NOW(), 3);
 
 -- Organization: Pennypacker LLC
 INSERT INTO organizations (id, public_id, name, gcp_org_id, gcp_billing_account, gcp_parent, location, region, gcp_folder_id, status, gcp_project_id, gcp_project_number, created_by, created_at)
-VALUES (3, UNHEX(REPLACE('858b7c52-5c7d-522a-aeaf-abfd2fed0bcb', '-', '')), 'Pennypacker LLC', '13000', 'BILL-3', 'organizations/13000', 'us', 'us-west1', 'folders/23000', 'active', 'org-3-proj', '33000', 8, NOW());
+VALUES (3, UUID_TO_BIN('858b7c52-5c7d-522a-aeaf-abfd2fed0bcb'), 'Pennypacker LLC', '13000', 'BILL-3', 'organizations/13000', 'us', 'us-west1', 'folders/23000', 'active', 'org-3-proj', '33000', 8, NOW());
 
 INSERT INTO relationships (id, public_id, source_organization_id, target_organization_id, relationship_type, status)
-VALUES (3, UNHEX(REPLACE('96087359-f2ad-549a-beb9-1eb26999c938', '-', '')), 1, 3, 'access', 'approved');
+VALUES (3, UUID_TO_BIN('96087359-f2ad-549a-beb9-1eb26999c938'), 1, 3, 'access', 'approved');
 
 INSERT INTO organization_members (public_id, organization_id, account_id, role, status, created_by, created_at)
-VALUES (UNHEX(REPLACE('ad84f4b5-27f1-5f90-8104-56f65d08177c', '-', '')), 3, 8, 'owner', 'active', 8, NOW());
+VALUES (UUID_TO_BIN('ad84f4b5-27f1-5f90-8104-56f65d08177c'), 3, 8, 'owner', 'active', 8, NOW());
 INSERT INTO organization_members (public_id, organization_id, account_id, role, status, created_by, created_at)
-VALUES (UNHEX(REPLACE('745eebcd-b5f8-51d9-a294-2174b7c36b76', '-', '')), 3, 9, 'developer', 'active', 8, NOW());
+VALUES (UUID_TO_BIN('745eebcd-b5f8-51d9-a294-2174b7c36b76'), 3, 9, 'developer', 'active', 8, NOW());
 
 -- Project: LibOps Core Platform
 INSERT INTO projects (id, public_id, organization_id, name, gcp_region, gcp_zone, machine_type, gcp_project_id, gcp_project_number, status, organization_project, created_by, created_at)
-VALUES (1, UNHEX(REPLACE('33eb036a-0fb2-54a5-acb1-c3729082a372', '-', '')), 1, 'LibOps Core Platform', 'us-central1', 'us-central1-b', 'e2-medium', 'proj-1-gcp', '41000', 'active', TRUE, 1, NOW());
+VALUES (1, UUID_TO_BIN('33eb036a-0fb2-54a5-acb1-c3729082a372'), 1, 'LibOps Core Platform', 'us-central1', 'us-central1-b', 'e2-medium', 'proj-1-gcp', '41000', 'active', TRUE, 1, NOW());
 
 
 -- Project: Project Jupiter
 INSERT INTO projects (id, public_id, organization_id, name, gcp_region, gcp_zone, machine_type, gcp_project_id, gcp_project_number, status, organization_project, created_by, created_at)
-VALUES (2, UNHEX(REPLACE('eede11e5-0fac-54d1-8d5c-71e4f9deff92', '-', '')), 2, 'Project Jupiter', 'us-east1', 'us-east1-b', 'e2-medium', 'proj-2-gcp', '42000', 'active', TRUE, 10, NOW());
+VALUES (2, UUID_TO_BIN('eede11e5-0fac-54d1-8d5c-71e4f9deff92'), 2, 'Project Jupiter', 'us-east1', 'us-east1-b', 'e2-medium', 'proj-2-gcp', '42000', 'active', TRUE, 10, NOW());
 
 INSERT INTO project_members (public_id, project_id, account_id, role, status, created_by, created_at)
-VALUES (UNHEX(REPLACE('72002521-ca7e-5532-9d32-f8ed47763c57', '-', '')), 2, 10, 'owner', 'active', 10, NOW());
+VALUES (UUID_TO_BIN('72002521-ca7e-5532-9d32-f8ed47763c57'), 2, 10, 'owner', 'active', 10, NOW());
 INSERT INTO project_members (public_id, project_id, account_id, role, status, created_by, created_at)
-VALUES (UNHEX(REPLACE('c3785d8b-0f6b-56bd-b79c-656d51aabd93', '-', '')), 2, 11, 'developer', 'active', 10, NOW());
+VALUES (UUID_TO_BIN('c3785d8b-0f6b-56bd-b79c-656d51aabd93'), 2, 11, 'developer', 'active', 10, NOW());
 INSERT INTO project_members (public_id, project_id, account_id, role, status, created_by, created_at)
-VALUES (UNHEX(REPLACE('7cb67c5d-c700-5622-bf2c-617ee694c39d', '-', '')), 2, 16, 'read', 'active', 10, NOW());
+VALUES (UUID_TO_BIN('7cb67c5d-c700-5622-bf2c-617ee694c39d'), 2, 16, 'read', 'active', 10, NOW());
 INSERT INTO project_secrets (public_id, project_id, name, vault_path, status, created_at, updated_at, created_by)
-VALUES (UNHEX(REPLACE('4581feb7-00d6-5a6c-ba1d-e74ea48dd737', '-', '')), 2, 'JUPITER_DB_PASSWORD', 'secret-project/2/JUPITER_DB_PASSWORD', 'active', UNIX_TIMESTAMP(), UNIX_TIMESTAMP(), 10);
+VALUES (UUID_TO_BIN('4581feb7-00d6-5a6c-ba1d-e74ea48dd737'), 2, 'JUPITER_DB_PASSWORD', 'secret-project/2/JUPITER_DB_PASSWORD', 'active', UNIX_TIMESTAMP(), UNIX_TIMESTAMP(), 10);
 INSERT INTO project_secrets (public_id, project_id, name, vault_path, status, created_at, updated_at, created_by)
-VALUES (UNHEX(REPLACE('67213bcd-0da9-5e73-9a4b-848724586e96', '-', '')), 2, 'JUPITER_API_SECRET', 'secret-project/2/JUPITER_API_SECRET', 'active', UNIX_TIMESTAMP(), UNIX_TIMESTAMP(), 10);
+VALUES (UUID_TO_BIN('67213bcd-0da9-5e73-9a4b-848724586e96'), 2, 'JUPITER_API_SECRET', 'secret-project/2/JUPITER_API_SECRET', 'active', UNIX_TIMESTAMP(), UNIX_TIMESTAMP(), 10);
 INSERT INTO project_firewall_rules (public_id, project_id, name, cidr, rule_type, status, created_at, updated_at, created_by)
-VALUES (UNHEX(REPLACE('6858615c-c325-5e23-80ca-322eebb65f82', '-', '')), 2, 'Jupiter Dev Team', '192.168.10.0/24', 'https_allowed', 'active', NOW(), NOW(), 10);
+VALUES (UUID_TO_BIN('6858615c-c325-5e23-80ca-322eebb65f82'), 2, 'Jupiter Dev Team', '192.168.10.0/24', 'https_allowed', 'active', NOW(), NOW(), 10);
 
 -- Project: Project Latex
 INSERT INTO projects (id, public_id, organization_id, name, gcp_region, gcp_zone, machine_type, gcp_project_id, gcp_project_number, status, organization_project, created_by, created_at)
-VALUES (3, UNHEX(REPLACE('51e0e08d-a0bc-5541-9539-d01fa76892d3', '-', '')), 3, 'Project Latex', 'us-west1', 'us-west1-b', 'e2-medium', 'proj-3-gcp', '43000', 'active', TRUE, 14, NOW());
+VALUES (3, UUID_TO_BIN('51e0e08d-a0bc-5541-9539-d01fa76892d3'), 3, 'Project Latex', 'us-west1', 'us-west1-b', 'e2-medium', 'proj-3-gcp', '43000', 'active', TRUE, 14, NOW());
 
 INSERT INTO project_members (public_id, project_id, account_id, role, status, created_by, created_at)
-VALUES (UNHEX(REPLACE('d9c01515-8501-5c26-81d4-1abce4c45c3a', '-', '')), 3, 14, 'owner', 'active', 14, NOW());
+VALUES (UUID_TO_BIN('d9c01515-8501-5c26-81d4-1abce4c45c3a'), 3, 14, 'owner', 'active', 14, NOW());
 INSERT INTO project_members (public_id, project_id, account_id, role, status, created_by, created_at)
-VALUES (UNHEX(REPLACE('5c8443b7-ee91-5a6d-89c9-235d22e242f0', '-', '')), 3, 15, 'developer', 'active', 14, NOW());
+VALUES (UUID_TO_BIN('5c8443b7-ee91-5a6d-89c9-235d22e242f0'), 3, 15, 'developer', 'active', 14, NOW());
 
 -- Site: production
 INSERT INTO sites (id, public_id, project_id, name, github_repository, github_ref, compose_path, compose_file, port, application_type, gcp_external_ip, status, created_by, created_at)
-VALUES (1, UNHEX(REPLACE('31d5f993-975e-5f24-ac2c-3b0f7f4d5d83', '-', '')), 2, 'production', 'repo/jupiter', 'main', '', 'docker-compose.yml', 80, 'generic', '1.2.3.1', 'active', 12, NOW());
+VALUES (1, UUID_TO_BIN('31d5f993-975e-5f24-ac2c-3b0f7f4d5d83'), 2, 'production', 'repo/jupiter', 'main', '', 'docker-compose.yml', 80, 'generic', '1.2.3.1', 'active', 12, NOW());
 
 INSERT INTO site_members (public_id, site_id, account_id, role, status, created_by, created_at)
-VALUES (UNHEX(REPLACE('2093c31b-6359-5fed-9296-1d281e5642f8', '-', '')), 1, 12, 'owner', 'active', 12, NOW());
+VALUES (UUID_TO_BIN('2093c31b-6359-5fed-9296-1d281e5642f8'), 1, 12, 'owner', 'active', 12, NOW());
 INSERT INTO site_members (public_id, site_id, account_id, role, status, created_by, created_at)
-VALUES (UNHEX(REPLACE('bf8c99b6-abb9-5de6-a4cb-4d84db25e668', '-', '')), 1, 13, 'developer', 'active', 12, NOW());
+VALUES (UUID_TO_BIN('bf8c99b6-abb9-5de6-a4cb-4d84db25e668'), 1, 13, 'developer', 'active', 12, NOW());
 INSERT INTO site_members (public_id, site_id, account_id, role, status, created_by, created_at)
-VALUES (UNHEX(REPLACE('7c82f1e2-108c-5322-8a17-e807b6ae0db8', '-', '')), 1, 17, 'read', 'active', 12, NOW());
+VALUES (UUID_TO_BIN('7c82f1e2-108c-5322-8a17-e807b6ae0db8'), 1, 17, 'read', 'active', 12, NOW());
 INSERT INTO site_secrets (public_id, site_id, name, vault_path, status, created_at, updated_at, created_by)
-VALUES (UNHEX(REPLACE('f8d7d43d-99a6-5131-9767-7b2f143db44c', '-', '')), 1, 'PROD_SESSION_KEY', 'secret-site/1/PROD_SESSION_KEY', 'active', UNIX_TIMESTAMP(), UNIX_TIMESTAMP(), 12);
+VALUES (UUID_TO_BIN('f8d7d43d-99a6-5131-9767-7b2f143db44c'), 1, 'PROD_SESSION_KEY', 'secret-site/1/PROD_SESSION_KEY', 'active', UNIX_TIMESTAMP(), UNIX_TIMESTAMP(), 12);
 INSERT INTO site_secrets (public_id, site_id, name, vault_path, status, created_at, updated_at, created_by)
-VALUES (UNHEX(REPLACE('3195faae-aa33-5b05-95b4-5cf131772f3a', '-', '')), 1, 'PROD_ENCRYPTION_KEY', 'secret-site/1/PROD_ENCRYPTION_KEY', 'active', UNIX_TIMESTAMP(), UNIX_TIMESTAMP(), 12);
+VALUES (UUID_TO_BIN('3195faae-aa33-5b05-95b4-5cf131772f3a'), 1, 'PROD_ENCRYPTION_KEY', 'secret-site/1/PROD_ENCRYPTION_KEY', 'active', UNIX_TIMESTAMP(), UNIX_TIMESTAMP(), 12);
 INSERT INTO site_firewall_rules (public_id, site_id, name, cidr, rule_type, status, created_at, updated_at, created_by)
-VALUES (UNHEX(REPLACE('e9ace9fc-ffb8-520a-9803-3fd10e9dcc9c', '-', '')), 1, 'Production CDN', '192.168.100.0/24', 'https_allowed', 'active', NOW(), NOW(), 12);
+VALUES (UUID_TO_BIN('e9ace9fc-ffb8-520a-9803-3fd10e9dcc9c'), 1, 'Production CDN', '192.168.100.0/24', 'https_allowed', 'active', NOW(), NOW(), 12);
 
 -- Site: staging
 INSERT INTO sites (id, public_id, project_id, name, github_repository, github_ref, compose_path, compose_file, port, application_type, gcp_external_ip, status, created_by, created_at)
-VALUES (2, UNHEX(REPLACE('46edd2fe-98df-5d6f-b0e7-cbfb584ac2b8', '-', '')), 2, 'staging', 'repo/jupiter', 'main', '', 'docker-compose.yml', 80, 'generic', '1.2.3.2', 'active', 12, NOW());
+VALUES (2, UUID_TO_BIN('46edd2fe-98df-5d6f-b0e7-cbfb584ac2b8'), 2, 'staging', 'repo/jupiter', 'main', '', 'docker-compose.yml', 80, 'generic', '1.2.3.2', 'active', 12, NOW());
 
 
 -- Site: production
 INSERT INTO sites (id, public_id, project_id, name, github_repository, github_ref, compose_path, compose_file, port, application_type, gcp_external_ip, status, created_by, created_at)
-VALUES (3, UNHEX(REPLACE('8cc8478b-676a-560f-a861-d4e83117c5fc', '-', '')), 3, 'production', 'repo/latex', 'main', '', 'docker-compose.yml', 80, 'generic', '1.2.3.3', 'active', 14, NOW());
+VALUES (3, UUID_TO_BIN('8cc8478b-676a-560f-a861-d4e83117c5fc'), 3, 'production', 'repo/latex', 'main', '', 'docker-compose.yml', 80, 'generic', '1.2.3.3', 'active', 14, NOW());
 

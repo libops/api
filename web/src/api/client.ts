@@ -11,6 +11,8 @@ import { ProjectMemberService } from "@proto/libops/v1/organization_api_connect"
 import { SiteMemberService } from "@proto/libops/v1/organization_api_connect";
 import { SshKeyService } from "@proto/libops/v1/organization_api_connect";
 import { AccountService } from "@proto/libops/v1/organization_account_api_connect";
+import { OrganizationSecretService, ProjectSecretService, SiteSecretService } from "@proto/libops/v1/secrets_connect";
+import { OrganizationSettingService, ProjectSettingService, SiteSettingService } from "@proto/libops/v1/settings_connect";
 import { errorInterceptor, loggingInterceptor, loadingInterceptor, retryInterceptor } from "./interceptors";
 
 // Determine if we're in development mode (defaults to production)
@@ -52,3 +54,15 @@ export const siteMemberClient = createPromiseClient(SiteMemberService, transport
 export const sshKeyClient = createPromiseClient(SshKeyService, transport);
 
 export const accountClient = createPromiseClient(AccountService, transport);
+
+export const organizationSecretClient = createPromiseClient(OrganizationSecretService, transport);
+
+export const projectSecretClient = createPromiseClient(ProjectSecretService, transport);
+
+export const siteSecretClient = createPromiseClient(SiteSecretService, transport);
+
+export const organizationSettingClient = createPromiseClient(OrganizationSettingService, transport);
+
+export const projectSettingClient = createPromiseClient(ProjectSettingService, transport);
+
+export const siteSettingClient = createPromiseClient(SiteSettingService, transport);

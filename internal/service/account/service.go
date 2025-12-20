@@ -8,8 +8,8 @@ import (
 
 	"connectrpc.com/connect"
 
+	"github.com/libops/api/db"
 	"github.com/libops/api/internal/auth"
-	"github.com/libops/api/internal/db"
 	"github.com/libops/api/internal/validation"
 	libopsv1 "github.com/libops/api/proto/libops/v1"
 	"github.com/libops/api/proto/libops/v1/libopsv1connect"

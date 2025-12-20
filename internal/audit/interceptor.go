@@ -51,7 +51,7 @@ func (i *AuditInterceptor) WrapUnary(next connect.UnaryFunc) connect.UnaryFunc {
 			return resp, nil
 		}
 
-		entityID := i.extractEntityID(resp.Any(), auditInfo.entityType)
+		entityID := i.extractEntityID(resp.Any(), auditInfo)
 		if entityID == 0 {
 			slog.Warn("failed to extract entity ID for audit logging",
 				"procedure", req.Spec().Procedure,
@@ -81,6 +81,7 @@ func (i *AuditInterceptor) WrapStreamingHandler(next connect.StreamingHandlerFun
 type auditInfo struct {
 	entityType EntityType
 	event      Event
+	idField    string // Optional: field name to extract ID from. If empty, defaults to "id", "internal_id", "entity_id"
 }
 
 // getAuditInfo maps RPC procedures to audit configuration.
@@ -119,13 +120,73 @@ func (i *AuditInterceptor) getAuditInfo(procedure string) *auditInfo {
 	case strings.HasSuffix(procedure, "SshKeyService/DeleteSshKey"):
 		return &auditInfo{entityType: SSHKeyEntityType, event: SSHKeyDelete}
 
+	// Members
+	case strings.HasSuffix(procedure, "MemberService/AddMember"):
+		return &auditInfo{entityType: OrganizationEntityType, event: MemberAddSuccess, idField: "organization_id"}
+	case strings.HasSuffix(procedure, "MemberService/UpdateMember"):
+		return &auditInfo{entityType: OrganizationEntityType, event: MemberUpdateSuccess, idField: "organization_id"}
+	case strings.HasSuffix(procedure, "MemberService/RemoveMember"):
+		return &auditInfo{entityType: OrganizationEntityType, event: MemberRemoveSuccess, idField: "organization_id"}
+
+	case strings.HasSuffix(procedure, "ProjectMemberService/AddProjectMember"):
+		return &auditInfo{entityType: ProjectEntityType, event: MemberAddSuccess, idField: "project_id"}
+	case strings.HasSuffix(procedure, "ProjectMemberService/UpdateProjectMember"):
+		return &auditInfo{entityType: ProjectEntityType, event: MemberUpdateSuccess, idField: "project_id"}
+	case strings.HasSuffix(procedure, "ProjectMemberService/RemoveProjectMember"):
+		return &auditInfo{entityType: ProjectEntityType, event: MemberRemoveSuccess, idField: "project_id"}
+
+	case strings.HasSuffix(procedure, "SiteMemberService/AddSiteMember"):
+		return &auditInfo{entityType: SiteEntityType, event: MemberAddSuccess, idField: "site_id"}
+	case strings.HasSuffix(procedure, "SiteMemberService/UpdateSiteMember"):
+		return &auditInfo{entityType: SiteEntityType, event: MemberUpdateSuccess, idField: "site_id"}
+	case strings.HasSuffix(procedure, "SiteMemberService/RemoveSiteMember"):
+		return &auditInfo{entityType: SiteEntityType, event: MemberRemoveSuccess, idField: "site_id"}
+
+	// Firewall
+	case strings.HasSuffix(procedure, "FirewallService/AddFirewallRule"):
+		return &auditInfo{entityType: OrganizationEntityType, event: FirewallRuleCreateSuccess, idField: "organization_id"}
+	case strings.HasSuffix(procedure, "FirewallService/RemoveFirewallRule"):
+		return &auditInfo{entityType: OrganizationEntityType, event: FirewallRuleDeleteSuccess, idField: "organization_id"}
+
+	case strings.HasSuffix(procedure, "ProjectFirewallService/AddProjectFirewallRule"):
+		return &auditInfo{entityType: ProjectEntityType, event: FirewallRuleCreateSuccess, idField: "project_id"}
+	case strings.HasSuffix(procedure, "ProjectFirewallService/RemoveProjectFirewallRule"):
+		return &auditInfo{entityType: ProjectEntityType, event: FirewallRuleDeleteSuccess, idField: "project_id"}
+
+	case strings.HasSuffix(procedure, "SiteFirewallService/AddSiteFirewallRule"):
+		return &auditInfo{entityType: SiteEntityType, event: FirewallRuleCreateSuccess, idField: "site_id"}
+	case strings.HasSuffix(procedure, "SiteFirewallService/RemoveSiteFirewallRule"):
+		return &auditInfo{entityType: SiteEntityType, event: FirewallRuleDeleteSuccess, idField: "site_id"}
+
+	// Secrets
+	case strings.HasSuffix(procedure, "OrganizationSecretService/CreateSecret"):
+		return &auditInfo{entityType: OrganizationEntityType, event: OrganizationSecretCreateSuccess, idField: "organization_id"}
+	case strings.HasSuffix(procedure, "OrganizationSecretService/UpdateSecret"):
+		return &auditInfo{entityType: OrganizationEntityType, event: OrganizationSecretUpdateSuccess, idField: "organization_id"}
+	case strings.HasSuffix(procedure, "OrganizationSecretService/DeleteSecret"):
+		return &auditInfo{entityType: OrganizationEntityType, event: OrganizationSecretDeleteSuccess, idField: "organization_id"}
+
+	case strings.HasSuffix(procedure, "ProjectSecretService/CreateProjectSecret"):
+		return &auditInfo{entityType: ProjectEntityType, event: ProjectSecretCreateSuccess, idField: "project_id"}
+	case strings.HasSuffix(procedure, "ProjectSecretService/UpdateProjectSecret"):
+		return &auditInfo{entityType: ProjectEntityType, event: ProjectSecretUpdateSuccess, idField: "project_id"}
+	case strings.HasSuffix(procedure, "ProjectSecretService/DeleteProjectSecret"):
+		return &auditInfo{entityType: ProjectEntityType, event: ProjectSecretDeleteSuccess, idField: "project_id"}
+
+	case strings.HasSuffix(procedure, "SiteSecretService/CreateSiteSecret"):
+		return &auditInfo{entityType: SiteEntityType, event: SiteSecretCreateSuccess, idField: "site_id"}
+	case strings.HasSuffix(procedure, "SiteSecretService/UpdateSiteSecret"):
+		return &auditInfo{entityType: SiteEntityType, event: SiteSecretUpdateSuccess, idField: "site_id"}
+	case strings.HasSuffix(procedure, "SiteSecretService/DeleteSiteSecret"):
+		return &auditInfo{entityType: SiteEntityType, event: SiteSecretDeleteSuccess, idField: "site_id"}
+
 	default:
 		return nil // Not a CUD operation we want to audit
 	}
 }
 
 // extractEntityID extracts the entity ID from the response message.
-func (i *AuditInterceptor) extractEntityID(msg any, entityType EntityType) int64 {
+func (i *AuditInterceptor) extractEntityID(msg any, info *auditInfo) int64 {
 	protoMsg, ok := msg.(proto.Message)
 	if !ok {
 		return 0
@@ -137,7 +198,12 @@ func (i *AuditInterceptor) extractEntityID(msg any, entityType EntityType) int64
 	reflection := protoMsg.ProtoReflect()
 	descriptor := reflection.Descriptor()
 
-	idFieldNames := []string{"id", "internal_id", "entity_id"}
+	var idFieldNames []string
+	if info.idField != "" {
+		idFieldNames = []string{info.idField}
+	} else {
+		idFieldNames = []string{"id", "internal_id", "entity_id"}
+	}
 
 	for _, fieldName := range idFieldNames {
 		field := descriptor.Fields().ByTextName(fieldName)

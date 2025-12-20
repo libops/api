@@ -13,7 +13,7 @@ import (
 	"golang.org/x/crypto/ssh"
 	"google.golang.org/protobuf/types/known/emptypb"
 
-	"github.com/libops/api/internal/db"
+	"github.com/libops/api/db"
 	libopsv1 "github.com/libops/api/proto/libops/v1"
 	"github.com/libops/api/proto/libops/v1/libopsv1connect"
 )

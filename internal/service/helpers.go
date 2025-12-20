@@ -15,7 +15,8 @@ import (
 	"google.golang.org/protobuf/types/known/fieldmaskpb"
 	"google.golang.org/protobuf/types/known/timestamppb"
 
-	"github.com/libops/api/internal/db"
+	"github.com/libops/api/db"
+	"github.com/libops/api/db/types"
 	commonv1 "github.com/libops/api/proto/libops/v1/common"
 )
 
@@ -252,9 +253,9 @@ func PtrToString(ptr *string) string {
 	return ""
 }
 
-// ToJSON converts any value to json.RawMessage.
+// ToJSON converts any value to types.RawJSON.
 // It returns nil if the input is nil or if marshalling fails.
-func ToJSON(v any) json.RawMessage {
+func ToJSON(v any) types.RawJSON {
 	if v == nil {
 		return nil
 	}
@@ -263,12 +264,12 @@ func ToJSON(v any) json.RawMessage {
 		slog.Error("failed to marshal to JSON", "error", err)
 		return nil
 	}
-	return json.RawMessage(b)
+	return types.RawJSON(b)
 }
 
-// FromJSONStringArray converts json.RawMessage to []string.
+// FromJSONStringArray converts types.RawJSON to []string.
 // It returns an empty slice if input is nil or unmarshalling fails.
-func FromJSONStringArray(raw json.RawMessage) []string {
+func FromJSONStringArray(raw types.RawJSON) []string {
 	if raw == nil {
 		return []string{}
 	}

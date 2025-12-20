@@ -51,7 +51,7 @@ func (n *NoOpBillingManager) GetMachineTypePriceID(ctx context.Context, machineT
 }
 
 // CreateCheckoutSession returns a fake checkout session (skips Stripe redirect)
-func (n *NoOpBillingManager) CreateCheckoutSession(ctx context.Context, accountEmail, sessionID, machineType string, diskSizeGB int, baseURL string) (*CheckoutSessionResult, error) {
+func (n *NoOpBillingManager) CreateCheckoutSession(ctx context.Context, accountEmail, sessionID, machineType string, diskSizeGB int, baseURL string, withTrial bool) (*CheckoutSessionResult, error) {
 	// Return empty checkout result - no URL means no redirect needed
 	return &CheckoutSessionResult{
 		SessionID: "noop_checkout_session",

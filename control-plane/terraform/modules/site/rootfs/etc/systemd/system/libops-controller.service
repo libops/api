@@ -1,0 +1,41 @@
+[Unit]
+Description=LibOps VM Controller
+Documentation=https://docs.libops.io
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=root
+Group=root
+WorkingDirectory=/opt/libops
+
+# Environment variables
+Environment="SITE_ID=${SITE_ID}"
+Environment="LIBOPS_API_URL=https://api.libops.io"
+Environment="PORT=8080"
+Environment="RATE_LIMIT_RPS=10"
+Environment="RATE_LIMIT_BURST=5"
+
+# The controller binary
+ExecStart=/usr/local/bin/libops-controller
+
+# Restart policy
+Restart=always
+RestartSec=10s
+
+# Resource limits
+LimitNOFILE=65536
+
+# Security hardening
+# Note: We need root for adduser/deluser and iptables management
+NoNewPrivileges=true
+PrivateTmp=yes
+
+# Logging
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=libops-controller
+
+[Install]
+WantedBy=multi-user.target

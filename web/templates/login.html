@@ -16,7 +16,7 @@
 
         <!-- Alerts -->
         {{if .Verified}}
-        <div class="mb-6 px-4 py-3 rounded-lg bg-green-50 border border-green-200 text-green-800 text-sm">
+        <div class="mb-6 px-4 py-3 rounded-lg bg-red-50 border border-red-200 text-red-950 text-sm">
             Email verified successfully! You can now log in.
         </div>
         {{end}}
@@ -39,7 +39,7 @@
             <div id="login-view">
                 <h1 class="text-2xl font-semibold text-gray-900 text-center mb-2">Sign in to LibOps</h1>
                 <p class="text-center text-sm text-gray-600 mb-8">
-                    Don't have an account? <a href="#" onclick="showRegister(); return false;" class="text-green-600 hover:text-green-700 font-medium">Get started →</a>
+                    Don't have an account? <a href="#" onclick="showRegister(); return false;" class="text-red-900 hover:text-red-950 font-medium">Get started →</a>
                 </p>
 
                 <form id="email-form" action="/auth/userpass/login" method="POST" class="space-y-4">
@@ -92,7 +92,7 @@
                         >
                         <button
                             type="submit"
-                            class="w-full mt-4 py-2.5 rounded-lg text-sm font-medium bg-green-600 text-white hover:bg-green-700 transition-colors"
+                            class="w-full mt-4 py-2.5 rounded-lg text-sm font-medium bg-red-900 text-white hover:bg-red-950 transition-colors"
                         >
                             Sign In
                         </button>
@@ -142,7 +142,7 @@
             <div id="register-view" class="hidden">
                 <h1 class="text-2xl font-semibold text-gray-900 text-center mb-2">Create your account</h1>
                 <p class="text-center text-sm text-gray-600 mb-8">
-                    Already have an account? <a href="#" onclick="showLogin(); return false;" class="text-green-600 hover:text-green-700 font-medium">Sign in →</a>
+                    Already have an account? <a href="#" onclick="showLogin(); return false;" class="text-red-900 hover:text-red-950 font-medium">Sign in →</a>
                 </p>
 
                 <form action="/auth/userpass/register" method="POST" class="space-y-4">
@@ -178,7 +178,7 @@
                         <p class="mt-1.5 text-xs text-gray-500">At least 8 characters with uppercase, lowercase, number, and special character</p>
                     </div>
 
-                    <button type="submit" class="w-full py-2.5 rounded-lg text-sm font-medium bg-green-600 text-white hover:bg-green-700 transition-colors">
+                    <button type="submit" class="w-full py-2.5 rounded-lg text-sm font-medium bg-red-900 text-white hover:bg-red-950 transition-colors">
                         Create Account
                     </button>
                 </form>

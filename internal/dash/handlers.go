@@ -8,8 +8,8 @@ import (
 	"time"
 
 	"github.com/google/uuid"
+	"github.com/libops/api/db"
 	"github.com/libops/api/internal/auth"
-	"github.com/libops/api/internal/db"
 )
 
 // Handler provides HTTP handlers for dashboard pages
@@ -692,6 +692,53 @@ func (h *Handler) HandleOrganizationDetail(w http.ResponseWriter, r *http.Reques
 		})
 	}
 
+	// Get settings with inheritance (includes relationships)
+	dbSettings, err := h.db.ListUserSettings(ctx, db.ListUserSettingsParams{
+		AccountID: account.ID,
+		Limit:     100,
+		Offset:    0,
+	})
+	if err != nil {
+		slog.Error("Failed to list settings", "org_id", orgID, "err", err)
+	}
+
+	settings := make([]Setting, 0)
+	for _, setting := range dbSettings {
+		// Only include settings for this specific organization
+		if setting.ParentPublicID != org.PublicID {
+			continue
+		}
+
+		// Check if user can edit/delete this setting
+		canEdit := h.canUserPerformOnOrganization(r.Context(), userInfo, setting.ParentPublicID, auth.PermissionWrite)
+		canDelete := h.canUserPerformOnOrganization(r.Context(), userInfo, setting.ParentPublicID, auth.PermissionOwner)
+
+		description := ""
+		if setting.Description.Valid {
+			description = setting.Description.String
+		}
+
+		editable := false
+		if setting.Editable.Valid {
+			editable = setting.Editable.Bool
+		}
+
+		settings = append(settings, Setting{
+			ID:          setting.PublicID,
+			Key:         setting.SettingKey,
+			Value:       setting.SettingValue,
+			Description: description,
+			Editable:    editable,
+			ParentName:  setting.ParentName,
+			ParentID:    setting.ParentPublicID,
+			ParentType:  setting.ParentType,
+			Permissions: ResourcePermissions{
+				CanEdit:   canEdit,
+				CanDelete: canDelete,
+			},
+		})
+	}
+
 	// TODO: Get audit log entries
 	auditLog := []AuditLogEntry{}
 
@@ -708,6 +755,7 @@ func (h *Handler) HandleOrganizationDetail(w http.ResponseWriter, r *http.Reques
 		Members:       members,
 		FirewallRules: firewallRules,
 		Secrets:       secrets,
+		Settings:      settings,
 		AuditLog:      auditLog,
 	}
 
@@ -922,6 +970,59 @@ func (h *Handler) HandleProjectDetail(w http.ResponseWriter, r *http.Request) {
 		})
 	}
 
+	// Get settings with inheritance (includes org + project settings)
+	dbSettings, err := h.db.ListUserSettings(ctx, db.ListUserSettingsParams{
+		AccountID: account.ID,
+		Limit:     100,
+		Offset:    0,
+	})
+	if err != nil {
+		slog.Error("Failed to list settings", "project_id", projectID, "err", err)
+	}
+
+	settings := make([]Setting, 0)
+	for _, setting := range dbSettings {
+		// Include settings for this project OR its parent organization
+		if setting.ParentPublicID != project.PublicID && setting.ParentPublicID != orgPublicID {
+			continue
+		}
+
+		// Check permissions - use project or org depending on where the setting is
+		var canEdit, canDelete bool
+		if setting.ParentType == "project" {
+			canEdit = h.canUserPerformOnProject(r.Context(), userInfo, setting.ParentPublicID, auth.PermissionWrite)
+			canDelete = h.canUserPerformOnProject(r.Context(), userInfo, setting.ParentPublicID, auth.PermissionOwner)
+		} else {
+			canEdit = h.canUserPerformOnOrganization(r.Context(), userInfo, setting.ParentPublicID, auth.PermissionWrite)
+			canDelete = h.canUserPerformOnOrganization(r.Context(), userInfo, setting.ParentPublicID, auth.PermissionOwner)
+		}
+
+		description := ""
+		if setting.Description.Valid {
+			description = setting.Description.String
+		}
+
+		editable := false
+		if setting.Editable.Valid {
+			editable = setting.Editable.Bool
+		}
+
+		settings = append(settings, Setting{
+			ID:          setting.PublicID,
+			Key:         setting.SettingKey,
+			Value:       setting.SettingValue,
+			Description: description,
+			Editable:    editable,
+			ParentName:  setting.ParentName,
+			ParentID:    setting.ParentPublicID,
+			ParentType:  setting.ParentType,
+			Permissions: ResourcePermissions{
+				CanEdit:   canEdit,
+				CanDelete: canDelete,
+			},
+		})
+	}
+
 	// TODO: Get audit log entries
 	auditLog := []AuditLogEntry{}
 
@@ -940,11 +1041,15 @@ func (h *Handler) HandleProjectDetail(w http.ResponseWriter, r *http.Request) {
 			Description: "",
 			Status:      projectStatus,
 			CreatedAt:   project.CreatedAt.Time.Format("2006-01-02"),
+			ParentID:    orgPublicID,
+			ParentName:  org.Name,
+			ParentType:  "organization",
 		},
 		Sites:         sites,
 		Members:       members,
 		FirewallRules: firewallRules,
 		Secrets:       secrets,
+		Settings:      settings,
 		AuditLog:      auditLog,
 	}
 
@@ -1146,6 +1251,63 @@ func (h *Handler) HandleSiteDetail(w http.ResponseWriter, r *http.Request) {
 		})
 	}
 
+	// Get settings with inheritance (includes org + project + site settings)
+	dbSettings, err := h.db.ListUserSettings(ctx, db.ListUserSettingsParams{
+		AccountID: account.ID,
+		Limit:     100,
+		Offset:    0,
+	})
+	if err != nil {
+		slog.Error("Failed to list settings", "site_id", siteID, "err", err)
+	}
+
+	settings := make([]Setting, 0)
+	for _, setting := range dbSettings {
+		// Include settings for this site OR its parent project OR parent organization
+		if setting.ParentPublicID != site.PublicID && setting.ParentPublicID != projectPublicID && setting.ParentPublicID != orgPublicID {
+			continue
+		}
+
+		// Check permissions based on where the setting is
+		var canEdit, canDelete bool
+		switch setting.ParentType {
+		case "site":
+			canEdit = h.canUserPerformOnSite(r.Context(), userInfo, setting.ParentPublicID, auth.PermissionWrite)
+			canDelete = h.canUserPerformOnSite(r.Context(), userInfo, setting.ParentPublicID, auth.PermissionOwner)
+		case "project":
+			canEdit = h.canUserPerformOnProject(r.Context(), userInfo, setting.ParentPublicID, auth.PermissionWrite)
+			canDelete = h.canUserPerformOnProject(r.Context(), userInfo, setting.ParentPublicID, auth.PermissionOwner)
+		case "organization":
+			canEdit = h.canUserPerformOnOrganization(r.Context(), userInfo, setting.ParentPublicID, auth.PermissionWrite)
+			canDelete = h.canUserPerformOnOrganization(r.Context(), userInfo, setting.ParentPublicID, auth.PermissionOwner)
+		}
+
+		description := ""
+		if setting.Description.Valid {
+			description = setting.Description.String
+		}
+
+		editable := false
+		if setting.Editable.Valid {
+			editable = setting.Editable.Bool
+		}
+
+		settings = append(settings, Setting{
+			ID:          setting.PublicID,
+			Key:         setting.SettingKey,
+			Value:       setting.SettingValue,
+			Description: description,
+			Editable:    editable,
+			ParentName:  setting.ParentName,
+			ParentID:    setting.ParentPublicID,
+			ParentType:  setting.ParentType,
+			Permissions: ResourcePermissions{
+				CanEdit:   canEdit,
+				CanDelete: canDelete,
+			},
+		})
+	}
+
 	// TODO: Get audit log entries
 	auditLog := []AuditLogEntry{}
 
@@ -1159,19 +1321,23 @@ func (h *Handler) HandleSiteDetail(w http.ResponseWriter, r *http.Request) {
 	}
 
 	data := SiteDetailData{
-		Email:      account.Email,
-		Name:       name,
-		ActivePage: "sites",
+		Email:          account.Email,
+		Name:           name,
+		ActivePage:     "sites",
+		OrganizationID: orgPublicID,
+		ProjectID:      projectPublicID,
 		Site: ResourceItem{
 			ID:          site.PublicID,
 			Name:        site.Name,
 			Description: "",
 			Status:      status,
 			CreatedAt:   createdAt,
+			ParentID:    projectPublicID,
 		},
 		Members:       members,
 		FirewallRules: firewallRules,
 		Secrets:       secrets,
+		Settings:      settings,
 		AuditLog:      auditLog,
 	}
 
@@ -1237,4 +1403,66 @@ func (h *Handler) HandleSSHKeys(w http.ResponseWriter, r *http.Request) {
 	}
 
 	RenderSSHKeys(w, data)
+}
+
+// HandleSettings handles requests to the settings page
+func (h *Handler) HandleSettings(w http.ResponseWriter, r *http.Request) {
+	userInfo, ok := auth.GetUserFromContext(r.Context())
+	if !ok || userInfo == nil {
+		http.Redirect(w, r, "/login", http.StatusSeeOther)
+		return
+	}
+
+	ctx := context.Background()
+	account, err := h.db.GetAccountByID(ctx, userInfo.AccountID)
+	if err != nil {
+		slog.Error("Failed to get account", "account_id", userInfo.AccountID, "err", err)
+		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+		return
+	}
+
+	name := ""
+	if account.Name.Valid {
+		name = account.Name.String
+	}
+
+	// Fetch settings for the user
+	dbSettings, err := h.db.ListUserSettings(ctx, db.ListUserSettingsParams{
+		AccountID: account.ID,
+		Limit:     100,
+		Offset:    0,
+	})
+	if err != nil {
+		slog.Error("Failed to list user settings", "account_id", account.ID, "err", err)
+		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+		return
+	}
+
+	items := make([]ResourceItem, 0, len(dbSettings))
+	for _, setting := range dbSettings {
+		description := ""
+		if setting.Description.Valid {
+			description = setting.Description.String
+		}
+		items = append(items, ResourceItem{
+			ID:          setting.PublicID,
+			Name:        setting.SettingKey,
+			Description: description,
+			Status:      "Active",
+			CreatedAt:   "",
+			ParentName:  setting.ParentName,
+			ParentID:    setting.ParentPublicID,
+			ParentType:  setting.ParentType,
+		})
+	}
+
+	data := ResourcePageData{
+		Email:        account.Email,
+		Name:         name,
+		ActivePage:   "settings",
+		ResourceName: "Settings",
+		Items:        items,
+	}
+
+	RenderSettings(w, data)
 }

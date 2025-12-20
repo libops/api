@@ -1782,6 +1782,1190 @@ func (x *AdminListAllSitesResponse) GetNextPageToken() string {
 	return ""
 }
 
+type GetSiteSSHKeysRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	SiteId        string                 `protobuf:"bytes,1,opt,name=site_id,json=siteId,proto3" json:"site_id,omitempty"` // Site public ID
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *GetSiteSSHKeysRequest) Reset() {
+	*x = GetSiteSSHKeysRequest{}
+	mi := &file_libops_v1_admin_api_proto_msgTypes[33]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *GetSiteSSHKeysRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*GetSiteSSHKeysRequest) ProtoMessage() {}
+
+func (x *GetSiteSSHKeysRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_libops_v1_admin_api_proto_msgTypes[33]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use GetSiteSSHKeysRequest.ProtoReflect.Descriptor instead.
+func (*GetSiteSSHKeysRequest) Descriptor() ([]byte, []int) {
+	return file_libops_v1_admin_api_proto_rawDescGZIP(), []int{33}
+}
+
+func (x *GetSiteSSHKeysRequest) GetSiteId() string {
+	if x != nil {
+		return x.SiteId
+	}
+	return ""
+}
+
+type SSHKey struct {
+	state          protoimpl.MessageState `protogen:"open.v1"`
+	PublicKey      string                 `protobuf:"bytes,1,opt,name=public_key,json=publicKey,proto3" json:"public_key,omitempty"`
+	Name           string                 `protobuf:"bytes,2,opt,name=name,proto3" json:"name,omitempty"`
+	Fingerprint    string                 `protobuf:"bytes,3,opt,name=fingerprint,proto3" json:"fingerprint,omitempty"`
+	GithubUsername string                 `protobuf:"bytes,4,opt,name=github_username,json=githubUsername,proto3" json:"github_username,omitempty"`
+	unknownFields  protoimpl.UnknownFields
+	sizeCache      protoimpl.SizeCache
+}
+
+func (x *SSHKey) Reset() {
+	*x = SSHKey{}
+	mi := &file_libops_v1_admin_api_proto_msgTypes[34]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *SSHKey) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*SSHKey) ProtoMessage() {}
+
+func (x *SSHKey) ProtoReflect() protoreflect.Message {
+	mi := &file_libops_v1_admin_api_proto_msgTypes[34]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use SSHKey.ProtoReflect.Descriptor instead.
+func (*SSHKey) Descriptor() ([]byte, []int) {
+	return file_libops_v1_admin_api_proto_rawDescGZIP(), []int{34}
+}
+
+func (x *SSHKey) GetPublicKey() string {
+	if x != nil {
+		return x.PublicKey
+	}
+	return ""
+}
+
+func (x *SSHKey) GetName() string {
+	if x != nil {
+		return x.Name
+	}
+	return ""
+}
+
+func (x *SSHKey) GetFingerprint() string {
+	if x != nil {
+		return x.Fingerprint
+	}
+	return ""
+}
+
+func (x *SSHKey) GetGithubUsername() string {
+	if x != nil {
+		return x.GithubUsername
+	}
+	return ""
+}
+
+type GetSiteSSHKeysResponse struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Keys          []*SSHKey              `protobuf:"bytes,1,rep,name=keys,proto3" json:"keys,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *GetSiteSSHKeysResponse) Reset() {
+	*x = GetSiteSSHKeysResponse{}
+	mi := &file_libops_v1_admin_api_proto_msgTypes[35]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *GetSiteSSHKeysResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*GetSiteSSHKeysResponse) ProtoMessage() {}
+
+func (x *GetSiteSSHKeysResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_libops_v1_admin_api_proto_msgTypes[35]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use GetSiteSSHKeysResponse.ProtoReflect.Descriptor instead.
+func (*GetSiteSSHKeysResponse) Descriptor() ([]byte, []int) {
+	return file_libops_v1_admin_api_proto_rawDescGZIP(), []int{35}
+}
+
+func (x *GetSiteSSHKeysResponse) GetKeys() []*SSHKey {
+	if x != nil {
+		return x.Keys
+	}
+	return nil
+}
+
+type GetSiteSecretsRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	SiteId        string                 `protobuf:"bytes,1,opt,name=site_id,json=siteId,proto3" json:"site_id,omitempty"` // Site public ID
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *GetSiteSecretsRequest) Reset() {
+	*x = GetSiteSecretsRequest{}
+	mi := &file_libops_v1_admin_api_proto_msgTypes[36]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *GetSiteSecretsRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*GetSiteSecretsRequest) ProtoMessage() {}
+
+func (x *GetSiteSecretsRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_libops_v1_admin_api_proto_msgTypes[36]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use GetSiteSecretsRequest.ProtoReflect.Descriptor instead.
+func (*GetSiteSecretsRequest) Descriptor() ([]byte, []int) {
+	return file_libops_v1_admin_api_proto_rawDescGZIP(), []int{36}
+}
+
+func (x *GetSiteSecretsRequest) GetSiteId() string {
+	if x != nil {
+		return x.SiteId
+	}
+	return ""
+}
+
+type Secret struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Key           string                 `protobuf:"bytes,1,opt,name=key,proto3" json:"key,omitempty"`
+	Value         string                 `protobuf:"bytes,2,opt,name=value,proto3" json:"value,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *Secret) Reset() {
+	*x = Secret{}
+	mi := &file_libops_v1_admin_api_proto_msgTypes[37]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *Secret) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*Secret) ProtoMessage() {}
+
+func (x *Secret) ProtoReflect() protoreflect.Message {
+	mi := &file_libops_v1_admin_api_proto_msgTypes[37]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use Secret.ProtoReflect.Descriptor instead.
+func (*Secret) Descriptor() ([]byte, []int) {
+	return file_libops_v1_admin_api_proto_rawDescGZIP(), []int{37}
+}
+
+func (x *Secret) GetKey() string {
+	if x != nil {
+		return x.Key
+	}
+	return ""
+}
+
+func (x *Secret) GetValue() string {
+	if x != nil {
+		return x.Value
+	}
+	return ""
+}
+
+type GetSiteSecretsResponse struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Secrets       []*Secret              `protobuf:"bytes,1,rep,name=secrets,proto3" json:"secrets,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *GetSiteSecretsResponse) Reset() {
+	*x = GetSiteSecretsResponse{}
+	mi := &file_libops_v1_admin_api_proto_msgTypes[38]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *GetSiteSecretsResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*GetSiteSecretsResponse) ProtoMessage() {}
+
+func (x *GetSiteSecretsResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_libops_v1_admin_api_proto_msgTypes[38]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use GetSiteSecretsResponse.ProtoReflect.Descriptor instead.
+func (*GetSiteSecretsResponse) Descriptor() ([]byte, []int) {
+	return file_libops_v1_admin_api_proto_rawDescGZIP(), []int{38}
+}
+
+func (x *GetSiteSecretsResponse) GetSecrets() []*Secret {
+	if x != nil {
+		return x.Secrets
+	}
+	return nil
+}
+
+type GetSiteFirewallRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	SiteId        string                 `protobuf:"bytes,1,opt,name=site_id,json=siteId,proto3" json:"site_id,omitempty"` // Site public ID
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *GetSiteFirewallRequest) Reset() {
+	*x = GetSiteFirewallRequest{}
+	mi := &file_libops_v1_admin_api_proto_msgTypes[39]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *GetSiteFirewallRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*GetSiteFirewallRequest) ProtoMessage() {}
+
+func (x *GetSiteFirewallRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_libops_v1_admin_api_proto_msgTypes[39]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use GetSiteFirewallRequest.ProtoReflect.Descriptor instead.
+func (*GetSiteFirewallRequest) Descriptor() ([]byte, []int) {
+	return file_libops_v1_admin_api_proto_rawDescGZIP(), []int{39}
+}
+
+func (x *GetSiteFirewallRequest) GetSiteId() string {
+	if x != nil {
+		return x.SiteId
+	}
+	return ""
+}
+
+type FirewallRule struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Protocol      string                 `protobuf:"bytes,1,opt,name=protocol,proto3" json:"protocol,omitempty"` // tcp, udp, icmp, etc.
+	Port          int32                  `protobuf:"varint,2,opt,name=port,proto3" json:"port,omitempty"`        // port number (0 if not applicable)
+	Source        string                 `protobuf:"bytes,3,opt,name=source,proto3" json:"source,omitempty"`     // source CIDR or IP
+	Action        string                 `protobuf:"bytes,4,opt,name=action,proto3" json:"action,omitempty"`     // accept, deny, drop, reject
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *FirewallRule) Reset() {
+	*x = FirewallRule{}
+	mi := &file_libops_v1_admin_api_proto_msgTypes[40]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *FirewallRule) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*FirewallRule) ProtoMessage() {}
+
+func (x *FirewallRule) ProtoReflect() protoreflect.Message {
+	mi := &file_libops_v1_admin_api_proto_msgTypes[40]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use FirewallRule.ProtoReflect.Descriptor instead.
+func (*FirewallRule) Descriptor() ([]byte, []int) {
+	return file_libops_v1_admin_api_proto_rawDescGZIP(), []int{40}
+}
+
+func (x *FirewallRule) GetProtocol() string {
+	if x != nil {
+		return x.Protocol
+	}
+	return ""
+}
+
+func (x *FirewallRule) GetPort() int32 {
+	if x != nil {
+		return x.Port
+	}
+	return 0
+}
+
+func (x *FirewallRule) GetSource() string {
+	if x != nil {
+		return x.Source
+	}
+	return ""
+}
+
+func (x *FirewallRule) GetAction() string {
+	if x != nil {
+		return x.Action
+	}
+	return ""
+}
+
+type GetSiteFirewallResponse struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Rules         []*FirewallRule        `protobuf:"bytes,1,rep,name=rules,proto3" json:"rules,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *GetSiteFirewallResponse) Reset() {
+	*x = GetSiteFirewallResponse{}
+	mi := &file_libops_v1_admin_api_proto_msgTypes[41]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *GetSiteFirewallResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*GetSiteFirewallResponse) ProtoMessage() {}
+
+func (x *GetSiteFirewallResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_libops_v1_admin_api_proto_msgTypes[41]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use GetSiteFirewallResponse.ProtoReflect.Descriptor instead.
+func (*GetSiteFirewallResponse) Descriptor() ([]byte, []int) {
+	return file_libops_v1_admin_api_proto_rawDescGZIP(), []int{41}
+}
+
+func (x *GetSiteFirewallResponse) GetRules() []*FirewallRule {
+	if x != nil {
+		return x.Rules
+	}
+	return nil
+}
+
+type SiteCheckInRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	SiteId        string                 `protobuf:"bytes,1,opt,name=site_id,json=siteId,proto3" json:"site_id,omitempty"` // Site public ID
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *SiteCheckInRequest) Reset() {
+	*x = SiteCheckInRequest{}
+	mi := &file_libops_v1_admin_api_proto_msgTypes[42]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *SiteCheckInRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*SiteCheckInRequest) ProtoMessage() {}
+
+func (x *SiteCheckInRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_libops_v1_admin_api_proto_msgTypes[42]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use SiteCheckInRequest.ProtoReflect.Descriptor instead.
+func (*SiteCheckInRequest) Descriptor() ([]byte, []int) {
+	return file_libops_v1_admin_api_proto_rawDescGZIP(), []int{42}
+}
+
+func (x *SiteCheckInRequest) GetSiteId() string {
+	if x != nil {
+		return x.SiteId
+	}
+	return ""
+}
+
+type SiteCheckInResponse struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Success       bool                   `protobuf:"varint,1,opt,name=success,proto3" json:"success,omitempty"`
+	Message       string                 `protobuf:"bytes,2,opt,name=message,proto3" json:"message,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *SiteCheckInResponse) Reset() {
+	*x = SiteCheckInResponse{}
+	mi := &file_libops_v1_admin_api_proto_msgTypes[43]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *SiteCheckInResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*SiteCheckInResponse) ProtoMessage() {}
+
+func (x *SiteCheckInResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_libops_v1_admin_api_proto_msgTypes[43]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use SiteCheckInResponse.ProtoReflect.Descriptor instead.
+func (*SiteCheckInResponse) Descriptor() ([]byte, []int) {
+	return file_libops_v1_admin_api_proto_rawDescGZIP(), []int{43}
+}
+
+func (x *SiteCheckInResponse) GetSuccess() bool {
+	if x != nil {
+		return x.Success
+	}
+	return false
+}
+
+func (x *SiteCheckInResponse) GetMessage() string {
+	if x != nil {
+		return x.Message
+	}
+	return ""
+}
+
+type SyncManifestRequest struct {
+	state            protoimpl.MessageState `protogen:"open.v1"`
+	SiteId           string                 `protobuf:"bytes,1,opt,name=site_id,json=siteId,proto3" json:"site_id,omitempty"`                                       // Site public ID
+	CurrentStateHash *string                `protobuf:"bytes,2,opt,name=current_state_hash,json=currentStateHash,proto3,oneof" json:"current_state_hash,omitempty"` // For ETag optimization (304 Not Modified)
+	unknownFields    protoimpl.UnknownFields
+	sizeCache        protoimpl.SizeCache
+}
+
+func (x *SyncManifestRequest) Reset() {
+	*x = SyncManifestRequest{}
+	mi := &file_libops_v1_admin_api_proto_msgTypes[44]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *SyncManifestRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*SyncManifestRequest) ProtoMessage() {}
+
+func (x *SyncManifestRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_libops_v1_admin_api_proto_msgTypes[44]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use SyncManifestRequest.ProtoReflect.Descriptor instead.
+func (*SyncManifestRequest) Descriptor() ([]byte, []int) {
+	return file_libops_v1_admin_api_proto_rawDescGZIP(), []int{44}
+}
+
+func (x *SyncManifestRequest) GetSiteId() string {
+	if x != nil {
+		return x.SiteId
+	}
+	return ""
+}
+
+func (x *SyncManifestRequest) GetCurrentStateHash() string {
+	if x != nil && x.CurrentStateHash != nil {
+		return *x.CurrentStateHash
+	}
+	return ""
+}
+
+type SyncManifestResponse struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	StateHash     string                 `protobuf:"bytes,1,opt,name=state_hash,json=stateHash,proto3" json:"state_hash,omitempty"` // Current state hash for this site
+	Blobs         *StateBlobs            `protobuf:"bytes,2,opt,name=blobs,proto3" json:"blobs,omitempty"`                          // Signed URLs to GCS blobs
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *SyncManifestResponse) Reset() {
+	*x = SyncManifestResponse{}
+	mi := &file_libops_v1_admin_api_proto_msgTypes[45]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *SyncManifestResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*SyncManifestResponse) ProtoMessage() {}
+
+func (x *SyncManifestResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_libops_v1_admin_api_proto_msgTypes[45]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use SyncManifestResponse.ProtoReflect.Descriptor instead.
+func (*SyncManifestResponse) Descriptor() ([]byte, []int) {
+	return file_libops_v1_admin_api_proto_rawDescGZIP(), []int{45}
+}
+
+func (x *SyncManifestResponse) GetStateHash() string {
+	if x != nil {
+		return x.StateHash
+	}
+	return ""
+}
+
+func (x *SyncManifestResponse) GetBlobs() *StateBlobs {
+	if x != nil {
+		return x.Blobs
+	}
+	return nil
+}
+
+type StateBlobs struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	SshKeysUrl    string                 `protobuf:"bytes,1,opt,name=ssh_keys_url,json=sshKeysUrl,proto3" json:"ssh_keys_url,omitempty"`  // Signed GCS URL to ssh-keys.json
+	SecretsUrl    string                 `protobuf:"bytes,2,opt,name=secrets_url,json=secretsUrl,proto3" json:"secrets_url,omitempty"`    // Signed GCS URL to secrets.json
+	FirewallUrl   string                 `protobuf:"bytes,3,opt,name=firewall_url,json=firewallUrl,proto3" json:"firewall_url,omitempty"` // Signed GCS URL to firewall.json
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *StateBlobs) Reset() {
+	*x = StateBlobs{}
+	mi := &file_libops_v1_admin_api_proto_msgTypes[46]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *StateBlobs) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*StateBlobs) ProtoMessage() {}
+
+func (x *StateBlobs) ProtoReflect() protoreflect.Message {
+	mi := &file_libops_v1_admin_api_proto_msgTypes[46]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use StateBlobs.ProtoReflect.Descriptor instead.
+func (*StateBlobs) Descriptor() ([]byte, []int) {
+	return file_libops_v1_admin_api_proto_rawDescGZIP(), []int{46}
+}
+
+func (x *StateBlobs) GetSshKeysUrl() string {
+	if x != nil {
+		return x.SshKeysUrl
+	}
+	return ""
+}
+
+func (x *StateBlobs) GetSecretsUrl() string {
+	if x != nil {
+		return x.SecretsUrl
+	}
+	return ""
+}
+
+func (x *StateBlobs) GetFirewallUrl() string {
+	if x != nil {
+		return x.FirewallUrl
+	}
+	return ""
+}
+
+type GetBlobRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	SiteId        string                 `protobuf:"bytes,1,opt,name=site_id,json=siteId,proto3" json:"site_id,omitempty"`       // Site public ID
+	BlobType      string                 `protobuf:"bytes,2,opt,name=blob_type,json=blobType,proto3" json:"blob_type,omitempty"` // "ssh_keys", "secrets", "firewall"
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *GetBlobRequest) Reset() {
+	*x = GetBlobRequest{}
+	mi := &file_libops_v1_admin_api_proto_msgTypes[47]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *GetBlobRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*GetBlobRequest) ProtoMessage() {}
+
+func (x *GetBlobRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_libops_v1_admin_api_proto_msgTypes[47]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use GetBlobRequest.ProtoReflect.Descriptor instead.
+func (*GetBlobRequest) Descriptor() ([]byte, []int) {
+	return file_libops_v1_admin_api_proto_rawDescGZIP(), []int{47}
+}
+
+func (x *GetBlobRequest) GetSiteId() string {
+	if x != nil {
+		return x.SiteId
+	}
+	return ""
+}
+
+func (x *GetBlobRequest) GetBlobType() string {
+	if x != nil {
+		return x.BlobType
+	}
+	return ""
+}
+
+type GetBlobResponse struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Data          []byte                 `protobuf:"bytes,1,opt,name=data,proto3" json:"data,omitempty"`                                  // Blob content (JSON)
+	ContentType   string                 `protobuf:"bytes,2,opt,name=content_type,json=contentType,proto3" json:"content_type,omitempty"` // "application/json"
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *GetBlobResponse) Reset() {
+	*x = GetBlobResponse{}
+	mi := &file_libops_v1_admin_api_proto_msgTypes[48]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *GetBlobResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*GetBlobResponse) ProtoMessage() {}
+
+func (x *GetBlobResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_libops_v1_admin_api_proto_msgTypes[48]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use GetBlobResponse.ProtoReflect.Descriptor instead.
+func (*GetBlobResponse) Descriptor() ([]byte, []int) {
+	return file_libops_v1_admin_api_proto_rawDescGZIP(), []int{48}
+}
+
+func (x *GetBlobResponse) GetData() []byte {
+	if x != nil {
+		return x.Data
+	}
+	return nil
+}
+
+func (x *GetBlobResponse) GetContentType() string {
+	if x != nil {
+		return x.ContentType
+	}
+	return ""
+}
+
+type GetReconciliationRunRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	RunId         string                 `protobuf:"bytes,1,opt,name=run_id,json=runId,proto3" json:"run_id,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *GetReconciliationRunRequest) Reset() {
+	*x = GetReconciliationRunRequest{}
+	mi := &file_libops_v1_admin_api_proto_msgTypes[49]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *GetReconciliationRunRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*GetReconciliationRunRequest) ProtoMessage() {}
+
+func (x *GetReconciliationRunRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_libops_v1_admin_api_proto_msgTypes[49]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use GetReconciliationRunRequest.ProtoReflect.Descriptor instead.
+func (*GetReconciliationRunRequest) Descriptor() ([]byte, []int) {
+	return file_libops_v1_admin_api_proto_rawDescGZIP(), []int{49}
+}
+
+func (x *GetReconciliationRunRequest) GetRunId() string {
+	if x != nil {
+		return x.RunId
+	}
+	return ""
+}
+
+type GetReconciliationRunResponse struct {
+	state              protoimpl.MessageState `protogen:"open.v1"`
+	RunId              string                 `protobuf:"bytes,1,opt,name=run_id,json=runId,proto3" json:"run_id,omitempty"`
+	RunType            string                 `protobuf:"bytes,2,opt,name=run_type,json=runType,proto3" json:"run_type,omitempty"`                                        // terraform or reconciliation
+	ReconciliationType *string                `protobuf:"bytes,3,opt,name=reconciliation_type,json=reconciliationType,proto3,oneof" json:"reconciliation_type,omitempty"` // ssh_keys, secrets, firewall, general
+	Modules            []string               `protobuf:"bytes,4,rep,name=modules,proto3" json:"modules,omitempty"`                                                       // For terraform runs
+	TargetSiteIds      []int64                `protobuf:"varint,5,rep,packed,name=target_site_ids,json=targetSiteIds,proto3" json:"target_site_ids,omitempty"`            // For reconciliation runs
+	EventIds           []string               `protobuf:"bytes,6,rep,name=event_ids,json=eventIds,proto3" json:"event_ids,omitempty"`
+	OrganizationId     *int64                 `protobuf:"varint,7,opt,name=organization_id,json=organizationId,proto3,oneof" json:"organization_id,omitempty"`
+	ProjectId          *int64                 `protobuf:"varint,8,opt,name=project_id,json=projectId,proto3,oneof" json:"project_id,omitempty"`
+	SiteId             *int64                 `protobuf:"varint,9,opt,name=site_id,json=siteId,proto3,oneof" json:"site_id,omitempty"`
+	Status             string                 `protobuf:"bytes,10,opt,name=status,proto3" json:"status,omitempty"`
+	unknownFields      protoimpl.UnknownFields
+	sizeCache          protoimpl.SizeCache
+}
+
+func (x *GetReconciliationRunResponse) Reset() {
+	*x = GetReconciliationRunResponse{}
+	mi := &file_libops_v1_admin_api_proto_msgTypes[50]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *GetReconciliationRunResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*GetReconciliationRunResponse) ProtoMessage() {}
+
+func (x *GetReconciliationRunResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_libops_v1_admin_api_proto_msgTypes[50]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use GetReconciliationRunResponse.ProtoReflect.Descriptor instead.
+func (*GetReconciliationRunResponse) Descriptor() ([]byte, []int) {
+	return file_libops_v1_admin_api_proto_rawDescGZIP(), []int{50}
+}
+
+func (x *GetReconciliationRunResponse) GetRunId() string {
+	if x != nil {
+		return x.RunId
+	}
+	return ""
+}
+
+func (x *GetReconciliationRunResponse) GetRunType() string {
+	if x != nil {
+		return x.RunType
+	}
+	return ""
+}
+
+func (x *GetReconciliationRunResponse) GetReconciliationType() string {
+	if x != nil && x.ReconciliationType != nil {
+		return *x.ReconciliationType
+	}
+	return ""
+}
+
+func (x *GetReconciliationRunResponse) GetModules() []string {
+	if x != nil {
+		return x.Modules
+	}
+	return nil
+}
+
+func (x *GetReconciliationRunResponse) GetTargetSiteIds() []int64 {
+	if x != nil {
+		return x.TargetSiteIds
+	}
+	return nil
+}
+
+func (x *GetReconciliationRunResponse) GetEventIds() []string {
+	if x != nil {
+		return x.EventIds
+	}
+	return nil
+}
+
+func (x *GetReconciliationRunResponse) GetOrganizationId() int64 {
+	if x != nil && x.OrganizationId != nil {
+		return *x.OrganizationId
+	}
+	return 0
+}
+
+func (x *GetReconciliationRunResponse) GetProjectId() int64 {
+	if x != nil && x.ProjectId != nil {
+		return *x.ProjectId
+	}
+	return 0
+}
+
+func (x *GetReconciliationRunResponse) GetSiteId() int64 {
+	if x != nil && x.SiteId != nil {
+		return *x.SiteId
+	}
+	return 0
+}
+
+func (x *GetReconciliationRunResponse) GetStatus() string {
+	if x != nil {
+		return x.Status
+	}
+	return ""
+}
+
+type UpdateReconciliationStatusRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	RunId         string                 `protobuf:"bytes,1,opt,name=run_id,json=runId,proto3" json:"run_id,omitempty"`
+	Status        string                 `protobuf:"bytes,2,opt,name=status,proto3" json:"status,omitempty"` // pending, triggered, running, completed, failed
+	ErrorMessage  *string                `protobuf:"bytes,3,opt,name=error_message,json=errorMessage,proto3,oneof" json:"error_message,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *UpdateReconciliationStatusRequest) Reset() {
+	*x = UpdateReconciliationStatusRequest{}
+	mi := &file_libops_v1_admin_api_proto_msgTypes[51]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *UpdateReconciliationStatusRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*UpdateReconciliationStatusRequest) ProtoMessage() {}
+
+func (x *UpdateReconciliationStatusRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_libops_v1_admin_api_proto_msgTypes[51]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use UpdateReconciliationStatusRequest.ProtoReflect.Descriptor instead.
+func (*UpdateReconciliationStatusRequest) Descriptor() ([]byte, []int) {
+	return file_libops_v1_admin_api_proto_rawDescGZIP(), []int{51}
+}
+
+func (x *UpdateReconciliationStatusRequest) GetRunId() string {
+	if x != nil {
+		return x.RunId
+	}
+	return ""
+}
+
+func (x *UpdateReconciliationStatusRequest) GetStatus() string {
+	if x != nil {
+		return x.Status
+	}
+	return ""
+}
+
+func (x *UpdateReconciliationStatusRequest) GetErrorMessage() string {
+	if x != nil && x.ErrorMessage != nil {
+		return *x.ErrorMessage
+	}
+	return ""
+}
+
+type UpdateReconciliationStatusResponse struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Success       bool                   `protobuf:"varint,1,opt,name=success,proto3" json:"success,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *UpdateReconciliationStatusResponse) Reset() {
+	*x = UpdateReconciliationStatusResponse{}
+	mi := &file_libops_v1_admin_api_proto_msgTypes[52]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *UpdateReconciliationStatusResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*UpdateReconciliationStatusResponse) ProtoMessage() {}
+
+func (x *UpdateReconciliationStatusResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_libops_v1_admin_api_proto_msgTypes[52]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use UpdateReconciliationStatusResponse.ProtoReflect.Descriptor instead.
+func (*UpdateReconciliationStatusResponse) Descriptor() ([]byte, []int) {
+	return file_libops_v1_admin_api_proto_rawDescGZIP(), []int{52}
+}
+
+func (x *UpdateReconciliationStatusResponse) GetSuccess() bool {
+	if x != nil {
+		return x.Success
+	}
+	return false
+}
+
+type GenerateTerraformVarsRequest struct {
+	state          protoimpl.MessageState `protogen:"open.v1"`
+	OrganizationId *int64                 `protobuf:"varint,1,opt,name=organization_id,json=organizationId,proto3,oneof" json:"organization_id,omitempty"`
+	ProjectId      *int64                 `protobuf:"varint,2,opt,name=project_id,json=projectId,proto3,oneof" json:"project_id,omitempty"`
+	SiteId         *int64                 `protobuf:"varint,3,opt,name=site_id,json=siteId,proto3,oneof" json:"site_id,omitempty"`
+	unknownFields  protoimpl.UnknownFields
+	sizeCache      protoimpl.SizeCache
+}
+
+func (x *GenerateTerraformVarsRequest) Reset() {
+	*x = GenerateTerraformVarsRequest{}
+	mi := &file_libops_v1_admin_api_proto_msgTypes[53]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *GenerateTerraformVarsRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*GenerateTerraformVarsRequest) ProtoMessage() {}
+
+func (x *GenerateTerraformVarsRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_libops_v1_admin_api_proto_msgTypes[53]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use GenerateTerraformVarsRequest.ProtoReflect.Descriptor instead.
+func (*GenerateTerraformVarsRequest) Descriptor() ([]byte, []int) {
+	return file_libops_v1_admin_api_proto_rawDescGZIP(), []int{53}
+}
+
+func (x *GenerateTerraformVarsRequest) GetOrganizationId() int64 {
+	if x != nil && x.OrganizationId != nil {
+		return *x.OrganizationId
+	}
+	return 0
+}
+
+func (x *GenerateTerraformVarsRequest) GetProjectId() int64 {
+	if x != nil && x.ProjectId != nil {
+		return *x.ProjectId
+	}
+	return 0
+}
+
+func (x *GenerateTerraformVarsRequest) GetSiteId() int64 {
+	if x != nil && x.SiteId != nil {
+		return *x.SiteId
+	}
+	return 0
+}
+
+type GenerateTerraformVarsResponse struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	TfvarsJson    string                 `protobuf:"bytes,1,opt,name=tfvars_json,json=tfvarsJson,proto3" json:"tfvars_json,omitempty"` // JSON-encoded terraform variables
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *GenerateTerraformVarsResponse) Reset() {
+	*x = GenerateTerraformVarsResponse{}
+	mi := &file_libops_v1_admin_api_proto_msgTypes[54]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *GenerateTerraformVarsResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*GenerateTerraformVarsResponse) ProtoMessage() {}
+
+func (x *GenerateTerraformVarsResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_libops_v1_admin_api_proto_msgTypes[54]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use GenerateTerraformVarsResponse.ProtoReflect.Descriptor instead.
+func (*GenerateTerraformVarsResponse) Descriptor() ([]byte, []int) {
+	return file_libops_v1_admin_api_proto_rawDescGZIP(), []int{54}
+}
+
+func (x *GenerateTerraformVarsResponse) GetTfvarsJson() string {
+	if x != nil {
+		return x.TfvarsJson
+	}
+	return ""
+}
+
 var File_libops_v1_admin_api_proto protoreflect.FileDescriptor
 
 const file_libops_v1_admin_api_proto_rawDesc = "" +
@@ -1914,14 +3098,105 @@ const file_libops_v1_admin_api_proto_rawDesc = "" +
 	"\a_filter\"{\n" +
 	"\x19AdminListAllSitesResponse\x126\n" +
 	"\x05sites\x18\x01 \x03(\v2 .libops.v1.admin.AdminSiteConfigR\x05sites\x12&\n" +
-	"\x0fnext_page_token\x18\x02 \x01(\tR\rnextPageToken2\xb7\x06\n" +
+	"\x0fnext_page_token\x18\x02 \x01(\tR\rnextPageToken\"0\n" +
+	"\x15GetSiteSSHKeysRequest\x12\x17\n" +
+	"\asite_id\x18\x01 \x01(\tR\x06siteId\"\x86\x01\n" +
+	"\x06SSHKey\x12\x1d\n" +
+	"\n" +
+	"public_key\x18\x01 \x01(\tR\tpublicKey\x12\x12\n" +
+	"\x04name\x18\x02 \x01(\tR\x04name\x12 \n" +
+	"\vfingerprint\x18\x03 \x01(\tR\vfingerprint\x12'\n" +
+	"\x0fgithub_username\x18\x04 \x01(\tR\x0egithubUsername\"?\n" +
+	"\x16GetSiteSSHKeysResponse\x12%\n" +
+	"\x04keys\x18\x01 \x03(\v2\x11.libops.v1.SSHKeyR\x04keys\"0\n" +
+	"\x15GetSiteSecretsRequest\x12\x17\n" +
+	"\asite_id\x18\x01 \x01(\tR\x06siteId\"0\n" +
+	"\x06Secret\x12\x10\n" +
+	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
+	"\x05value\x18\x02 \x01(\tR\x05value\"E\n" +
+	"\x16GetSiteSecretsResponse\x12+\n" +
+	"\asecrets\x18\x01 \x03(\v2\x11.libops.v1.SecretR\asecrets\"1\n" +
+	"\x16GetSiteFirewallRequest\x12\x17\n" +
+	"\asite_id\x18\x01 \x01(\tR\x06siteId\"n\n" +
+	"\fFirewallRule\x12\x1a\n" +
+	"\bprotocol\x18\x01 \x01(\tR\bprotocol\x12\x12\n" +
+	"\x04port\x18\x02 \x01(\x05R\x04port\x12\x16\n" +
+	"\x06source\x18\x03 \x01(\tR\x06source\x12\x16\n" +
+	"\x06action\x18\x04 \x01(\tR\x06action\"H\n" +
+	"\x17GetSiteFirewallResponse\x12-\n" +
+	"\x05rules\x18\x01 \x03(\v2\x17.libops.v1.FirewallRuleR\x05rules\"-\n" +
+	"\x12SiteCheckInRequest\x12\x17\n" +
+	"\asite_id\x18\x01 \x01(\tR\x06siteId\"I\n" +
+	"\x13SiteCheckInResponse\x12\x18\n" +
+	"\asuccess\x18\x01 \x01(\bR\asuccess\x12\x18\n" +
+	"\amessage\x18\x02 \x01(\tR\amessage\"x\n" +
+	"\x13SyncManifestRequest\x12\x17\n" +
+	"\asite_id\x18\x01 \x01(\tR\x06siteId\x121\n" +
+	"\x12current_state_hash\x18\x02 \x01(\tH\x00R\x10currentStateHash\x88\x01\x01B\x15\n" +
+	"\x13_current_state_hash\"b\n" +
+	"\x14SyncManifestResponse\x12\x1d\n" +
+	"\n" +
+	"state_hash\x18\x01 \x01(\tR\tstateHash\x12+\n" +
+	"\x05blobs\x18\x02 \x01(\v2\x15.libops.v1.StateBlobsR\x05blobs\"r\n" +
+	"\n" +
+	"StateBlobs\x12 \n" +
+	"\fssh_keys_url\x18\x01 \x01(\tR\n" +
+	"sshKeysUrl\x12\x1f\n" +
+	"\vsecrets_url\x18\x02 \x01(\tR\n" +
+	"secretsUrl\x12!\n" +
+	"\ffirewall_url\x18\x03 \x01(\tR\vfirewallUrl\"F\n" +
+	"\x0eGetBlobRequest\x12\x17\n" +
+	"\asite_id\x18\x01 \x01(\tR\x06siteId\x12\x1b\n" +
+	"\tblob_type\x18\x02 \x01(\tR\bblobType\"H\n" +
+	"\x0fGetBlobResponse\x12\x12\n" +
+	"\x04data\x18\x01 \x01(\fR\x04data\x12!\n" +
+	"\fcontent_type\x18\x02 \x01(\tR\vcontentType\"4\n" +
+	"\x1bGetReconciliationRunRequest\x12\x15\n" +
+	"\x06run_id\x18\x01 \x01(\tR\x05runId\"\xb4\x03\n" +
+	"\x1cGetReconciliationRunResponse\x12\x15\n" +
+	"\x06run_id\x18\x01 \x01(\tR\x05runId\x12\x19\n" +
+	"\brun_type\x18\x02 \x01(\tR\arunType\x124\n" +
+	"\x13reconciliation_type\x18\x03 \x01(\tH\x00R\x12reconciliationType\x88\x01\x01\x12\x18\n" +
+	"\amodules\x18\x04 \x03(\tR\amodules\x12&\n" +
+	"\x0ftarget_site_ids\x18\x05 \x03(\x03R\rtargetSiteIds\x12\x1b\n" +
+	"\tevent_ids\x18\x06 \x03(\tR\beventIds\x12,\n" +
+	"\x0forganization_id\x18\a \x01(\x03H\x01R\x0eorganizationId\x88\x01\x01\x12\"\n" +
+	"\n" +
+	"project_id\x18\b \x01(\x03H\x02R\tprojectId\x88\x01\x01\x12\x1c\n" +
+	"\asite_id\x18\t \x01(\x03H\x03R\x06siteId\x88\x01\x01\x12\x16\n" +
+	"\x06status\x18\n" +
+	" \x01(\tR\x06statusB\x16\n" +
+	"\x14_reconciliation_typeB\x12\n" +
+	"\x10_organization_idB\r\n" +
+	"\v_project_idB\n" +
+	"\n" +
+	"\b_site_id\"\x8e\x01\n" +
+	"!UpdateReconciliationStatusRequest\x12\x15\n" +
+	"\x06run_id\x18\x01 \x01(\tR\x05runId\x12\x16\n" +
+	"\x06status\x18\x02 \x01(\tR\x06status\x12(\n" +
+	"\rerror_message\x18\x03 \x01(\tH\x00R\ferrorMessage\x88\x01\x01B\x10\n" +
+	"\x0e_error_message\">\n" +
+	"\"UpdateReconciliationStatusResponse\x12\x18\n" +
+	"\asuccess\x18\x01 \x01(\bR\asuccess\"\xbd\x01\n" +
+	"\x1cGenerateTerraformVarsRequest\x12,\n" +
+	"\x0forganization_id\x18\x01 \x01(\x03H\x00R\x0eorganizationId\x88\x01\x01\x12\"\n" +
+	"\n" +
+	"project_id\x18\x02 \x01(\x03H\x01R\tprojectId\x88\x01\x01\x12\x1c\n" +
+	"\asite_id\x18\x03 \x01(\x03H\x02R\x06siteId\x88\x01\x01B\x12\n" +
+	"\x10_organization_idB\r\n" +
+	"\v_project_idB\n" +
+	"\n" +
+	"\b_site_id\"@\n" +
+	"\x1dGenerateTerraformVarsResponse\x12\x1f\n" +
+	"\vtfvars_json\x18\x01 \x01(\tR\n" +
+	"tfvarsJson2\xb7\x06\n" +
 	"\x18AdminOrganizationService\x12}\n" +
 	"\x0fGetOrganization\x12&.libops.v1.AdminGetOrganizationRequest\x1a'.libops.v1.AdminGetOrganizationResponse\"\x19\x92\xb5\x18\x12\b\x01\x10\x03\"\fadmin:system\x90\x02\x01\x12\x83\x01\n" +
 	"\x12CreateOrganization\x12).libops.v1.AdminCreateOrganizationRequest\x1a*.libops.v1.AdminCreateOrganizationResponse\"\x16\x92\xb5\x18\x12\b\x01\x10\x03\"\fadmin:system\x12\x83\x01\n" +
 	"\x12UpdateOrganization\x12).libops.v1.AdminUpdateOrganizationRequest\x1a*.libops.v1.AdminUpdateOrganizationResponse\"\x16\x92\xb5\x18\x12\b\x01\x10\x03\"\fadmin:system\x12o\n" +
 	"\x12DeleteOrganization\x12).libops.v1.AdminDeleteOrganizationRequest\x1a\x16.google.protobuf.Empty\"\x16\x92\xb5\x18\x12\b\x01\x10\x03\"\fadmin:system\x12\x83\x01\n" +
 	"\x11ListOrganizations\x12(.libops.v1.AdminListOrganizationsRequest\x1a).libops.v1.AdminListOrganizationsResponse\"\x19\x92\xb5\x18\x12\b\x01\x10\x03\"\fadmin:system\x90\x02\x01\x12\x98\x01\n" +
-	"\x18ListOrganizationProjects\x12/.libops.v1.AdminListOrganizationProjectsRequest\x1a0.libops.v1.AdminListOrganizationProjectsResponse\"\x19\x92\xb5\x18\x12\b\x01\x10\x03\"\fadmin:system\x90\x02\x012\x97\x05\n" +
+	"\x18ListOrganizationProjects\x12/.libops.v1.AdminListOrganizationProjectsRequest\x1a0.libops.v1.AdminListOrganizationProjectsResponse\"\x19\x92\xb5\x18\x12\b\x01\x10\x03\"\fadmin:system\x90\x02\x012\x9b\t\n" +
 	"\x10AdminSiteService\x12k\n" +
 	"\tListSites\x12 .libops.v1.AdminListSitesRequest\x1a!.libops.v1.AdminListSitesResponse\"\x19\x92\xb5\x18\x12\b\x01\x10\x03\"\fadmin:system\x90\x02\x01\x12e\n" +
 	"\aGetSite\x12\x1e.libops.v1.AdminGetSiteRequest\x1a\x1f.libops.v1.AdminGetSiteResponse\"\x19\x92\xb5\x18\x12\b\x01\x10\x03\"\fadmin:system\x90\x02\x01\x12k\n" +
@@ -1931,7 +3206,13 @@ const file_libops_v1_admin_api_proto_rawDesc = "" +
 	"UpdateSite\x12!.libops.v1.AdminUpdateSiteRequest\x1a\".libops.v1.AdminUpdateSiteResponse\"\x16\x92\xb5\x18\x12\b\x01\x10\x03\"\fadmin:system\x12_\n" +
 	"\n" +
 	"DeleteSite\x12!.libops.v1.AdminDeleteSiteRequest\x1a\x16.google.protobuf.Empty\"\x16\x92\xb5\x18\x12\b\x01\x10\x03\"\fadmin:system\x12t\n" +
-	"\fListAllSites\x12#.libops.v1.AdminListAllSitesRequest\x1a$.libops.v1.AdminListAllSitesResponse\"\x19\x92\xb5\x18\x12\b\x01\x10\x03\"\fadmin:system\x90\x02\x012\xcd\x05\n" +
+	"\fListAllSites\x12#.libops.v1.AdminListAllSitesRequest\x1a$.libops.v1.AdminListAllSitesResponse\"\x19\x92\xb5\x18\x12\b\x01\x10\x03\"\fadmin:system\x90\x02\x01\x12Z\n" +
+	"\x0eGetSiteSSHKeys\x12 .libops.v1.GetSiteSSHKeysRequest\x1a!.libops.v1.GetSiteSSHKeysResponse\"\x03\x90\x02\x01\x12Z\n" +
+	"\x0eGetSiteSecrets\x12 .libops.v1.GetSiteSecretsRequest\x1a!.libops.v1.GetSiteSecretsResponse\"\x03\x90\x02\x01\x12]\n" +
+	"\x0fGetSiteFirewall\x12!.libops.v1.GetSiteFirewallRequest\x1a\".libops.v1.GetSiteFirewallResponse\"\x03\x90\x02\x01\x12N\n" +
+	"\vSiteCheckIn\x12\x1d.libops.v1.SiteCheckInRequest\x1a\x1e.libops.v1.SiteCheckInResponse\"\x00\x12T\n" +
+	"\fSyncManifest\x12\x1e.libops.v1.SyncManifestRequest\x1a\x1f.libops.v1.SyncManifestResponse\"\x03\x90\x02\x01\x12E\n" +
+	"\aGetBlob\x12\x19.libops.v1.GetBlobRequest\x1a\x1a.libops.v1.GetBlobResponse\"\x03\x90\x02\x012\xcd\x05\n" +
 	"\x13AdminProjectService\x12n\n" +
 	"\n" +
 	"GetProject\x12!.libops.v1.AdminGetProjectRequest\x1a\".libops.v1.AdminGetProjectResponse\"\x19\x92\xb5\x18\x12\b\x01\x10\x03\"\fadmin:system\x90\x02\x01\x12t\n" +
@@ -1939,7 +3220,11 @@ const file_libops_v1_admin_api_proto_rawDesc = "" +
 	"\rUpdateProject\x12$.libops.v1.AdminUpdateProjectRequest\x1a%.libops.v1.AdminUpdateProjectResponse\"\x16\x92\xb5\x18\x12\b\x01\x10\x03\"\fadmin:system\x12e\n" +
 	"\rDeleteProject\x12$.libops.v1.AdminDeleteProjectRequest\x1a\x16.google.protobuf.Empty\"\x16\x92\xb5\x18\x12\b\x01\x10\x03\"\fadmin:system\x12t\n" +
 	"\fListProjects\x12#.libops.v1.AdminListProjectsRequest\x1a$.libops.v1.AdminListProjectsResponse\"\x19\x92\xb5\x18\x12\b\x01\x10\x03\"\fadmin:system\x90\x02\x01\x12}\n" +
-	"\x0fListAllProjects\x12&.libops.v1.AdminListAllProjectsRequest\x1a'.libops.v1.AdminListAllProjectsResponse\"\x19\x92\xb5\x18\x12\b\x01\x10\x03\"\fadmin:system\x90\x02\x01B\x93\x01\n" +
+	"\x0fListAllProjects\x12&.libops.v1.AdminListAllProjectsRequest\x1a'.libops.v1.AdminListAllProjectsResponse\"\x19\x92\xb5\x18\x12\b\x01\x10\x03\"\fadmin:system\x90\x02\x012\xf8\x02\n" +
+	"\x1aAdminReconciliationService\x12l\n" +
+	"\x14GetReconciliationRun\x12&.libops.v1.GetReconciliationRunRequest\x1a'.libops.v1.GetReconciliationRunResponse\"\x03\x90\x02\x01\x12{\n" +
+	"\x1aUpdateReconciliationStatus\x12,.libops.v1.UpdateReconciliationStatusRequest\x1a-.libops.v1.UpdateReconciliationStatusResponse\"\x00\x12o\n" +
+	"\x15GenerateTerraformVars\x12'.libops.v1.GenerateTerraformVarsRequest\x1a(.libops.v1.GenerateTerraformVarsResponse\"\x03\x90\x02\x01B\x93\x01\n" +
 	"\rcom.libops.v1B\rAdminApiProtoP\x01Z.github.com/libops/api/proto/libops/v1;libopsv1\xa2\x02\x03LXX\xaa\x02\tLibops.V1\xca\x02\tLibops\\V1\xe2\x02\x15Libops\\V1\\GPBMetadata\xea\x02\n" +
 	"Libops::V1b\x06proto3"
 
@@ -1955,7 +3240,7 @@ func file_libops_v1_admin_api_proto_rawDescGZIP() []byte {
 	return file_libops_v1_admin_api_proto_rawDescData
 }
 
-var file_libops_v1_admin_api_proto_msgTypes = make([]protoimpl.MessageInfo, 33)
+var file_libops_v1_admin_api_proto_msgTypes = make([]protoimpl.MessageInfo, 55)
 var file_libops_v1_admin_api_proto_goTypes = []any{
 	(*AdminGetProjectRequest)(nil),                // 0: libops.v1.AdminGetProjectRequest
 	(*AdminGetProjectResponse)(nil),               // 1: libops.v1.AdminGetProjectResponse
@@ -1990,77 +3275,121 @@ var file_libops_v1_admin_api_proto_goTypes = []any{
 	(*AdminListSitesResponse)(nil),                // 30: libops.v1.AdminListSitesResponse
 	(*AdminListAllSitesRequest)(nil),              // 31: libops.v1.AdminListAllSitesRequest
 	(*AdminListAllSitesResponse)(nil),             // 32: libops.v1.AdminListAllSitesResponse
-	(*admin.AdminProjectConfig)(nil),              // 33: libops.v1.admin.AdminProjectConfig
-	(*fieldmaskpb.FieldMask)(nil),                 // 34: google.protobuf.FieldMask
-	(*admin.AdminFolderConfig)(nil),               // 35: libops.v1.admin.AdminFolderConfig
-	(*admin.AdminSiteConfig)(nil),                 // 36: libops.v1.admin.AdminSiteConfig
-	(*emptypb.Empty)(nil),                         // 37: google.protobuf.Empty
+	(*GetSiteSSHKeysRequest)(nil),                 // 33: libops.v1.GetSiteSSHKeysRequest
+	(*SSHKey)(nil),                                // 34: libops.v1.SSHKey
+	(*GetSiteSSHKeysResponse)(nil),                // 35: libops.v1.GetSiteSSHKeysResponse
+	(*GetSiteSecretsRequest)(nil),                 // 36: libops.v1.GetSiteSecretsRequest
+	(*Secret)(nil),                                // 37: libops.v1.Secret
+	(*GetSiteSecretsResponse)(nil),                // 38: libops.v1.GetSiteSecretsResponse
+	(*GetSiteFirewallRequest)(nil),                // 39: libops.v1.GetSiteFirewallRequest
+	(*FirewallRule)(nil),                          // 40: libops.v1.FirewallRule
+	(*GetSiteFirewallResponse)(nil),               // 41: libops.v1.GetSiteFirewallResponse
+	(*SiteCheckInRequest)(nil),                    // 42: libops.v1.SiteCheckInRequest
+	(*SiteCheckInResponse)(nil),                   // 43: libops.v1.SiteCheckInResponse
+	(*SyncManifestRequest)(nil),                   // 44: libops.v1.SyncManifestRequest
+	(*SyncManifestResponse)(nil),                  // 45: libops.v1.SyncManifestResponse
+	(*StateBlobs)(nil),                            // 46: libops.v1.StateBlobs
+	(*GetBlobRequest)(nil),                        // 47: libops.v1.GetBlobRequest
+	(*GetBlobResponse)(nil),                       // 48: libops.v1.GetBlobResponse
+	(*GetReconciliationRunRequest)(nil),           // 49: libops.v1.GetReconciliationRunRequest
+	(*GetReconciliationRunResponse)(nil),          // 50: libops.v1.GetReconciliationRunResponse
+	(*UpdateReconciliationStatusRequest)(nil),     // 51: libops.v1.UpdateReconciliationStatusRequest
+	(*UpdateReconciliationStatusResponse)(nil),    // 52: libops.v1.UpdateReconciliationStatusResponse
+	(*GenerateTerraformVarsRequest)(nil),          // 53: libops.v1.GenerateTerraformVarsRequest
+	(*GenerateTerraformVarsResponse)(nil),         // 54: libops.v1.GenerateTerraformVarsResponse
+	(*admin.AdminProjectConfig)(nil),              // 55: libops.v1.admin.AdminProjectConfig
+	(*fieldmaskpb.FieldMask)(nil),                 // 56: google.protobuf.FieldMask
+	(*admin.AdminFolderConfig)(nil),               // 57: libops.v1.admin.AdminFolderConfig
+	(*admin.AdminSiteConfig)(nil),                 // 58: libops.v1.admin.AdminSiteConfig
+	(*emptypb.Empty)(nil),                         // 59: google.protobuf.Empty
 }
 var file_libops_v1_admin_api_proto_depIdxs = []int32{
-	33, // 0: libops.v1.AdminGetProjectResponse.project:type_name -> libops.v1.admin.AdminProjectConfig
-	33, // 1: libops.v1.AdminCreateProjectRequest.project:type_name -> libops.v1.admin.AdminProjectConfig
-	33, // 2: libops.v1.AdminCreateProjectResponse.project:type_name -> libops.v1.admin.AdminProjectConfig
-	33, // 3: libops.v1.AdminUpdateProjectRequest.project:type_name -> libops.v1.admin.AdminProjectConfig
-	34, // 4: libops.v1.AdminUpdateProjectRequest.update_mask:type_name -> google.protobuf.FieldMask
-	33, // 5: libops.v1.AdminUpdateProjectResponse.project:type_name -> libops.v1.admin.AdminProjectConfig
-	33, // 6: libops.v1.AdminListProjectsResponse.projects:type_name -> libops.v1.admin.AdminProjectConfig
-	33, // 7: libops.v1.AdminListAllProjectsResponse.projects:type_name -> libops.v1.admin.AdminProjectConfig
-	35, // 8: libops.v1.AdminGetOrganizationResponse.folder:type_name -> libops.v1.admin.AdminFolderConfig
-	35, // 9: libops.v1.AdminCreateOrganizationRequest.folder:type_name -> libops.v1.admin.AdminFolderConfig
-	35, // 10: libops.v1.AdminCreateOrganizationResponse.folder:type_name -> libops.v1.admin.AdminFolderConfig
-	35, // 11: libops.v1.AdminUpdateOrganizationRequest.folder:type_name -> libops.v1.admin.AdminFolderConfig
-	34, // 12: libops.v1.AdminUpdateOrganizationRequest.update_mask:type_name -> google.protobuf.FieldMask
-	35, // 13: libops.v1.AdminUpdateOrganizationResponse.folder:type_name -> libops.v1.admin.AdminFolderConfig
-	35, // 14: libops.v1.AdminListOrganizationsResponse.organizations:type_name -> libops.v1.admin.AdminFolderConfig
-	36, // 15: libops.v1.AdminGetSiteResponse.site:type_name -> libops.v1.admin.AdminSiteConfig
-	36, // 16: libops.v1.AdminCreateSiteRequest.site:type_name -> libops.v1.admin.AdminSiteConfig
-	36, // 17: libops.v1.AdminCreateSiteResponse.site:type_name -> libops.v1.admin.AdminSiteConfig
-	36, // 18: libops.v1.AdminUpdateSiteRequest.site:type_name -> libops.v1.admin.AdminSiteConfig
-	34, // 19: libops.v1.AdminUpdateSiteRequest.update_mask:type_name -> google.protobuf.FieldMask
-	36, // 20: libops.v1.AdminUpdateSiteResponse.site:type_name -> libops.v1.admin.AdminSiteConfig
-	36, // 21: libops.v1.AdminListSitesResponse.sites:type_name -> libops.v1.admin.AdminSiteConfig
-	36, // 22: libops.v1.AdminListAllSitesResponse.sites:type_name -> libops.v1.admin.AdminSiteConfig
-	11, // 23: libops.v1.AdminOrganizationService.GetOrganization:input_type -> libops.v1.AdminGetOrganizationRequest
-	13, // 24: libops.v1.AdminOrganizationService.CreateOrganization:input_type -> libops.v1.AdminCreateOrganizationRequest
-	15, // 25: libops.v1.AdminOrganizationService.UpdateOrganization:input_type -> libops.v1.AdminUpdateOrganizationRequest
-	17, // 26: libops.v1.AdminOrganizationService.DeleteOrganization:input_type -> libops.v1.AdminDeleteOrganizationRequest
-	18, // 27: libops.v1.AdminOrganizationService.ListOrganizations:input_type -> libops.v1.AdminListOrganizationsRequest
-	20, // 28: libops.v1.AdminOrganizationService.ListOrganizationProjects:input_type -> libops.v1.AdminListOrganizationProjectsRequest
-	29, // 29: libops.v1.AdminSiteService.ListSites:input_type -> libops.v1.AdminListSitesRequest
-	22, // 30: libops.v1.AdminSiteService.GetSite:input_type -> libops.v1.AdminGetSiteRequest
-	24, // 31: libops.v1.AdminSiteService.CreateSite:input_type -> libops.v1.AdminCreateSiteRequest
-	26, // 32: libops.v1.AdminSiteService.UpdateSite:input_type -> libops.v1.AdminUpdateSiteRequest
-	28, // 33: libops.v1.AdminSiteService.DeleteSite:input_type -> libops.v1.AdminDeleteSiteRequest
-	31, // 34: libops.v1.AdminSiteService.ListAllSites:input_type -> libops.v1.AdminListAllSitesRequest
-	0,  // 35: libops.v1.AdminProjectService.GetProject:input_type -> libops.v1.AdminGetProjectRequest
-	2,  // 36: libops.v1.AdminProjectService.CreateProject:input_type -> libops.v1.AdminCreateProjectRequest
-	4,  // 37: libops.v1.AdminProjectService.UpdateProject:input_type -> libops.v1.AdminUpdateProjectRequest
-	6,  // 38: libops.v1.AdminProjectService.DeleteProject:input_type -> libops.v1.AdminDeleteProjectRequest
-	7,  // 39: libops.v1.AdminProjectService.ListProjects:input_type -> libops.v1.AdminListProjectsRequest
-	9,  // 40: libops.v1.AdminProjectService.ListAllProjects:input_type -> libops.v1.AdminListAllProjectsRequest
-	12, // 41: libops.v1.AdminOrganizationService.GetOrganization:output_type -> libops.v1.AdminGetOrganizationResponse
-	14, // 42: libops.v1.AdminOrganizationService.CreateOrganization:output_type -> libops.v1.AdminCreateOrganizationResponse
-	16, // 43: libops.v1.AdminOrganizationService.UpdateOrganization:output_type -> libops.v1.AdminUpdateOrganizationResponse
-	37, // 44: libops.v1.AdminOrganizationService.DeleteOrganization:output_type -> google.protobuf.Empty
-	19, // 45: libops.v1.AdminOrganizationService.ListOrganizations:output_type -> libops.v1.AdminListOrganizationsResponse
-	21, // 46: libops.v1.AdminOrganizationService.ListOrganizationProjects:output_type -> libops.v1.AdminListOrganizationProjectsResponse
-	30, // 47: libops.v1.AdminSiteService.ListSites:output_type -> libops.v1.AdminListSitesResponse
-	23, // 48: libops.v1.AdminSiteService.GetSite:output_type -> libops.v1.AdminGetSiteResponse
-	25, // 49: libops.v1.AdminSiteService.CreateSite:output_type -> libops.v1.AdminCreateSiteResponse
-	27, // 50: libops.v1.AdminSiteService.UpdateSite:output_type -> libops.v1.AdminUpdateSiteResponse
-	37, // 51: libops.v1.AdminSiteService.DeleteSite:output_type -> google.protobuf.Empty
-	32, // 52: libops.v1.AdminSiteService.ListAllSites:output_type -> libops.v1.AdminListAllSitesResponse
-	1,  // 53: libops.v1.AdminProjectService.GetProject:output_type -> libops.v1.AdminGetProjectResponse
-	3,  // 54: libops.v1.AdminProjectService.CreateProject:output_type -> libops.v1.AdminCreateProjectResponse
-	5,  // 55: libops.v1.AdminProjectService.UpdateProject:output_type -> libops.v1.AdminUpdateProjectResponse
-	37, // 56: libops.v1.AdminProjectService.DeleteProject:output_type -> google.protobuf.Empty
-	8,  // 57: libops.v1.AdminProjectService.ListProjects:output_type -> libops.v1.AdminListProjectsResponse
-	10, // 58: libops.v1.AdminProjectService.ListAllProjects:output_type -> libops.v1.AdminListAllProjectsResponse
-	41, // [41:59] is the sub-list for method output_type
-	23, // [23:41] is the sub-list for method input_type
-	23, // [23:23] is the sub-list for extension type_name
-	23, // [23:23] is the sub-list for extension extendee
-	0,  // [0:23] is the sub-list for field type_name
+	55, // 0: libops.v1.AdminGetProjectResponse.project:type_name -> libops.v1.admin.AdminProjectConfig
+	55, // 1: libops.v1.AdminCreateProjectRequest.project:type_name -> libops.v1.admin.AdminProjectConfig
+	55, // 2: libops.v1.AdminCreateProjectResponse.project:type_name -> libops.v1.admin.AdminProjectConfig
+	55, // 3: libops.v1.AdminUpdateProjectRequest.project:type_name -> libops.v1.admin.AdminProjectConfig
+	56, // 4: libops.v1.AdminUpdateProjectRequest.update_mask:type_name -> google.protobuf.FieldMask
+	55, // 5: libops.v1.AdminUpdateProjectResponse.project:type_name -> libops.v1.admin.AdminProjectConfig
+	55, // 6: libops.v1.AdminListProjectsResponse.projects:type_name -> libops.v1.admin.AdminProjectConfig
+	55, // 7: libops.v1.AdminListAllProjectsResponse.projects:type_name -> libops.v1.admin.AdminProjectConfig
+	57, // 8: libops.v1.AdminGetOrganizationResponse.folder:type_name -> libops.v1.admin.AdminFolderConfig
+	57, // 9: libops.v1.AdminCreateOrganizationRequest.folder:type_name -> libops.v1.admin.AdminFolderConfig
+	57, // 10: libops.v1.AdminCreateOrganizationResponse.folder:type_name -> libops.v1.admin.AdminFolderConfig
+	57, // 11: libops.v1.AdminUpdateOrganizationRequest.folder:type_name -> libops.v1.admin.AdminFolderConfig
+	56, // 12: libops.v1.AdminUpdateOrganizationRequest.update_mask:type_name -> google.protobuf.FieldMask
+	57, // 13: libops.v1.AdminUpdateOrganizationResponse.folder:type_name -> libops.v1.admin.AdminFolderConfig
+	57, // 14: libops.v1.AdminListOrganizationsResponse.organizations:type_name -> libops.v1.admin.AdminFolderConfig
+	58, // 15: libops.v1.AdminGetSiteResponse.site:type_name -> libops.v1.admin.AdminSiteConfig
+	58, // 16: libops.v1.AdminCreateSiteRequest.site:type_name -> libops.v1.admin.AdminSiteConfig
+	58, // 17: libops.v1.AdminCreateSiteResponse.site:type_name -> libops.v1.admin.AdminSiteConfig
+	58, // 18: libops.v1.AdminUpdateSiteRequest.site:type_name -> libops.v1.admin.AdminSiteConfig
+	56, // 19: libops.v1.AdminUpdateSiteRequest.update_mask:type_name -> google.protobuf.FieldMask
+	58, // 20: libops.v1.AdminUpdateSiteResponse.site:type_name -> libops.v1.admin.AdminSiteConfig
+	58, // 21: libops.v1.AdminListSitesResponse.sites:type_name -> libops.v1.admin.AdminSiteConfig
+	58, // 22: libops.v1.AdminListAllSitesResponse.sites:type_name -> libops.v1.admin.AdminSiteConfig
+	34, // 23: libops.v1.GetSiteSSHKeysResponse.keys:type_name -> libops.v1.SSHKey
+	37, // 24: libops.v1.GetSiteSecretsResponse.secrets:type_name -> libops.v1.Secret
+	40, // 25: libops.v1.GetSiteFirewallResponse.rules:type_name -> libops.v1.FirewallRule
+	46, // 26: libops.v1.SyncManifestResponse.blobs:type_name -> libops.v1.StateBlobs
+	11, // 27: libops.v1.AdminOrganizationService.GetOrganization:input_type -> libops.v1.AdminGetOrganizationRequest
+	13, // 28: libops.v1.AdminOrganizationService.CreateOrganization:input_type -> libops.v1.AdminCreateOrganizationRequest
+	15, // 29: libops.v1.AdminOrganizationService.UpdateOrganization:input_type -> libops.v1.AdminUpdateOrganizationRequest
+	17, // 30: libops.v1.AdminOrganizationService.DeleteOrganization:input_type -> libops.v1.AdminDeleteOrganizationRequest
+	18, // 31: libops.v1.AdminOrganizationService.ListOrganizations:input_type -> libops.v1.AdminListOrganizationsRequest
+	20, // 32: libops.v1.AdminOrganizationService.ListOrganizationProjects:input_type -> libops.v1.AdminListOrganizationProjectsRequest
+	29, // 33: libops.v1.AdminSiteService.ListSites:input_type -> libops.v1.AdminListSitesRequest
+	22, // 34: libops.v1.AdminSiteService.GetSite:input_type -> libops.v1.AdminGetSiteRequest
+	24, // 35: libops.v1.AdminSiteService.CreateSite:input_type -> libops.v1.AdminCreateSiteRequest
+	26, // 36: libops.v1.AdminSiteService.UpdateSite:input_type -> libops.v1.AdminUpdateSiteRequest
+	28, // 37: libops.v1.AdminSiteService.DeleteSite:input_type -> libops.v1.AdminDeleteSiteRequest
+	31, // 38: libops.v1.AdminSiteService.ListAllSites:input_type -> libops.v1.AdminListAllSitesRequest
+	33, // 39: libops.v1.AdminSiteService.GetSiteSSHKeys:input_type -> libops.v1.GetSiteSSHKeysRequest
+	36, // 40: libops.v1.AdminSiteService.GetSiteSecrets:input_type -> libops.v1.GetSiteSecretsRequest
+	39, // 41: libops.v1.AdminSiteService.GetSiteFirewall:input_type -> libops.v1.GetSiteFirewallRequest
+	42, // 42: libops.v1.AdminSiteService.SiteCheckIn:input_type -> libops.v1.SiteCheckInRequest
+	44, // 43: libops.v1.AdminSiteService.SyncManifest:input_type -> libops.v1.SyncManifestRequest
+	47, // 44: libops.v1.AdminSiteService.GetBlob:input_type -> libops.v1.GetBlobRequest
+	0,  // 45: libops.v1.AdminProjectService.GetProject:input_type -> libops.v1.AdminGetProjectRequest
+	2,  // 46: libops.v1.AdminProjectService.CreateProject:input_type -> libops.v1.AdminCreateProjectRequest
+	4,  // 47: libops.v1.AdminProjectService.UpdateProject:input_type -> libops.v1.AdminUpdateProjectRequest
+	6,  // 48: libops.v1.AdminProjectService.DeleteProject:input_type -> libops.v1.AdminDeleteProjectRequest
+	7,  // 49: libops.v1.AdminProjectService.ListProjects:input_type -> libops.v1.AdminListProjectsRequest
+	9,  // 50: libops.v1.AdminProjectService.ListAllProjects:input_type -> libops.v1.AdminListAllProjectsRequest
+	49, // 51: libops.v1.AdminReconciliationService.GetReconciliationRun:input_type -> libops.v1.GetReconciliationRunRequest
+	51, // 52: libops.v1.AdminReconciliationService.UpdateReconciliationStatus:input_type -> libops.v1.UpdateReconciliationStatusRequest
+	53, // 53: libops.v1.AdminReconciliationService.GenerateTerraformVars:input_type -> libops.v1.GenerateTerraformVarsRequest
+	12, // 54: libops.v1.AdminOrganizationService.GetOrganization:output_type -> libops.v1.AdminGetOrganizationResponse
+	14, // 55: libops.v1.AdminOrganizationService.CreateOrganization:output_type -> libops.v1.AdminCreateOrganizationResponse
+	16, // 56: libops.v1.AdminOrganizationService.UpdateOrganization:output_type -> libops.v1.AdminUpdateOrganizationResponse
+	59, // 57: libops.v1.AdminOrganizationService.DeleteOrganization:output_type -> google.protobuf.Empty
+	19, // 58: libops.v1.AdminOrganizationService.ListOrganizations:output_type -> libops.v1.AdminListOrganizationsResponse
+	21, // 59: libops.v1.AdminOrganizationService.ListOrganizationProjects:output_type -> libops.v1.AdminListOrganizationProjectsResponse
+	30, // 60: libops.v1.AdminSiteService.ListSites:output_type -> libops.v1.AdminListSitesResponse
+	23, // 61: libops.v1.AdminSiteService.GetSite:output_type -> libops.v1.AdminGetSiteResponse
+	25, // 62: libops.v1.AdminSiteService.CreateSite:output_type -> libops.v1.AdminCreateSiteResponse
+	27, // 63: libops.v1.AdminSiteService.UpdateSite:output_type -> libops.v1.AdminUpdateSiteResponse
+	59, // 64: libops.v1.AdminSiteService.DeleteSite:output_type -> google.protobuf.Empty
+	32, // 65: libops.v1.AdminSiteService.ListAllSites:output_type -> libops.v1.AdminListAllSitesResponse
+	35, // 66: libops.v1.AdminSiteService.GetSiteSSHKeys:output_type -> libops.v1.GetSiteSSHKeysResponse
+	38, // 67: libops.v1.AdminSiteService.GetSiteSecrets:output_type -> libops.v1.GetSiteSecretsResponse
+	41, // 68: libops.v1.AdminSiteService.GetSiteFirewall:output_type -> libops.v1.GetSiteFirewallResponse
+	43, // 69: libops.v1.AdminSiteService.SiteCheckIn:output_type -> libops.v1.SiteCheckInResponse
+	45, // 70: libops.v1.AdminSiteService.SyncManifest:output_type -> libops.v1.SyncManifestResponse
+	48, // 71: libops.v1.AdminSiteService.GetBlob:output_type -> libops.v1.GetBlobResponse
+	1,  // 72: libops.v1.AdminProjectService.GetProject:output_type -> libops.v1.AdminGetProjectResponse
+	3,  // 73: libops.v1.AdminProjectService.CreateProject:output_type -> libops.v1.AdminCreateProjectResponse
+	5,  // 74: libops.v1.AdminProjectService.UpdateProject:output_type -> libops.v1.AdminUpdateProjectResponse
+	59, // 75: libops.v1.AdminProjectService.DeleteProject:output_type -> google.protobuf.Empty
+	8,  // 76: libops.v1.AdminProjectService.ListProjects:output_type -> libops.v1.AdminListProjectsResponse
+	10, // 77: libops.v1.AdminProjectService.ListAllProjects:output_type -> libops.v1.AdminListAllProjectsResponse
+	50, // 78: libops.v1.AdminReconciliationService.GetReconciliationRun:output_type -> libops.v1.GetReconciliationRunResponse
+	52, // 79: libops.v1.AdminReconciliationService.UpdateReconciliationStatus:output_type -> libops.v1.UpdateReconciliationStatusResponse
+	54, // 80: libops.v1.AdminReconciliationService.GenerateTerraformVars:output_type -> libops.v1.GenerateTerraformVarsResponse
+	54, // [54:81] is the sub-list for method output_type
+	27, // [27:54] is the sub-list for method input_type
+	27, // [27:27] is the sub-list for extension type_name
+	27, // [27:27] is the sub-list for extension extendee
+	0,  // [0:27] is the sub-list for field type_name
 }
 
 func init() { file_libops_v1_admin_api_proto_init() }
@@ -2073,15 +3402,19 @@ func file_libops_v1_admin_api_proto_init() {
 	file_libops_v1_admin_api_proto_msgTypes[18].OneofWrappers = []any{}
 	file_libops_v1_admin_api_proto_msgTypes[29].OneofWrappers = []any{}
 	file_libops_v1_admin_api_proto_msgTypes[31].OneofWrappers = []any{}
+	file_libops_v1_admin_api_proto_msgTypes[44].OneofWrappers = []any{}
+	file_libops_v1_admin_api_proto_msgTypes[50].OneofWrappers = []any{}
+	file_libops_v1_admin_api_proto_msgTypes[51].OneofWrappers = []any{}
+	file_libops_v1_admin_api_proto_msgTypes[53].OneofWrappers = []any{}
 	type x struct{}
 	out := protoimpl.TypeBuilder{
 		File: protoimpl.DescBuilder{
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_libops_v1_admin_api_proto_rawDesc), len(file_libops_v1_admin_api_proto_rawDesc)),
 			NumEnums:      0,
-			NumMessages:   33,
+			NumMessages:   55,
 			NumExtensions: 0,
-			NumServices:   3,
+			NumServices:   4,
 		},
 		GoTypes:           file_libops_v1_admin_api_proto_goTypes,
 		DependencyIndexes: file_libops_v1_admin_api_proto_depIdxs,

@@ -11,14 +11,12 @@ import (
 	"path/filepath"
 	"time"
 
-	cloudevents "github.com/cloudevents/sdk-go/v2"
-
+	"github.com/libops/api/db"
 	"github.com/libops/api/internal/audit"
 	"github.com/libops/api/internal/auth"
 	"github.com/libops/api/internal/config"
 	"github.com/libops/api/internal/dash"
 	"github.com/libops/api/internal/database"
-	"github.com/libops/api/internal/db"
 	"github.com/libops/api/internal/events"
 	"github.com/libops/api/internal/router"
 	"github.com/libops/api/internal/vault"
@@ -26,14 +24,14 @@ import (
 
 // Server represents the API server with all its dependencies.
 type Server struct {
-	config         *config.Config
-	reloader       *config.Reloader
-	httpServer     *http.Server
-	dbPool         *sql.DB
-	queueProcessor *events.QueueProcessor
-	emailVerifier  *auth.EmailVerifier
-	cleanupTicker  *time.Ticker
-	cleanupDone    chan bool
+	config        *config.Config
+	reloader      *config.Reloader
+	httpServer    *http.Server
+	dbPool        *sql.DB
+	emailVerifier *auth.EmailVerifier
+	vaultClient   *vault.Client
+	cleanupTicker *time.Ticker
+	cleanupDone   chan bool
 }
 
 // findTemplatesDir searches for the templates directory starting from the current directory
@@ -96,14 +94,21 @@ func New(reloader *config.Reloader) (*Server, error) {
 	}
 	slog.Info("Database connection pool established")
 
+	// Run database migrations (same in dev and prod)
+	slog.Info("Running database migrations")
+	if err := database.Migrate(dbPool); err != nil {
+		return nil, fmt.Errorf("failed to run migrations: %w", err)
+	}
+	slog.Info("Database migrations completed successfully")
+
 	queries := db.New(dbPool)
 
-	jwtValidator, libopsTokenIssuer, apiKeyManager, authHandler, authorizer, emailVerifier, userpassClient, sessionManager, err := setupAuth(cfg, queries)
+	jwtValidator, libopsTokenIssuer, apiKeyManager, authHandler, authorizer, emailVerifier, userpassClient, sessionManager, vaultClient, err := setupAuth(cfg, queries)
 	if err != nil {
 		return nil, fmt.Errorf("failed to setup auth: %w", err)
 	}
 
-	ceClient, emitter, queueProcessor := setupEvents(cfg, queries)
+	emitter := setupEvents(queries)
 
 	routerDeps := &router.Dependencies{
 		Config:            cfg,
@@ -128,17 +133,23 @@ func New(reloader *config.Reloader) (*Server, error) {
 		IdleTimeout:  cfg.IdleTimeout,
 	}
 
-	logServerConfig(cfg, ceClient)
+	server := &Server{
+		config:        cfg,
+		reloader:      reloader,
+		httpServer:    httpServer,
+		dbPool:        dbPool,
+		emailVerifier: emailVerifier,
+		vaultClient:   vaultClient,
+		cleanupDone:   make(chan bool),
+	}
 
-	return &Server{
-		config:         cfg,
-		reloader:       reloader,
-		httpServer:     httpServer,
-		dbPool:         dbPool,
-		queueProcessor: queueProcessor,
-		emailVerifier:  emailVerifier,
-		cleanupDone:    make(chan bool),
-	}, nil
+	// Register callback to update Vault token when config changes
+	reloader.OnTokenChange(func(newToken string) {
+		slog.Info("Updating Vault client token after config reload")
+		vaultClient.SetToken(newToken)
+	})
+
+	return server, nil
 }
 
 // Start begins listening for HTTP requests.
@@ -147,8 +158,6 @@ func (s *Server) Start() error {
 	if err := s.reloader.Start(context.Background()); err != nil {
 		return fmt.Errorf("failed to start config reloader: %w", err)
 	}
-
-	go s.queueProcessor.Start(context.Background())
 
 	if s.emailVerifier != nil {
 		s.cleanupTicker = time.NewTicker(1 * time.Hour)
@@ -191,9 +200,6 @@ func (s *Server) Shutdown(ctx context.Context) error {
 		slog.Info("Stopped email verification cleanup job")
 	}
 
-	slog.Info("Stopping queue processor")
-	s.queueProcessor.Stop()
-
 	if err := s.httpServer.Shutdown(ctx); err != nil {
 		_ = s.httpServer.Close()
 		return fmt.Errorf("could not stop server gracefully: %w", err)
@@ -217,6 +223,7 @@ func setupAuth(cfg *config.Config, queries db.Querier) (
 	*auth.EmailVerifier,
 	*auth.UserpassClient,
 	*auth.SessionManager,
+	*vault.Client,
 	error,
 ) {
 	vaultClient, err := vault.NewClient(&vault.Config{
@@ -224,7 +231,7 @@ func setupAuth(cfg *config.Config, queries db.Querier) (
 		Token:   cfg.VaultToken,
 	})
 	if err != nil {
-		return nil, nil, nil, nil, nil, nil, nil, nil, fmt.Errorf("failed to initialize vault client: %w", err)
+		return nil, nil, nil, nil, nil, nil, nil, nil, nil, fmt.Errorf("failed to initialize vault client: %w", err)
 	}
 
 	// JWT validator uses APIBaseURL (not VaultAddr) to fetch JWKS via Traefik
@@ -232,7 +239,7 @@ func setupAuth(cfg *config.Config, queries db.Querier) (
 	jwtValidator := auth.NewJWTValidator(cfg.VaultAddr, cfg.VaultOIDCProvider)
 
 	if err := jwtValidator.Initialize(context.Background()); err != nil {
-		return nil, nil, nil, nil, nil, nil, nil, nil, fmt.Errorf("failed to initialize JWT validator: %w", err)
+		return nil, nil, nil, nil, nil, nil, nil, nil, nil, fmt.Errorf("failed to initialize JWT validator: %w", err)
 	}
 
 	auditLogger := audit.New(queries)
@@ -295,51 +302,13 @@ func setupAuth(cfg *config.Config, queries db.Querier) (
 		"provider", cfg.VaultOIDCProvider,
 		"token_len", len(cfg.VaultToken))
 
-	return jwtValidator, libopsTokenIssuer, apiKeyManager, authHandler, authorizer, emailVerifier, userpassClient, sessionManager, nil
+	return jwtValidator, libopsTokenIssuer, apiKeyManager, authHandler, authorizer, emailVerifier, userpassClient, sessionManager, vaultClient, nil
 }
 
-// setupEvents initializes event emitter and queue processor.
-func setupEvents(cfg *config.Config, queries db.Querier) (
-	cloudevents.Client,
-	*events.Emitter,
-	*events.QueueProcessor,
-) {
-	var ceClient cloudevents.Client
-
-	if cfg.GCPProjectID != "" && cfg.EventsTopicID != "" {
-		sender, err := events.NewPubSubSender(context.Background(), cfg.GCPProjectID, cfg.EventsTopicID)
-		if err != nil {
-			slog.Warn("Failed to create Pub/Sub sender, events disabled", "error", err)
-			ceClient = events.NewNoOpClient()
-		} else {
-			slog.Info("Event emitter configured with Pub/Sub",
-				"project", cfg.GCPProjectID,
-				"topic", cfg.EventsTopicID)
-			ceClient = events.NewPubSubCloudEventsClient(sender)
-		}
-	} else {
-		slog.Info("Event emitter disabled (no GCP_PROJECT_ID or EVENTS_TOPIC_ID)")
-		ceClient = events.NewNoOpClient()
-	}
-
-	emitter := events.NewEmitter(ceClient, events.EventSourceLibOpsAPI, queries)
-
-	hostname, _ := os.Hostname()
-	instanceID := fmt.Sprintf("%s-%d", hostname, os.Getpid())
-	queueProcessor := events.NewQueueProcessor(
-		queries,
-		ceClient,
-		events.EventSourceLibOpsAPI,
-		instanceID,
-		events.DefaultQueueProcessorConfig(),
-	)
-
-	return ceClient, emitter, queueProcessor
-}
-
-// logServerConfig logs the server configuration at startup.
-func logServerConfig(cfg *config.Config, ceClient cloudevents.Client) {
-	slog.Info("Authorization interceptor enabled")
-	slog.Info("Auth middleware enabled")
-	slog.Info("Auth routes registered")
+// setupEvents initializes event emitter.
+// Events are written to the event_queue table and processed by the orchestrator.
+func setupEvents(queries db.Querier) *events.Emitter {
+	slog.Info("Event emitter configured to use database queue")
+	emitter := events.NewEmitter(queries, events.EventSourceLibOpsAPI)
+	return emitter
 }

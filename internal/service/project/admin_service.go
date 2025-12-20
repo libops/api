@@ -12,9 +12,9 @@ import (
 	"github.com/google/uuid"
 	"google.golang.org/protobuf/types/known/emptypb"
 
+	"github.com/libops/api/db"
 	"github.com/libops/api/internal/auth"
 	"github.com/libops/api/internal/billing"
-	"github.com/libops/api/internal/db"
 	"github.com/libops/api/internal/service"
 	"github.com/libops/api/internal/validation"
 	libopsv1 "github.com/libops/api/proto/libops/v1"
@@ -86,6 +86,8 @@ func (s *AdminProjectService) GetProject(
 			Zone:              service.FromNullString(project.GcpZone),
 			MachineType:       service.FromNullString(project.MachineType),
 			DiskSizeGb:        service.FromNullInt32(project.DiskSizeGb),
+			Os:                service.FromNullString(project.Os),
+			DiskType:          service.FromNullString(project.DiskType),
 			Promote:           service.DbPromoteStrategyToProto(project.PromoteStrategy),
 			Status:            DbProjectStatusToProto(project.Status),
 		},
@@ -174,17 +176,47 @@ func (s *AdminProjectService) CreateProject(
 		return nil, connect.NewError(connect.CodeInvalidArgument, fmt.Errorf("disk_size_gb must be between 10 and 2000"))
 	}
 
-	// Add project to Stripe subscription (adds machine + increases disk)
-	machineItemID, err := s.billingManager.AddProjectToSubscription(
-		ctx,
-		organization.ID,
-		project.Config.ProjectName,
-		machineType,
-		int(diskSizeGB),
-	)
+	// Check if this is the first project for the organization (onboarding flow)
+	// During onboarding, the Stripe subscription is already created with machine+disk items
+	// So we skip adding billing items for the first project to avoid duplicates
+	allProjects, err := s.repo.db.ListProjects(ctx, db.ListProjectsParams{
+		Limit:  100,
+		Offset: 0,
+	})
 	if err != nil {
-		slog.Error("Failed to add project to Stripe subscription", "error", err, "project", project.Config.ProjectName)
-		return nil, connect.NewError(connect.CodeInternal, fmt.Errorf("failed to setup billing for project: %w", err))
+		slog.Error("Failed to check existing projects", "error", err)
+		return nil, connect.NewError(connect.CodeInternal, fmt.Errorf("failed to check existing projects: %w", err))
+	}
+
+	// Count projects for this organization
+	var orgProjectCount int
+	for _, p := range allProjects {
+		if p.OrganizationID == organization.ID {
+			orgProjectCount++
+		}
+	}
+
+	var machineItemID string
+	isFirstProject := orgProjectCount == 0
+
+	if !isFirstProject {
+		// Add project to Stripe subscription (adds machine + increases disk)
+		// Only for projects created after onboarding
+		machineItemID, err = s.billingManager.AddProjectToSubscription(
+			ctx,
+			organization.ID,
+			project.Config.ProjectName,
+			machineType,
+			int(diskSizeGB),
+		)
+		if err != nil {
+			slog.Error("Failed to add project to Stripe subscription", "error", err, "project", project.Config.ProjectName)
+			return nil, connect.NewError(connect.CodeInternal, fmt.Errorf("failed to setup billing for project: %w", err))
+		}
+	} else {
+		slog.Info("Skipping billing setup for first project (onboarding)", "project", project.Config.ProjectName, "org_id", organization.ID)
+		// Machine item ID will be empty for first project - it's already in the subscription from onboarding
+		machineItemID = ""
 	}
 
 	projectPublicID := uuid.New().String()
@@ -463,6 +495,8 @@ func (s *AdminProjectService) ListProjects(
 				Zone:              service.FromNullString(project.GcpZone),
 				MachineType:       service.FromNullString(project.MachineType),
 				DiskSizeGb:        service.FromNullInt32(project.DiskSizeGb),
+				Os:                service.FromNullString(project.Os),
+				DiskType:          service.FromNullString(project.DiskType),
 				Promote:           commonv1.PromoteStrategy_PROMOTE_STRATEGY_GITHUB_TAG,
 				Status:            DbProjectStatusToProto(project.Status),
 			},

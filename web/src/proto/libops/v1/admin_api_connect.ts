@@ -3,7 +3,7 @@
 /* eslint-disable */
 // @ts-nocheck
 
-import { AdminCreateOrganizationRequest, AdminCreateOrganizationResponse, AdminCreateProjectRequest, AdminCreateProjectResponse, AdminCreateSiteRequest, AdminCreateSiteResponse, AdminDeleteOrganizationRequest, AdminDeleteProjectRequest, AdminDeleteSiteRequest, AdminGetOrganizationRequest, AdminGetOrganizationResponse, AdminGetProjectRequest, AdminGetProjectResponse, AdminGetSiteRequest, AdminGetSiteResponse, AdminListAllProjectsRequest, AdminListAllProjectsResponse, AdminListAllSitesRequest, AdminListAllSitesResponse, AdminListOrganizationProjectsRequest, AdminListOrganizationProjectsResponse, AdminListOrganizationsRequest, AdminListOrganizationsResponse, AdminListProjectsRequest, AdminListProjectsResponse, AdminListSitesRequest, AdminListSitesResponse, AdminUpdateOrganizationRequest, AdminUpdateOrganizationResponse, AdminUpdateProjectRequest, AdminUpdateProjectResponse, AdminUpdateSiteRequest, AdminUpdateSiteResponse } from "./admin_api_pb.js";
+import { AdminCreateOrganizationRequest, AdminCreateOrganizationResponse, AdminCreateProjectRequest, AdminCreateProjectResponse, AdminCreateSiteRequest, AdminCreateSiteResponse, AdminDeleteOrganizationRequest, AdminDeleteProjectRequest, AdminDeleteSiteRequest, AdminGetOrganizationRequest, AdminGetOrganizationResponse, AdminGetProjectRequest, AdminGetProjectResponse, AdminGetSiteRequest, AdminGetSiteResponse, AdminListAllProjectsRequest, AdminListAllProjectsResponse, AdminListAllSitesRequest, AdminListAllSitesResponse, AdminListOrganizationProjectsRequest, AdminListOrganizationProjectsResponse, AdminListOrganizationsRequest, AdminListOrganizationsResponse, AdminListProjectsRequest, AdminListProjectsResponse, AdminListSitesRequest, AdminListSitesResponse, AdminUpdateOrganizationRequest, AdminUpdateOrganizationResponse, AdminUpdateProjectRequest, AdminUpdateProjectResponse, AdminUpdateSiteRequest, AdminUpdateSiteResponse, GenerateTerraformVarsRequest, GenerateTerraformVarsResponse, GetBlobRequest, GetBlobResponse, GetReconciliationRunRequest, GetReconciliationRunResponse, GetSiteFirewallRequest, GetSiteFirewallResponse, GetSiteSecretsRequest, GetSiteSecretsResponse, GetSiteSSHKeysRequest, GetSiteSSHKeysResponse, SiteCheckInRequest, SiteCheckInResponse, SyncManifestRequest, SyncManifestResponse, UpdateReconciliationStatusRequest, UpdateReconciliationStatusResponse } from "./admin_api_pb.js";
 import { MethodIdempotency, MethodKind } from "@bufbuild/protobuf";
 import { Empty } from "../../google/protobuf/empty_pb.js";
 
@@ -164,6 +164,78 @@ export const AdminSiteService = {
       kind: MethodKind.Unary,
       idempotency: MethodIdempotency.NoSideEffects,
     },
+    /**
+     * Get SSH keys for a site VM (called by VM controller with GSA auth)
+     *
+     * @generated from rpc libops.v1.AdminSiteService.GetSiteSSHKeys
+     */
+    getSiteSSHKeys: {
+      name: "GetSiteSSHKeys",
+      I: GetSiteSSHKeysRequest,
+      O: GetSiteSSHKeysResponse,
+      kind: MethodKind.Unary,
+      idempotency: MethodIdempotency.NoSideEffects,
+    },
+    /**
+     * Get secrets for a site VM (called by VM controller with GSA auth)
+     *
+     * @generated from rpc libops.v1.AdminSiteService.GetSiteSecrets
+     */
+    getSiteSecrets: {
+      name: "GetSiteSecrets",
+      I: GetSiteSecretsRequest,
+      O: GetSiteSecretsResponse,
+      kind: MethodKind.Unary,
+      idempotency: MethodIdempotency.NoSideEffects,
+    },
+    /**
+     * Get firewall rules for a site VM (called by VM controller with GSA auth)
+     *
+     * @generated from rpc libops.v1.AdminSiteService.GetSiteFirewall
+     */
+    getSiteFirewall: {
+      name: "GetSiteFirewall",
+      I: GetSiteFirewallRequest,
+      O: GetSiteFirewallResponse,
+      kind: MethodKind.Unary,
+      idempotency: MethodIdempotency.NoSideEffects,
+    },
+    /**
+     * Site VM check-in (updates checkin_at timestamp)
+     *
+     * @generated from rpc libops.v1.AdminSiteService.SiteCheckIn
+     */
+    siteCheckIn: {
+      name: "SiteCheckIn",
+      I: SiteCheckInRequest,
+      O: SiteCheckInResponse,
+      kind: MethodKind.Unary,
+    },
+    /**
+     * Sync site manifest - returns state hash and signed URLs to blobs (for eventual consistency)
+     * Called by site VMs every ~24h for eventual consistency
+     *
+     * @generated from rpc libops.v1.AdminSiteService.SyncManifest
+     */
+    syncManifest: {
+      name: "SyncManifest",
+      I: SyncManifestRequest,
+      O: SyncManifestResponse,
+      kind: MethodKind.Unary,
+      idempotency: MethodIdempotency.NoSideEffects,
+    },
+    /**
+     * Get blob content via signed GCS URL (optional - VMs can fetch directly from GCS)
+     *
+     * @generated from rpc libops.v1.AdminSiteService.GetBlob
+     */
+    getBlob: {
+      name: "GetBlob",
+      I: GetBlobRequest,
+      O: GetBlobResponse,
+      kind: MethodKind.Unary,
+      idempotency: MethodIdempotency.NoSideEffects,
+    },
   }
 } as const;
 
@@ -241,6 +313,53 @@ export const AdminProjectService = {
       name: "ListAllProjects",
       I: AdminListAllProjectsRequest,
       O: AdminListAllProjectsResponse,
+      kind: MethodKind.Unary,
+      idempotency: MethodIdempotency.NoSideEffects,
+    },
+  }
+} as const;
+
+/**
+ * AdminReconciliationService handles reconciliation operations
+ * Called by Cloud Run reconciliation services with GSA authentication
+ *
+ * @generated from service libops.v1.AdminReconciliationService
+ */
+export const AdminReconciliationService = {
+  typeName: "libops.v1.AdminReconciliationService",
+  methods: {
+    /**
+     * Get reconciliation run details from control-plane database
+     *
+     * @generated from rpc libops.v1.AdminReconciliationService.GetReconciliationRun
+     */
+    getReconciliationRun: {
+      name: "GetReconciliationRun",
+      I: GetReconciliationRunRequest,
+      O: GetReconciliationRunResponse,
+      kind: MethodKind.Unary,
+      idempotency: MethodIdempotency.NoSideEffects,
+    },
+    /**
+     * Update reconciliation run status
+     *
+     * @generated from rpc libops.v1.AdminReconciliationService.UpdateReconciliationStatus
+     */
+    updateReconciliationStatus: {
+      name: "UpdateReconciliationStatus",
+      I: UpdateReconciliationStatusRequest,
+      O: UpdateReconciliationStatusResponse,
+      kind: MethodKind.Unary,
+    },
+    /**
+     * Generate terraform variables JSON from database state
+     *
+     * @generated from rpc libops.v1.AdminReconciliationService.GenerateTerraformVars
+     */
+    generateTerraformVars: {
+      name: "GenerateTerraformVars",
+      I: GenerateTerraformVarsRequest,
+      O: GenerateTerraformVarsResponse,
       kind: MethodKind.Unary,
       idempotency: MethodIdempotency.NoSideEffects,
     },

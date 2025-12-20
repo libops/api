@@ -9,7 +9,7 @@ import (
 	"connectrpc.com/connect"
 	"github.com/google/uuid"
 
-	"github.com/libops/api/internal/db"
+	"github.com/libops/api/db"
 	libopsv1 "github.com/libops/api/proto/libops/v1"
 	"github.com/libops/api/proto/libops/v1/libopsv1connect"
 )
@@ -56,7 +56,7 @@ func (s *SiteOperationsService) DeploySite(
 	deploymentID := uuid.New().String()
 
 	err = s.db.CreateDeployment(ctx, db.CreateDeploymentParams{
-		DeploymentID: deploymentID,
+		ID:           deploymentID,
 		SiteID:       siteID,
 		Status:       "pending",
 		GithubRunID:  sql.NullString{Valid: false},

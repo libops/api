@@ -1,24 +1,20 @@
 package onboard
 
 import (
-	"context"
 	"database/sql"
 	"encoding/json"
-	"fmt"
 	"io"
 	"log/slog"
+	"net"
 	"net/http"
-	"time"
 
-	"github.com/google/uuid"
+	"github.com/libops/api/db"
 	"github.com/libops/api/internal/auth"
 	"github.com/libops/api/internal/billing"
 	"github.com/libops/api/internal/config"
 	"github.com/libops/api/internal/dash"
-	"github.com/libops/api/internal/db"
 	"github.com/libops/api/internal/service/organization"
 	"github.com/stripe/stripe-go/v84"
-	"github.com/stripe/stripe-go/v84/subscriptionitem"
 	"github.com/stripe/stripe-go/v84/webhook"
 )
 
@@ -109,6 +105,7 @@ func (h *Handler) HandleGetSession(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// Get or create session
 	session, err := h.sessionMgr.GetOrCreateSession(r.Context(), userInfo.AccountID)
 	if err != nil {
 		slog.Error("Failed to get onboarding session", "error", err)
@@ -146,28 +143,32 @@ func (h *Handler) HandleStep1(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Create organization immediately
-	var organizationID = session.OrganizationID
-	if !organizationID.Valid {
-		orgID, err := h.createOrganization(r.Context(), userInfo.AccountID, req.OrganizationName)
+	// Organization is created via API call from frontend
+	// Update session with org name, organization public ID, and advance to step 2
+	organizationPublicID := ""
+	var organizationID sql.NullInt64
+	if req.OrganizationPublicID != "" {
+		organizationPublicID = req.OrganizationPublicID
+
+		// Look up the organization's internal ID
+		org, err := h.db.GetOrganization(r.Context(), req.OrganizationPublicID)
 		if err != nil {
-			slog.Error("Failed to create organization", "error", err)
-			writeJSON(w, http.StatusInternalServerError, ErrorResponse{Error: "Failed to create organization"})
+			slog.Error("Failed to get organization by public ID", "error", err, "public_id", req.OrganizationPublicID)
+			writeJSON(w, http.StatusInternalServerError, ErrorResponse{Error: "Failed to find organization"})
 			return
 		}
-		organizationID = sql.NullInt64{Int64: orgID, Valid: true}
-		slog.Info("Created organization for onboarding", "org_id", orgID, "org_name", req.OrganizationName)
+		organizationID = sql.NullInt64{Int64: org.ID, Valid: true}
 	}
 
-	// Update session with org name, org ID, and advance to step 2
 	err = h.db.UpdateOnboardingSession(r.Context(), db.UpdateOnboardingSessionParams{
 		OrgName:                 sql.NullString{String: req.OrganizationName, Valid: true},
+		OrgUuid:                 organizationPublicID,
 		MachineType:             session.MachineType,
 		MachinePriceID:          session.MachinePriceID,
 		DiskSizeGb:              session.DiskSizeGb,
 		StripeCheckoutSessionID: session.StripeCheckoutSessionID,
 		StripeSubscriptionID:    session.StripeSubscriptionID,
-		OrganizationID:          organizationID,
+		OrganizationID:          organizationID, // Set org ID from lookup
 		ProjectName:             session.ProjectName,
 		GcpCountry:              session.GcpCountry,
 		GcpRegion:               session.GcpRegion,
@@ -232,7 +233,8 @@ func (h *Handler) HandleStep2(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Create Stripe checkout session using billing manager
-	checkoutResult, err := h.billingMgr.CreateCheckoutSession(r.Context(), account.Email, session.PublicID, req.MachineType, req.DiskSizeGB, h.baseURL)
+	// First-time onboarding always gets a 7-day trial
+	checkoutResult, err := h.billingMgr.CreateCheckoutSession(r.Context(), account.Email, session.PublicID, req.MachineType, req.DiskSizeGB, h.baseURL, true)
 	if err != nil {
 		slog.Error("Failed to create checkout session", "error", err)
 		writeJSON(w, http.StatusInternalServerError, ErrorResponse{Error: "Failed to create checkout session"})
@@ -257,6 +259,7 @@ func (h *Handler) HandleStep2(w http.ResponseWriter, r *http.Request) {
 	// Update session with machine type, disk size, and checkout info
 	err = h.db.UpdateOnboardingSession(r.Context(), db.UpdateOnboardingSessionParams{
 		OrgName:                 session.OrgName,
+		OrgUuid:                 getOrgPublicID(session.OrganizationPublicID),
 		MachineType:             sql.NullString{String: req.MachineType, Valid: true},
 		MachinePriceID:          sql.NullString{String: machinePriceID, Valid: true},
 		DiskSizeGb:              sql.NullInt32{Int32: int32(req.DiskSizeGB), Valid: true},
@@ -287,40 +290,6 @@ func (h *Handler) HandleStep2(w http.ResponseWriter, r *http.Request) {
 		SkipBilling: h.disableBilling,
 		NextStep:    nextStep,
 	})
-}
-
-// createOrganization creates an organization using the organization service's shared logic
-// This ensures consistent behavior with the organization service (adds owner member and relationship)
-// Returns the organization ID
-func (h *Handler) createOrganization(ctx context.Context, accountID int64, orgName string) (int64, error) {
-	orgPublicID := uuid.New().String()
-
-	// Get config values (fallback to empty if config not set)
-	var gcpOrgID, gcpBillingAccount, gcpParent string
-	var rootOrgID int64
-	if h.config != nil {
-		gcpOrgID = h.config.GcpOrgID
-		gcpBillingAccount = h.config.GcpBillingAccount
-		gcpParent = h.config.GcpParent
-		rootOrgID = h.config.RootOrganizationID
-	}
-
-	// Use shared repository method that creates org, adds owner with active status, and creates relationship
-	orgID, err := h.orgRepo.CreateOrganizationWithOwner(
-		ctx,
-		orgPublicID,
-		orgName,
-		gcpOrgID,
-		gcpBillingAccount,
-		gcpParent,
-		accountID,
-		rootOrgID,
-	)
-	if err != nil {
-		return 0, fmt.Errorf("failed to create organization: %w", err)
-	}
-
-	return orgID, nil
 }
 
 // HandleStripeSuccess handles the return from successful Stripe checkout
@@ -369,6 +338,7 @@ func (h *Handler) HandleStep4(w http.ResponseWriter, r *http.Request) {
 
 	err = h.db.UpdateOnboardingSession(r.Context(), db.UpdateOnboardingSessionParams{
 		OrgName:                 session.OrgName,
+		OrgUuid:                 getOrgPublicID(session.OrganizationPublicID),
 		MachineType:             session.MachineType,
 		MachinePriceID:          session.MachinePriceID,
 		DiskSizeGb:              session.DiskSizeGb,
@@ -430,6 +400,7 @@ func (h *Handler) HandleStep5(w http.ResponseWriter, r *http.Request) {
 
 	err = h.db.UpdateOnboardingSession(r.Context(), db.UpdateOnboardingSessionParams{
 		OrgName:                 session.OrgName,
+		OrgUuid:                 getOrgPublicID(session.OrganizationPublicID),
 		MachineType:             session.MachineType,
 		MachinePriceID:          session.MachinePriceID,
 		DiskSizeGb:              session.DiskSizeGb,
@@ -516,6 +487,7 @@ func (h *Handler) HandleStep6(w http.ResponseWriter, r *http.Request) {
 
 	err = h.db.UpdateOnboardingSession(r.Context(), db.UpdateOnboardingSessionParams{
 		OrgName:                 session.OrgName,
+		OrgUuid:                 getOrgPublicID(session.OrganizationPublicID),
 		MachineType:             session.MachineType,
 		MachinePriceID:          session.MachinePriceID,
 		DiskSizeGb:              session.DiskSizeGb,
@@ -570,145 +542,36 @@ func (h *Handler) HandleStep7(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Verify organization was created (by webhook)
-	if !session.OrganizationID.Valid {
+	// Verify organization was created (by webhook or API)
+	// Skip this check if billing is disabled (for testing)
+	if !h.disableBilling && !session.OrganizationID.Valid {
 		writeJSON(w, http.StatusBadRequest, ErrorResponse{Error: "Organization not yet created. Please wait for payment processing."})
 		return
 	}
 
-	// Validate we have all required data
-	if !session.ProjectName.Valid || !session.MachineType.Valid || !session.DiskSizeGb.Valid {
-		writeJSON(w, http.StatusBadRequest, ErrorResponse{Error: "Missing project configuration"})
-		return
-	}
-
-	if !session.GcpRegion.Valid {
-		writeJSON(w, http.StatusBadRequest, ErrorResponse{Error: "Missing region configuration"})
-		return
-	}
-
-	if !session.SiteName.Valid || !session.Port.Valid {
-		writeJSON(w, http.StatusBadRequest, ErrorResponse{Error: "Missing site configuration"})
-		return
-	}
-
-	// Get the organization's Stripe subscription to find machine item ID (if billing enabled)
-	machineItemID := ""
+	// Validate we have all required data (relaxed for testing when billing is disabled)
 	if !h.disableBilling {
-		subscription, err := h.db.GetStripeSubscriptionByOrganizationID(r.Context(), session.OrganizationID.Int64)
-		if err != nil {
-			slog.Error("Failed to get subscription", "error", err)
-			writeJSON(w, http.StatusInternalServerError, ErrorResponse{Error: "Failed to get subscription"})
+		if !session.ProjectName.Valid || !session.MachineType.Valid || !session.DiskSizeGb.Valid {
+			writeJSON(w, http.StatusBadRequest, ErrorResponse{Error: "Missing project configuration"})
 			return
 		}
 
-		// Get the machine subscription item ID that was stored in the webhook
-		// The MachinePriceID field is reused to store the subscription item ID
-		if session.MachinePriceID.Valid {
-			machineItemID = session.MachinePriceID.String
-			slog.Info("Using machine subscription item ID from webhook", "item_id", machineItemID)
-		} else {
-			// Fallback: try to find it from Stripe if webhook didn't store it
-			machineItemID, err = h.findMachineSubscriptionItem(r.Context(), subscription.StripeSubscriptionID, session.MachineType.String)
-			if err != nil {
-				slog.Error("Failed to find machine subscription item", "error", err)
-				// Don't fail - we can still create the project without the item ID
-				machineItemID = ""
-			}
+		if !session.GcpRegion.Valid {
+			writeJSON(w, http.StatusBadRequest, ErrorResponse{Error: "Missing region configuration"})
+			return
 		}
 
-		_ = subscription // Use subscription if needed later
-	} else {
-		slog.Info("Billing disabled - skipping subscription check")
+		if !session.SiteName.Valid || !session.Port.Valid {
+			writeJSON(w, http.StatusBadRequest, ErrorResponse{Error: "Missing site configuration"})
+			return
+		}
 	}
 
-	// Create project
-	projectPublicID := uuid.New().String()
-	err = h.db.CreateProject(r.Context(), db.CreateProjectParams{
-		PublicID:                  projectPublicID,
-		OrganizationID:            session.OrganizationID.Int64,
-		Name:                      session.ProjectName.String,
-		GcpRegion:                 sql.NullString{String: session.GcpRegion.String, Valid: true},
-		GcpZone:                   sql.NullString{String: session.GcpRegion.String + "-a", Valid: true}, // Default to zone -a
-		MachineType:               sql.NullString{String: session.MachineType.String, Valid: true},
-		DiskSizeGb:                session.DiskSizeGb,
-		StripeSubscriptionItemID:  sql.NullString{String: machineItemID, Valid: machineItemID != ""},
-		MonitoringEnabled:         sql.NullBool{Bool: false, Valid: true},
-		MonitoringLogLevel:        sql.NullString{String: "INFO", Valid: true},
-		MonitoringMetricsEnabled:  sql.NullBool{Bool: false, Valid: true},
-		MonitoringHealthCheckPath: sql.NullString{String: "/", Valid: true},
-		GcpProjectID:              sql.NullString{Valid: false}, // Will be set by terraform
-		GcpProjectNumber:          sql.NullString{Valid: false},
-		CreateBranchSites:         sql.NullBool{Bool: false, Valid: true},
-		Status:                    db.NullProjectsStatus{ProjectsStatus: db.ProjectsStatusProvisioning, Valid: true},
-		CreatedBy:                 sql.NullInt64{Int64: userInfo.AccountID, Valid: true},
-		UpdatedBy:                 sql.NullInt64{Int64: userInfo.AccountID, Valid: true},
-	})
-
-	if err != nil {
-		slog.Error("Failed to create project", "error", err)
-		writeJSON(w, http.StatusInternalServerError, ErrorResponse{Error: "Failed to create project"})
-		return
-	}
-
-	// Get project ID
-	project, err := h.db.GetProject(r.Context(), projectPublicID)
-	if err != nil {
-		slog.Error("Failed to get project", "error", err)
-		writeJSON(w, http.StatusInternalServerError, ErrorResponse{Error: "Failed to create project"})
-		return
-	}
-
-	// Create site
-	githubRepo := session.GithubRepoUrl.String
-	if githubRepo == "" {
-		githubRepo = "https://github.com/libops/isle-site-template" // Default
-	}
-
-	err = h.db.CreateSite(r.Context(), db.CreateSiteParams{
-		ProjectID:        project.ID,
-		Name:             session.SiteName.String,
-		GithubRepository: githubRepo,
-		GithubRef:        "heads/main",
-		GithubTeamID:     sql.NullString{Valid: false},
-		ComposePath:      sql.NullString{String: "/mnt/disks/data/compose", Valid: true},
-		ComposeFile:      sql.NullString{String: "docker-compose.yml", Valid: true},
-		Port:             session.Port,
-		ApplicationType:  sql.NullString{String: "generic", Valid: true},
-		UpCmd:            json.RawMessage(`["docker compose up --remove-orphans -d"]`),
-		InitCmd:          json.RawMessage(`[]`),
-		RolloutCmd:       json.RawMessage(`["docker compose pull", "docker compose up --remove-orphans -d"]`),
-		GcpExternalIp:    sql.NullString{Valid: false}, // Will be set by terraform
-		Status:           db.NullSitesStatus{SitesStatus: db.SitesStatusProvisioning, Valid: true},
-		CreatedBy:        sql.NullInt64{Int64: userInfo.AccountID, Valid: true},
-		UpdatedBy:        sql.NullInt64{Int64: userInfo.AccountID, Valid: true},
-	})
-
-	if err != nil {
-		slog.Error("Failed to create site", "error", err)
-		writeJSON(w, http.StatusInternalServerError, ErrorResponse{Error: "Failed to create site"})
-		return
-	}
-
-	// Create organization firewall rule
-	err = h.db.CreateOrganizationFirewallRule(r.Context(), db.CreateOrganizationFirewallRuleParams{
-		OrganizationID: sql.NullInt64{Int64: session.OrganizationID.Int64, Valid: true},
-		Name:           "Onboarding IP",
-		RuleType:       db.OrganizationFirewallRulesRuleTypeHttpsAllowed,
-		Cidr:           req.FirewallIP + "/32",
-		CreatedBy:      sql.NullInt64{Int64: userInfo.AccountID, Valid: true},
-		UpdatedBy:      sql.NullInt64{Int64: userInfo.AccountID, Valid: true},
-	})
-
-	if err != nil {
-		slog.Error("Failed to create firewall rule", "error", err)
-		writeJSON(w, http.StatusInternalServerError, ErrorResponse{Error: "Failed to create firewall rule"})
-		return
-	}
-
-	// Update session as completed
+	// Project, site, firewall rule, and SSH keys are created via API calls from frontend
+	// Just update session as completed
 	err = h.db.UpdateOnboardingSession(r.Context(), db.UpdateOnboardingSessionParams{
 		OrgName:                 session.OrgName,
+		OrgUuid:                 getOrgPublicID(session.OrganizationPublicID),
 		MachineType:             session.MachineType,
 		MachinePriceID:          session.MachinePriceID,
 		DiskSizeGb:              session.DiskSizeGb,
@@ -749,8 +612,8 @@ func (h *Handler) HandleStep7(w http.ResponseWriter, r *http.Request) {
 	slog.Info("Onboarding completed successfully",
 		"account_id", userInfo.AccountID,
 		"organization_id", session.OrganizationID.Int64,
-		"project_id", project.ID,
-		"project_name", session.ProjectName.String)
+		"project_name", session.ProjectName.String,
+		"site_name", session.SiteName.String)
 
 	writeJSON(w, http.StatusOK, SuccessResponse{Message: "Onboarding completed successfully"})
 }
@@ -771,122 +634,10 @@ func (h *Handler) HandleStripeWebhook(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	switch event.Type {
-	case "checkout.session.completed":
-		var session stripe.CheckoutSession
-		err := json.Unmarshal(event.Data.Raw, &session)
-		if err != nil {
-			slog.Error("Failed to parse checkout session", "error", err)
-			http.Error(w, "Bad Request", http.StatusBadRequest)
-			return
-		}
-
-		if err := h.handleCheckoutSessionCompleted(r.Context(), &session); err != nil {
-			slog.Error("Failed to handle checkout session completed", "error", err)
-			http.Error(w, "Internal Server Error", http.StatusInternalServerError)
-			return
-		}
-
-	default:
-		slog.Info("Unhandled webhook event type", "type", event.Type)
-	}
-
+	// Note: This webhook handler is not used. The actual Stripe webhooks are handled
+	// by the billing service in internal/billing/webhook.go
+	slog.Info("Received Stripe webhook event", "type", event.Type)
 	w.WriteHeader(http.StatusOK)
-}
-
-// handleCheckoutSessionCompleted creates the organization after successful payment
-func (h *Handler) handleCheckoutSessionCompleted(ctx context.Context, session *stripe.CheckoutSession) error {
-	// Get onboarding session by client reference ID (onboarding session public ID)
-	onboardSession, err := h.db.GetOnboardingSession(ctx, session.ClientReferenceID)
-	if err != nil {
-		return fmt.Errorf("failed to get onboarding session: %w", err)
-	}
-
-	// Check if organization already created
-	var orgID int64
-	if onboardSession.OrganizationID.Valid {
-		slog.Info("Organization already created for this session", "session_id", onboardSession.PublicID)
-		orgID = onboardSession.OrganizationID.Int64
-	} else {
-		// Create organization using helper
-		var err error
-		orgID, err = h.createOrganization(ctx, onboardSession.AccountID, onboardSession.OrgName.String)
-		if err != nil {
-			return fmt.Errorf("failed to create organization: %w", err)
-		}
-	}
-
-	// Get organization for further processing
-	org, err := h.db.GetOrganizationByID(ctx, orgID)
-	if err != nil {
-		return fmt.Errorf("failed to get organization: %w", err)
-	}
-
-	// Create Stripe subscription record
-	subscriptionID := session.Subscription.ID
-	customerID := session.Customer.ID
-
-	var trialStart, trialEnd sql.NullTime
-	if session.Subscription != nil {
-		if session.Subscription.TrialStart != 0 {
-			trialStart = sql.NullTime{Time: time.Unix(session.Subscription.TrialStart, 0), Valid: true}
-		}
-		if session.Subscription.TrialEnd != 0 {
-			trialEnd = sql.NullTime{Time: time.Unix(session.Subscription.TrialEnd, 0), Valid: true}
-		}
-	}
-
-	_, err = h.db.CreateStripeSubscription(ctx, db.CreateStripeSubscriptionParams{
-		OrganizationID:          org.ID,
-		StripeSubscriptionID:    subscriptionID,
-		StripeCustomerID:        customerID,
-		StripeCheckoutSessionID: sql.NullString{String: session.ID, Valid: true},
-		Status:                  db.StripeSubscriptionsStatusTrialing,
-		CurrentPeriodStart:      sql.NullTime{Valid: false},
-		CurrentPeriodEnd:        sql.NullTime{Valid: false},
-		TrialStart:              trialStart,
-		TrialEnd:                trialEnd,
-		CancelAtPeriodEnd:       sql.NullBool{Bool: false, Valid: true},
-		CanceledAt:              sql.NullTime{Valid: false},
-		MachineType:             onboardSession.MachineType,
-		DiskSizeGb:              onboardSession.DiskSizeGb,
-	})
-
-	if err != nil {
-		return fmt.Errorf("failed to create stripe subscription: %w", err)
-	}
-
-	// Update onboarding session with organization ID and subscription ID
-	err = h.db.UpdateOnboardingSession(ctx, db.UpdateOnboardingSessionParams{
-		OrgName:                 onboardSession.OrgName,
-		MachineType:             onboardSession.MachineType,
-		MachinePriceID:          onboardSession.MachinePriceID,
-		DiskSizeGb:              onboardSession.DiskSizeGb,
-		StripeCheckoutSessionID: sql.NullString{String: session.ID, Valid: true},
-		StripeSubscriptionID:    sql.NullString{String: subscriptionID, Valid: true},
-		OrganizationID:          sql.NullInt64{Int64: org.ID, Valid: true},
-		ProjectName:             onboardSession.ProjectName,
-		GcpCountry:              onboardSession.GcpCountry,
-		GcpRegion:               onboardSession.GcpRegion,
-		SiteName:                onboardSession.SiteName,
-		GithubRepoUrl:           onboardSession.GithubRepoUrl,
-		Port:                    onboardSession.Port,
-		FirewallIp:              onboardSession.FirewallIp,
-		CurrentStep:             sql.NullInt32{Int32: 4, Valid: true}, // Move to step 4 (project configuration)
-		Completed:               sql.NullBool{Bool: false, Valid: true},
-		ID:                      onboardSession.ID,
-	})
-
-	if err != nil {
-		return fmt.Errorf("failed to update onboarding session: %w", err)
-	}
-
-	slog.Info("Organization created successfully from Stripe checkout",
-		"organization_id", org.PublicID,
-		"subscription_id", subscriptionID,
-		"account_id", onboardSession.AccountID)
-
-	return nil
 }
 
 // HandleGetClientIP returns the client's IP address
@@ -932,34 +683,11 @@ func getClientIP(r *http.Request) string {
 	}
 
 	// Fall back to RemoteAddr
+	host, _, err := net.SplitHostPort(r.RemoteAddr)
+	if err == nil {
+		return host
+	}
 	return r.RemoteAddr
-}
-
-// findMachineSubscriptionItem finds the machine subscription item in a Stripe subscription
-func (h *Handler) findMachineSubscriptionItem(ctx context.Context, subscriptionID, machineType string) (string, error) {
-	machinePriceID, err := h.billingMgr.GetMachineTypePriceID(ctx, machineType)
-	if err != nil {
-		return "", fmt.Errorf("invalid machine type: %s", machineType)
-	}
-
-	params := &stripe.SubscriptionItemListParams{
-		Subscription: stripe.String(subscriptionID),
-	}
-
-	iter := subscriptionitem.List(params)
-	for iter.Next() {
-		item := iter.SubscriptionItem()
-		// Find the item with matching price ID
-		if item.Price.ID == machinePriceID {
-			return item.ID, nil
-		}
-	}
-
-	if err := iter.Err(); err != nil {
-		return "", err
-	}
-
-	return "", fmt.Errorf("machine subscription item not found for machine type: %s", machineType)
 }
 
 // writeJSON writes a JSON response

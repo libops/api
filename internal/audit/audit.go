@@ -8,7 +8,7 @@ import (
 	"net/http"
 	"strings"
 
-	"github.com/libops/api/internal/db"
+	"github.com/libops/api/db"
 )
 
 // Event represents an audit event type.
@@ -61,6 +61,20 @@ const (
 	SiteSecretUpdateFailed  Event = "site.secret.update.failed"
 	SiteSecretDeleteSuccess Event = "site.secret.delete.success"
 	SiteSecretDeleteFailed  Event = "site.secret.delete.failed"
+
+	// Member Events.
+	MemberAddSuccess    Event = "member.add.success"
+	MemberAddFailure    Event = "member.add.failure"
+	MemberUpdateSuccess Event = "member.update.success"
+	MemberUpdateFailure Event = "member.update.failure"
+	MemberRemoveSuccess Event = "member.remove.success"
+	MemberRemoveFailure Event = "member.remove.failure"
+
+	// Firewall Events.
+	FirewallRuleCreateSuccess Event = "firewall.rule.create.success"
+	FirewallRuleCreateFailure Event = "firewall.rule.create.failure"
+	FirewallRuleDeleteSuccess Event = "firewall.rule.delete.success"
+	FirewallRuleDeleteFailure Event = "firewall.rule.delete.failure"
 )
 
 // EntityType represents the type of entity being audited.

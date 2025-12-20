@@ -14,7 +14,7 @@ import (
 
 	"github.com/hashicorp/vault/api/auth/userpass"
 
-	"github.com/libops/api/internal/db"
+	"github.com/libops/api/db"
 	"github.com/libops/api/internal/validation"
 	"github.com/libops/api/internal/vault"
 )

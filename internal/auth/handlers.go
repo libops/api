@@ -10,7 +10,7 @@ import (
 	"net/url"
 	"strings"
 
-	"github.com/libops/api/internal/db"
+	"github.com/libops/api/db"
 	"github.com/libops/api/internal/vault"
 )
 

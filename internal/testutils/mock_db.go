@@ -4,7 +4,7 @@ import (
 	"context"
 	"database/sql"
 
-	"github.com/libops/api/internal/db"
+	"github.com/libops/api/db"
 )
 
 // MockQuerier is a mock implementation of the db.Querier interface for testing purposes.
@@ -30,6 +30,7 @@ type MockQuerier struct {
 	CreateProjectFunc                                 func(ctx context.Context, arg db.CreateProjectParams) error
 	CreateSiteFunc                                    func(ctx context.Context, arg db.CreateSiteParams) error
 	GetSiteByProjectAndNameFunc                       func(ctx context.Context, arg db.GetSiteByProjectAndNameParams) (db.GetSiteByProjectAndNameRow, error)
+	GetSiteByShortUUIDFunc                            func(ctx context.Context, shortUUID string) (db.GetSiteByShortUUIDRow, error)
 	ListProjectSitesFunc                              func(ctx context.Context, arg db.ListProjectSitesParams) ([]db.ListProjectSitesRow, error)
 	ListUserProjectsFunc                              func(ctx context.Context, arg db.ListUserProjectsParams) ([]db.ListUserProjectsRow, error)
 	ListUserSitesFunc                                 func(ctx context.Context, arg db.ListUserSitesParams) ([]db.ListUserSitesRow, error)
@@ -41,6 +42,167 @@ type MockQuerier struct {
 	GetStripeSubscriptionByOrganizationIDFunc         func(ctx context.Context, organizationID int64) (db.GetStripeSubscriptionByOrganizationIDRow, error)
 	GetStorageConfigFunc                              func(ctx context.Context) (db.StorageConfig, error)
 	CreateRelationshipFunc                            func(ctx context.Context, arg db.CreateRelationshipParams) (sql.Result, error)
+}
+
+func (m *MockQuerier) AppendEventIDsToRun(ctx context.Context, arg db.AppendEventIDsToRunParams) error {
+	return nil
+}
+
+func (m *MockQuerier) ClearStaleLocks(ctx context.Context) (sql.Result, error) {
+	return nil, nil
+}
+
+func (m *MockQuerier) CountOrganizationProjects(ctx context.Context, organizationID int64) (int64, error) {
+	return 0, nil
+}
+
+func (m *MockQuerier) CountUserOrganizations(ctx context.Context, accountID int64) (int64, error) {
+	return 0, nil
+}
+
+func (m *MockQuerier) CreateOrganizationSetting(ctx context.Context, arg db.CreateOrganizationSettingParams) error {
+	return nil
+}
+func (m *MockQuerier) GetOrganizationSetting(ctx context.Context, arg db.GetOrganizationSettingParams) (db.GetOrganizationSettingRow, error) {
+	return db.GetOrganizationSettingRow{}, nil
+}
+func (m *MockQuerier) GetOrganizationSettingByPublicID(ctx context.Context, publicID string) (db.GetOrganizationSettingByPublicIDRow, error) {
+	return db.GetOrganizationSettingByPublicIDRow{}, nil
+}
+func (m *MockQuerier) ListOrganizationSettings(ctx context.Context, arg db.ListOrganizationSettingsParams) ([]db.ListOrganizationSettingsRow, error) {
+	return nil, nil
+}
+func (m *MockQuerier) UpdateOrganizationSetting(ctx context.Context, arg db.UpdateOrganizationSettingParams) error {
+	return nil
+}
+func (m *MockQuerier) DeleteOrganizationSetting(ctx context.Context, arg db.DeleteOrganizationSettingParams) error {
+	return nil
+}
+
+func (m *MockQuerier) CreateProjectSetting(ctx context.Context, arg db.CreateProjectSettingParams) error {
+	return nil
+}
+func (m *MockQuerier) GetProjectSetting(ctx context.Context, arg db.GetProjectSettingParams) (db.GetProjectSettingRow, error) {
+	return db.GetProjectSettingRow{}, nil
+}
+func (m *MockQuerier) GetProjectSettingByPublicID(ctx context.Context, publicID string) (db.GetProjectSettingByPublicIDRow, error) {
+	return db.GetProjectSettingByPublicIDRow{}, nil
+}
+func (m *MockQuerier) ListProjectSettings(ctx context.Context, arg db.ListProjectSettingsParams) ([]db.ListProjectSettingsRow, error) {
+	return nil, nil
+}
+func (m *MockQuerier) UpdateProjectSetting(ctx context.Context, arg db.UpdateProjectSettingParams) error {
+	return nil
+}
+func (m *MockQuerier) DeleteProjectSetting(ctx context.Context, arg db.DeleteProjectSettingParams) error {
+	return nil
+}
+
+func (m *MockQuerier) CreateSiteSetting(ctx context.Context, arg db.CreateSiteSettingParams) error {
+	return nil
+}
+func (m *MockQuerier) GetSiteSetting(ctx context.Context, arg db.GetSiteSettingParams) (db.GetSiteSettingRow, error) {
+	return db.GetSiteSettingRow{}, nil
+}
+func (m *MockQuerier) GetSiteSettingByPublicID(ctx context.Context, publicID string) (db.GetSiteSettingByPublicIDRow, error) {
+	return db.GetSiteSettingByPublicIDRow{}, nil
+}
+func (m *MockQuerier) ListSiteSettings(ctx context.Context, arg db.ListSiteSettingsParams) ([]db.ListSiteSettingsRow, error) {
+	return nil, nil
+}
+func (m *MockQuerier) UpdateSiteSetting(ctx context.Context, arg db.UpdateSiteSettingParams) error {
+	return nil
+}
+func (m *MockQuerier) DeleteSiteSetting(ctx context.Context, arg db.DeleteSiteSettingParams) error {
+	return nil
+}
+
+func (m *MockQuerier) ListUserSettings(ctx context.Context, arg db.ListUserSettingsParams) ([]db.ListUserSettingsRow, error) {
+	return nil, nil
+}
+
+func (m *MockQuerier) CreateReconciliationResult(ctx context.Context, arg db.CreateReconciliationResultParams) (sql.Result, error) {
+	return nil, nil
+}
+func (m *MockQuerier) CreateReconciliationRun(ctx context.Context, arg db.CreateReconciliationRunParams) (sql.Result, error) {
+	return nil, nil
+}
+
+func (m *MockQuerier) GetOrganizationFirewallRuleByPublicID(ctx context.Context, uuidTOBIN string) (db.GetOrganizationFirewallRuleByPublicIDRow, error) {
+	return db.GetOrganizationFirewallRuleByPublicIDRow{}, nil
+}
+func (m *MockQuerier) GetProjectFirewallRuleByPublicID(ctx context.Context, uuidTOBIN string) (db.GetProjectFirewallRuleByPublicIDRow, error) {
+	return db.GetProjectFirewallRuleByPublicIDRow{}, nil
+}
+func (m *MockQuerier) GetSiteFirewallRuleByPublicID(ctx context.Context, uuidTOBIN string) (db.GetSiteFirewallRuleByPublicIDRow, error) {
+	return db.GetSiteFirewallRuleByPublicIDRow{}, nil
+}
+
+func (m *MockQuerier) GetPendingEvents(ctx context.Context, limit int32) ([]db.GetPendingEventsRow, error) {
+	return nil, nil
+}
+func (m *MockQuerier) GetPendingReconciliationRunByOrg(ctx context.Context, organizationID sql.NullInt64) (db.Reconciliation, error) {
+	return db.Reconciliation{}, nil
+}
+func (m *MockQuerier) GetPendingReconciliationRunByProject(ctx context.Context, projectID sql.NullInt64) (db.Reconciliation, error) {
+	return db.Reconciliation{}, nil
+}
+func (m *MockQuerier) GetPendingReconciliationRunByResource(ctx context.Context, arg db.GetPendingReconciliationRunByResourceParams) (db.Reconciliation, error) {
+	return db.Reconciliation{}, nil
+}
+func (m *MockQuerier) GetPendingReconciliationRunBySite(ctx context.Context, siteID sql.NullInt64) (db.Reconciliation, error) {
+	return db.Reconciliation{}, nil
+}
+func (m *MockQuerier) GetReconciliationResults(ctx context.Context, runID string) ([]db.ReconciliationResult, error) {
+	return nil, nil
+}
+func (m *MockQuerier) GetReconciliationResultsBySite(ctx context.Context, arg db.GetReconciliationResultsBySiteParams) ([]db.ReconciliationResult, error) {
+	return nil, nil
+}
+func (m *MockQuerier) GetReconciliationRunByID(ctx context.Context, runID string) (db.Reconciliation, error) {
+	return db.Reconciliation{}, nil
+}
+func (m *MockQuerier) GetRunningReconciliations(ctx context.Context) ([]db.GetRunningReconciliationsRow, error) {
+	return nil, nil
+}
+func (m *MockQuerier) GetStaleReconciliationRuns(ctx context.Context) ([]db.Reconciliation, error) {
+	return nil, nil
+}
+
+func (m *MockQuerier) GetSiteIDsByOrganization(ctx context.Context, organizationID int64) ([]int64, error) {
+	return nil, nil
+}
+func (m *MockQuerier) GetSiteIDsByProject(ctx context.Context, projectID int64) ([]int64, error) {
+	return nil, nil
+}
+func (m *MockQuerier) GetSiteIDsBySite(ctx context.Context, id int64) ([]int64, error) {
+	return nil, nil
+}
+
+func (m *MockQuerier) ListAllOrganizations(ctx context.Context) ([]db.ListAllOrganizationsRow, error) {
+	return nil, nil
+}
+
+func (m *MockQuerier) MarkEventSentOrStatus(ctx context.Context, eventID string) error {
+	return nil
+}
+func (m *MockQuerier) UpdateReconciliationRunCompleted(ctx context.Context, runID string) error {
+	return nil
+}
+func (m *MockQuerier) UpdateReconciliationRunFailed(ctx context.Context, arg db.UpdateReconciliationRunFailedParams) error {
+	return nil
+}
+func (m *MockQuerier) UpdateReconciliationRunStarted(ctx context.Context, runID string) error {
+	return nil
+}
+func (m *MockQuerier) UpdateReconciliationRunStatus(ctx context.Context, arg db.UpdateReconciliationRunStatusParams) error {
+	return nil
+}
+func (m *MockQuerier) UpdateReconciliationRunTriggered(ctx context.Context, runID string) error {
+	return nil
+}
+func (m *MockQuerier) UpgradeReconciliationRunScope(ctx context.Context, arg db.UpgradeReconciliationRunScopeParams) error {
+	return nil
 }
 
 func (m *MockQuerier) GetSite(ctx context.Context, publicID string) (db.GetSiteRow, error) {
@@ -143,11 +305,7 @@ func (m *MockQuerier) GetAccountByEmail(ctx context.Context, email string) (db.G
 func (m *MockQuerier) ApproveRelationship(ctx context.Context, arg db.ApproveRelationshipParams) (sql.Result, error) {
 	return nil, nil
 }
-func (m *MockQuerier) ClaimPendingEvents(ctx context.Context, arg db.ClaimPendingEventsParams) (sql.Result, error) {
-	return nil, nil
-}
 func (m *MockQuerier) CleanupExpiredVerificationTokens(ctx context.Context) error { return nil }
-func (m *MockQuerier) CleanupOldEvents(ctx context.Context, dateSUB any) error    { return nil }
 func (m *MockQuerier) CountOrganizationSecrets(ctx context.Context, organizationID int64) (int64, error) {
 	return 0, nil
 }
@@ -288,9 +446,6 @@ func (m *MockQuerier) GetAccountByVaultEntityID(ctx context.Context, vaultEntity
 func (m *MockQuerier) GetActiveAPIKeyByUUID(ctx context.Context, apiKeyUuid string) (db.GetActiveAPIKeyByUUIDRow, error) {
 	return db.GetActiveAPIKeyByUUIDRow{}, nil
 }
-func (m *MockQuerier) GetClaimedEvents(ctx context.Context, processingBy sql.NullString) ([]db.GetClaimedEventsRow, error) {
-	return nil, nil
-}
 func (m *MockQuerier) HasUserRelationshipAccessToOrganization(ctx context.Context, arg db.HasUserRelationshipAccessToOrganizationParams) (bool, error) {
 	return false, nil
 }
@@ -321,9 +476,6 @@ func (m *MockQuerier) GetEmailVerificationTokenByEmail(ctx context.Context, emai
 func (m *MockQuerier) GetLatestSiteDeployment(ctx context.Context, siteID string) (db.Deployment, error) {
 	return db.Deployment{}, nil
 }
-func (m *MockQuerier) GetOrganizationFirewallRule(ctx context.Context, id int64) (db.GetOrganizationFirewallRuleRow, error) {
-	return db.GetOrganizationFirewallRuleRow{}, nil
-}
 func (m *MockQuerier) GetOrganizationMemberByAccountAndOrganization(ctx context.Context, arg db.GetOrganizationMemberByAccountAndOrganizationParams) (db.OrganizationMember, error) {
 	if m.GetOrganizationMemberByAccountAndOrganizationFunc != nil {
 		return m.GetOrganizationMemberByAccountAndOrganizationFunc(ctx, arg)
@@ -344,9 +496,6 @@ func (m *MockQuerier) GetOrganizationSecretByPublicID(ctx context.Context, publi
 }
 func (m *MockQuerier) GetProjectByGCPProjectID(ctx context.Context, gcpProjectID sql.NullString) (db.GetProjectByGCPProjectIDRow, error) {
 	return db.GetProjectByGCPProjectIDRow{}, nil
-}
-func (m *MockQuerier) GetProjectFirewallRule(ctx context.Context, id int64) (db.GetProjectFirewallRuleRow, error) {
-	return db.GetProjectFirewallRuleRow{}, nil
 }
 func (m *MockQuerier) GetProjectMemberByAccountAndProject(ctx context.Context, arg db.GetProjectMemberByAccountAndProjectParams) (db.ProjectMember, error) {
 	if m.GetProjectMemberByAccountAndProjectFunc != nil {
@@ -381,8 +530,20 @@ func (m *MockQuerier) GetSiteByProjectAndName(ctx context.Context, arg db.GetSit
 	}
 	return db.GetSiteByProjectAndNameRow{}, nil
 }
-func (m *MockQuerier) GetSiteFirewallRule(ctx context.Context, id int64) (db.GetSiteFirewallRuleRow, error) {
-	return db.GetSiteFirewallRuleRow{}, nil
+func (m *MockQuerier) GetSiteByShortUUID(ctx context.Context, shortUUID string) (db.GetSiteByShortUUIDRow, error) {
+	if m.GetSiteByShortUUIDFunc != nil {
+		return m.GetSiteByShortUUIDFunc(ctx, shortUUID)
+	}
+	return db.GetSiteByShortUUIDRow{}, nil
+}
+func (m *MockQuerier) GetSiteFirewallForVM(ctx context.Context, arg db.GetSiteFirewallForVMParams) ([]db.GetSiteFirewallForVMRow, error) {
+	return []db.GetSiteFirewallForVMRow{}, nil
+}
+func (m *MockQuerier) GetSiteSSHKeysForVM(ctx context.Context, arg db.GetSiteSSHKeysForVMParams) ([]db.GetSiteSSHKeysForVMRow, error) {
+	return []db.GetSiteSSHKeysForVMRow{}, nil
+}
+func (m *MockQuerier) GetSiteSecretsForVM(ctx context.Context, arg db.GetSiteSecretsForVMParams) ([]db.GetSiteSecretsForVMRow, error) {
+	return []db.GetSiteSecretsForVMRow{}, nil
 }
 func (m *MockQuerier) GetSiteMemberByAccountAndSite(ctx context.Context, arg db.GetSiteMemberByAccountAndSiteParams) (db.SiteMember, error) {
 	if m.GetSiteMemberByAccountAndSiteFunc != nil {
@@ -434,9 +595,6 @@ func (m *MockQuerier) ListOrganizationRelationships(ctx context.Context, arg db.
 	return nil, nil
 }
 func (m *MockQuerier) ListOrganizationSecrets(ctx context.Context, arg db.ListOrganizationSecretsParams) ([]db.ListOrganizationSecretsRow, error) {
-	return nil, nil
-}
-func (m *MockQuerier) ListPendingApprovals(ctx context.Context, targetOrganizationID int64) ([]db.ListPendingApprovalsRow, error) {
 	return nil, nil
 }
 func (m *MockQuerier) ListProjectFirewallRules(ctx context.Context, projectID sql.NullInt64) ([]db.ListProjectFirewallRulesRow, error) {
@@ -504,16 +662,7 @@ func (m *MockQuerier) ListUserMemberships(ctx context.Context, arg db.ListUserMe
 	return nil, nil
 }
 
-func (m *MockQuerier) MarkEventDeadLetter(ctx context.Context, arg db.MarkEventDeadLetterParams) error {
-	return nil
-}
-func (m *MockQuerier) MarkEventFailed(ctx context.Context, arg db.MarkEventFailedParams) error {
-	return nil
-}
 func (m *MockQuerier) MarkEventSent(ctx context.Context, id int64) error { return nil }
-func (m *MockQuerier) RecoverStaleProcessing(ctx context.Context, dateSUB any) error {
-	return nil
-}
 func (m *MockQuerier) RejectRelationship(ctx context.Context, arg db.RejectRelationshipParams) (sql.Result, error) {
 	return nil, nil
 }
@@ -534,6 +683,9 @@ func (m *MockQuerier) UpdateOrganization(ctx context.Context, arg db.UpdateOrgan
 func (m *MockQuerier) UpdateOrganizationMember(ctx context.Context, arg db.UpdateOrganizationMemberParams) error {
 	return nil
 }
+func (m *MockQuerier) UpdateOrganizationMemberStatus(ctx context.Context, arg db.UpdateOrganizationMemberStatusParams) error {
+	return nil
+}
 func (m *MockQuerier) UpdateOrganizationSecret(ctx context.Context, arg db.UpdateOrganizationSecretParams) error {
 	return nil
 }
@@ -543,11 +695,18 @@ func (m *MockQuerier) UpdateProject(ctx context.Context, arg db.UpdateProjectPar
 func (m *MockQuerier) UpdateProjectMember(ctx context.Context, arg db.UpdateProjectMemberParams) error {
 	return nil
 }
+func (m *MockQuerier) UpdateProjectMemberStatus(ctx context.Context, arg db.UpdateProjectMemberStatusParams) error {
+	return nil
+}
 func (m *MockQuerier) UpdateProjectSecret(ctx context.Context, arg db.UpdateProjectSecretParams) error {
 	return nil
 }
 func (m *MockQuerier) UpdateSite(ctx context.Context, arg db.UpdateSiteParams) error { return nil }
+func (m *MockQuerier) UpdateSiteCheckIn(ctx context.Context, id int64) error         { return nil }
 func (m *MockQuerier) UpdateSiteMember(ctx context.Context, arg db.UpdateSiteMemberParams) error {
+	return nil
+}
+func (m *MockQuerier) UpdateSiteMemberStatus(ctx context.Context, arg db.UpdateSiteMemberStatusParams) error {
 	return nil
 }
 func (m *MockQuerier) UpdateSiteSecret(ctx context.Context, arg db.UpdateSiteSecretParams) error {
@@ -688,4 +847,20 @@ func (m *MockQuerier) GetStorageConfig(ctx context.Context) (db.StorageConfig, e
 		return m.GetStorageConfigFunc(ctx)
 	}
 	return db.StorageConfig{}, sql.ErrNoRows
+}
+
+func (m *MockQuerier) MarkEventCollapsed(ctx context.Context, arg db.MarkEventCollapsedParams) error {
+	return nil
+}
+
+func (m *MockQuerier) MarkEventExecuted(ctx context.Context, arg db.MarkEventExecutedParams) error {
+	return nil
+}
+
+func (m *MockQuerier) GetOrganizationsByAccountID(ctx context.Context, arg db.GetOrganizationsByAccountIDParams) ([]int64, error) {
+	return []int64{}, nil
+}
+
+func (m *MockQuerier) MarkEventDeadLetter(ctx context.Context, eventID string) error {
+	return nil
 }

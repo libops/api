@@ -5,78 +5,31 @@ import (
 	"database/sql"
 	"fmt"
 	"log/slog"
-	"time"
 
-	cloudevents "github.com/cloudevents/sdk-go/v2"
 	"github.com/google/uuid"
-	"github.com/sony/gobreaker/v2"
 	"google.golang.org/protobuf/proto"
 
-	"github.com/libops/api/internal/db"
+	"github.com/libops/api/db"
 )
 
-// Emitter encapsulates the CloudEvents client and a constant source.
+// Emitter writes events to the database queue for processing by the orchestrator.
 type Emitter struct {
-	client  cloudevents.Client
+	querier db.Querier
 	source  string // e.g., "io.libops.api"
-	cb      *gobreaker.CircuitBreaker[cloudevents.Result]
-	querier db.Querier // For fallback queue
 }
 
-// EmitterConfig holds configuration for the emitter.
-type EmitterConfig struct {
-	MaxRequests uint32
-	Interval    time.Duration
-	Timeout     time.Duration
-	ReadyToTrip func(counts gobreaker.Counts) bool
-}
-
-// DefaultEmitterConfig returns default circuit breaker config.
-func DefaultEmitterConfig() EmitterConfig {
-	return EmitterConfig{
-		MaxRequests: 3,
-		Interval:    10 * time.Second,
-		Timeout:     30 * time.Second,
-		ReadyToTrip: func(counts gobreaker.Counts) bool {
-			// Trip after 5 consecutive failures
-			return counts.ConsecutiveFailures > 5
-		},
-	}
-}
-
-// NewEmitter creates a new event emitter with circuit breaker and database queue fallback.
-func NewEmitter(client cloudevents.Client, source string, querier db.Querier) *Emitter {
-	return NewEmitterWithConfig(client, source, querier, DefaultEmitterConfig())
-}
-
-// NewEmitterWithConfig creates a new event emitter with custom circuit breaker config.
-func NewEmitterWithConfig(client cloudevents.Client, source string, querier db.Querier, config EmitterConfig) *Emitter {
-	settings := gobreaker.Settings{
-		Name:        "EventEmitter",
-		MaxRequests: config.MaxRequests,
-		Interval:    config.Interval,
-		Timeout:     config.Timeout,
-		ReadyToTrip: config.ReadyToTrip,
-		OnStateChange: func(name string, from gobreaker.State, to gobreaker.State) {
-			slog.Info("Circuit breaker state changed",
-				"name", name,
-				"from", from.String(),
-				"to", to.String())
-		},
-	}
-
+// NewEmitter creates a new event emitter that writes to the database queue.
+func NewEmitter(querier db.Querier, source string) *Emitter {
 	return &Emitter{
-		client:  client,
-		source:  source,
-		cb:      gobreaker.NewCircuitBreaker[cloudevents.Result](settings),
 		querier: querier,
+		source:  source,
 	}
 }
 
 // SendProtoEvent is the generic helper that accepts any generated Protobuf message
 // and emits it as a CloudEvent.
 //
-// If the circuit breaker is open, the event is queued to the database.
+// Events are written to the event_queue table for processing by the orchestrator.
 //
 // Parameters:
 //   - ctx: Context for the operation
@@ -97,56 +50,87 @@ func (e *Emitter) SendProtoEvent(ctx context.Context, eventType string, data pro
 // SendProtoEventWithSubject is like SendProtoEvent but also sets a subject field
 // Subject typically identifies the resource the event is about (e.g., account ID)
 //
-// This method uses a circuit breaker. If the circuit is open (too many failures),
-// the event is queued to the database for later retry.
+// Events are written to the event_queue table for processing by the orchestrator.
 func (e *Emitter) SendProtoEventWithSubject(ctx context.Context, eventType, subject string, data proto.Message) error {
+	return e.SendScopedProtoEvent(ctx, eventType, subject, nil, nil, nil, data)
+}
+
+// SendScopedProtoEvent emits an event with optional organization, project, and site IDs.
+// IDs can be provided as public UUID strings, which will be resolved to internal int64 IDs.
+func (e *Emitter) SendScopedProtoEvent(ctx context.Context, eventType, subject string, orgID, projectID, siteID *string, data proto.Message) error {
 	protoData, err := proto.Marshal(data)
 	if err != nil {
 		return fmt.Errorf("failed to marshal proto data: %w", err)
 	}
 
-	event := cloudevents.NewEvent()
 	eventID := uuid.NewString()
-	event.SetID(eventID)
-	event.SetSource(e.source)
-	event.SetTime(time.Now())
-	event.SetType(eventType)
-	if subject != "" {
-		event.SetSubject(subject)
-	}
-	event.SetDataContentType("application/protobuf")
 
-	if err := event.SetData(cloudevents.ApplicationCloudEventsJSON, protoData); err != nil {
-		return fmt.Errorf("failed to set cloudevent data: %w", err)
-	}
+	var orgIDInt, projectIDInt, siteIDInt *int64
 
-	_, err = e.cb.Execute(func() (cloudevents.Result, error) {
-		result := e.client.Send(ctx, event)
-		if cloudevents.IsNACK(result) {
-			return result, fmt.Errorf("event NACK: %w", result)
+	// Resolve Organization ID
+	if orgID != nil && *orgID != "" {
+		org, err := e.querier.GetOrganization(ctx, *orgID)
+		if err == nil {
+			id := org.ID
+			orgIDInt = &id
+		} else {
+			slog.Warn("failed to resolve organization ID for event", "org_id", *orgID, "error", err)
 		}
-		return result, nil
-	})
+	}
 
-	if err != nil {
-		if e.querier != nil {
-			queueErr := e.enqueueEvent(ctx, eventID, eventType, subject, protoData)
-			if queueErr != nil {
-				return fmt.Errorf("failed to send event and failed to queue: send_err=%w, queue_err=%v", err, queueErr)
+	// Resolve Project ID and auto-populate Organization ID
+	if projectID != nil && *projectID != "" {
+		proj, err := e.querier.GetProject(ctx, *projectID)
+		if err == nil {
+			id := proj.ID
+			projectIDInt = &id
+			// Auto-populate organization ID from project
+			if orgIDInt == nil {
+				orgID := proj.OrganizationID
+				orgIDInt = &orgID
 			}
-			// Event queued successfully, return nil (no error to caller)
-			slog.Info("Event queued to database (circuit open or send failed)",
-				"event_type", eventType)
-			return nil
+		} else {
+			slog.Warn("failed to resolve project ID for event", "project_id", *projectID, "error", err)
 		}
-		return fmt.Errorf("failed to send event: %w", err)
 	}
+
+	// Resolve Site ID and auto-populate Project ID and Organization ID
+	if siteID != nil && *siteID != "" {
+		site, err := e.querier.GetSite(ctx, *siteID)
+		if err == nil {
+			id := site.ID
+			siteIDInt = &id
+			// Auto-populate project ID from site
+			if projectIDInt == nil {
+				projID := site.ProjectID
+				projectIDInt = &projID
+				// Also fetch the project to get org ID
+				if orgIDInt == nil {
+					if proj, err := e.querier.GetProjectByID(ctx, site.ProjectID); err == nil {
+						orgID := proj.OrganizationID
+						orgIDInt = &orgID
+					}
+				}
+			}
+		} else {
+			slog.Warn("failed to resolve site ID for event", "site_id", *siteID, "error", err)
+		}
+	}
+
+	// Write event to queue
+	if err := e.enqueueEvent(ctx, eventID, eventType, subject, orgIDInt, projectIDInt, siteIDInt, protoData); err != nil {
+		return fmt.Errorf("failed to enqueue event: %w", err)
+	}
+
+	slog.Info("Event queued",
+		"event_id", eventID,
+		"event_type", eventType)
 
 	return nil
 }
 
 // enqueueEvent saves an event to the database queue.
-func (e *Emitter) enqueueEvent(ctx context.Context, eventID, eventType, subject string, data []byte) error {
+func (e *Emitter) enqueueEvent(ctx context.Context, eventID, eventType, subject string, orgID, projectID, siteID *int64, data []byte) error {
 	// Convert subject to sql.NullString
 	var subjectSQL sql.NullString
 	if subject != "" {
@@ -154,11 +138,21 @@ func (e *Emitter) enqueueEvent(ctx context.Context, eventID, eventType, subject 
 	}
 
 	return e.querier.EnqueueEvent(ctx, db.EnqueueEventParams{
-		EventID:      eventID,
-		EventType:    eventType,
-		EventSource:  e.source,
-		EventSubject: subjectSQL,
-		EventData:    data,
-		ContentType:  "application/protobuf",
+		EventID:        eventID,
+		EventType:      eventType,
+		EventSource:    e.source,
+		EventSubject:   subjectSQL,
+		EventData:      data,
+		ContentType:    "application/protobuf",
+		OrganizationID: toNullInt64(orgID),
+		ProjectID:      toNullInt64(projectID),
+		SiteID:         toNullInt64(siteID),
 	})
+}
+
+func toNullInt64(i *int64) sql.NullInt64 {
+	if i == nil {
+		return sql.NullInt64{}
+	}
+	return sql.NullInt64{Int64: *i, Valid: true}
 }

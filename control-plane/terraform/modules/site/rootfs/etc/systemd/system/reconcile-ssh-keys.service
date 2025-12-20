@@ -1,0 +1,15 @@
+[Unit]
+Description=SSH Keys Reconciliation Service
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+EnvironmentFile=/etc/default/reconcile-ssh-keys
+ExecStart=/usr/local/bin/reconcile-ssh-keys.sh
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=reconcile-ssh-keys
+
+[Install]
+WantedBy=multi-user.target

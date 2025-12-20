@@ -7,29 +7,10 @@
 # - Exposes ports for debugging
 # - Includes test runner services
 
-secrets: !override
-  MARIADB_ROOT_PASSWORD:
-    environment: USER
-  MARIADB_PASSWORD: !override
-    environment: USER
-  GOOGLE_APPLICATION_CREDENTIALS:
-    environment: HOME
-
 services:
   # Override mariadb with test configuration
   mariadb:
     command: --innodb-use-native-aio=1 # Required for GHA runners
-    environment:
-      MARIADB_ROOT_PASSWORD_FILE: /tmp/mdb-root
-      MARIADB_PASSWORD_FILE: /tmp/mdb
-    secrets: [] # Don't use secrets in CI
-    volumes:
-      - mariadb-data:/var/lib/mysql:rw
-      - ./ci/testdata/00-functions.sql:/docker-entrypoint-initdb.d/00-functions.sql:ro
-      - ./ci/testdata/schema.sql:/docker-entrypoint-initdb.d/01-schema.sql:ro
-      - ./ci/testdata/rbac_seed.sql:/docker-entrypoint-initdb.d/02-seed.sql:ro
-      - ./ci/mdb-root:/tmp/mdb-root:ro
-      - ./ci/mdb:/tmp/mdb:ro
     ports:
       - "3306:3306"
 
@@ -46,7 +27,6 @@ services:
       VAULT_ADDR: http://0.0.0.0:8200
       VAULT_LOG_LEVEL: debug
       VAULT_LOG_REQUESTS_LEVEL: debug
-    secrets: [] # Don't use secrets in CI
     volumes:
       - vault-data:/vault/data:rw
       - ./conf/vault/local.hcl:/etc/vault/server.hcl:r
@@ -72,17 +52,13 @@ services:
     environment:
       API_BASE_URL: http://traefik:80
       DASH_BASE_URL: https://localhost:8080
-      MARIADB_PASSWORD_FILE: /tmp/mdb
       VAULT_ADDR: http://vault:8200
       LOG_LEVEL: DEBUG
       LIBOPS_ENV: development
       CUSTOMER_VAULT_ADDR: http://vault:8200
       CUSTOMER_VAULT_TOKEN: test-root-token
       DISABLE_BILLING: "true" # Disable Stripe billing for tests
-    secrets: [] # Don't use secrets in CI
-    volumes:
-      - vault-secrets:/vault/secrets:r
-      - ./ci/mdb:/tmp/mdb:r
+      PUBSUB_EMULATOR_HOST: pubsub:8085
     ports:
       - "8080:8080"
 
@@ -91,16 +67,10 @@ services:
     environment:
       ENVIRONMENT: local
       VAULT_ADDR: http://vault:8200
-    secrets: [] # Don't use secrets in CI
     volumes:
       - vault-secrets:/vault/secrets:rw
       - ./ci/vault-root-token:/tmp/vault-root-token:ro
 
-  # Disable init service in CI (use vault-init instead)
-  init:
-    profiles: [disabled]
-
-  # Disable docs service in CI
   docs:
     profiles: [disabled]
 
@@ -108,6 +78,21 @@ services:
   traefik:
     ports:
       - "80:80"
+
+  # PubSub Emulator for events
+  pubsub:
+    image: gcr.io/google.com/cloudsdktool/google-cloud-cli:emulators
+    command: gcloud beta emulators pubsub start --project=libops-api --host-port=0.0.0.0:8085
+    ports:
+      - "8085:8085"
+    networks:
+      - default
+
+  event-router:
+    environment:
+      PUBSUB_EMULATOR_HOST: pubsub:8085
+    depends_on:
+      - pubsub
 
   # Test runner service
   test-runner:
@@ -120,7 +105,10 @@ services:
       API_URL: http://api:8080
       VAULT_ADDR: http://vault:8200
       VAULT_TOKEN: test-root-token
-      DATABASE_URL: libops:libops-test-pass@tcp(mariadb:3306)/libops?parseTime=true
+      MARIADB_PASSWORD_FILE: /run/secrets/MARIADB_PASSWORD
+      # DATABASE_URL will be constructed by entrypoint if MARIADB_PASSWORD_FILE is set
+    secrets:
+      - source: MARIADB_PASSWORD
     depends_on:
       api:
         condition: service_healthy
@@ -153,3 +141,23 @@ services:
         condition: service_healthy
     command: ["run-tests"]
     working_dir: /app/ci/dash-tests
+
+  seed:
+    image: mariadb:12.1.2@sha256:e1bcd6f85781f4a875abefb11c4166c1d79e4237c23de597bf0df81fec225b40
+    environment:
+      MARIADB_ROOT_PASSWORD_FILE: /run/secrets/MARIADB_ROOT_PASSWORD
+      MARIADB_PASSWORD_FILE: /run/secrets/MARIADB_PASSWORD
+      MARIADB_USER: libops
+      MARIADB_DATABASE: libops
+    networks:
+      - default
+    secrets:
+      - source: MARIADB_ROOT_PASSWORD
+      - source: MARIADB_PASSWORD
+    volumes:
+      - ./ci/testdata:/testdata:ro
+    entrypoint: /testdata/import.sh
+    depends_on:
+      api:
+        condition: service_healthy
+    profiles: [none]

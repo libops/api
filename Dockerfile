@@ -1,4 +1,4 @@
-FROM ghcr.io/libops/go1.25:main@sha256:f43c9b34f888d2ac53e87c8e061554f826b8eb580863d7b21fd787b6f0378f8f AS builder
+FROM ghcr.io/libops/base:main AS builder
 
 SHELL ["/bin/ash", "-o", "pipefail", "-ex", "-c"]
 
@@ -6,12 +6,12 @@ WORKDIR /app
 
 COPY go.mod go.sum ./
 COPY proto/ ./proto/
+COPY db/ ./db/
 RUN --mount=type=cache,target=/go/pkg/mod \
     go mod download
 
 COPY *.go ./
 COPY internal/ ./internal/
-COPY db/ ./db/
 
 RUN --mount=type=cache,target=/root/.cache/go-build \
     CGO_ENABLED=0 go build -ldflags="-s -w" -o /app/binary .
@@ -20,15 +20,11 @@ FROM node:22-alpine AS frontend
 
 WORKDIR /app
 
-# Copy package files and install dependencies
 COPY web/package.json web/package-lock.json ./
 RUN npm ci
 
-# Copy source files and build configuration
 COPY web/src/ ./src/
 COPY web/tsconfig.json web/vite.config.ts web/vite-plugin-proto-resolver.ts ./
-
-# Build the frontend bundle
 RUN npm run build
 
 FROM ubuntu:24.04 AS tailwind
@@ -47,7 +43,6 @@ RUN if [ "${TARGETARCH}" = "amd64" ]; then ARCH_SUFFIX="x64"; fi && \
     chmod +x /app/tailwindcss
 
 COPY web/ ./web/
-# Copy the bundled JavaScript from frontend stage
 COPY --from=frontend /app/static/js/main.bundle.js ./web/static/js/main.bundle.js
 
 RUN /app/tailwindcss \
@@ -57,7 +52,7 @@ RUN /app/tailwindcss \
     --minify
 
 
-FROM ghcr.io/libops/go1.25:main@sha256:f43c9b34f888d2ac53e87c8e061554f826b8eb580863d7b21fd787b6f0378f8f
+FROM ghcr.io/libops/base:main
 
 WORKDIR /app
 COPY --from=builder /app/binary /app/binary
@@ -72,6 +67,10 @@ RUN chown -R goapp . && \
     find . -type f -exec chmod 440 {} \; && \
     chmod +x /app/binary
 
+USER goapp
+
 EXPOSE 8080
 
-HEALTHCHECK CMD /bin/bash -c 'curl -sf http://localhost:8080/health'
+ENTRYPOINT [ "/app/binary" ]
+
+HEALTHCHECK CMD /bin/bash -c 'curl -sf http://localhost:8080/health || exit 1'
